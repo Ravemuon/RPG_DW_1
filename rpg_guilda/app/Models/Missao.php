@@ -9,10 +9,22 @@ class Missao extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['titulo', 'descricao', 'recompensa'];
+    protected $fillable = [
+        'campanha_id',
+        'user_id',
+        'titulo',
+        'descricao',
+        'recompensa',
+        'status',
+    ];
 
-    public function personagem()
+    public function campanha()
     {
-        return $this->hasOne(Personagem::class);
+        return $this->belongsTo(Campanha::class);
+    }
+
+    public function mestre()
+    {
+        return $this->belongsTo(Usuario::class, 'user_id', 'id_usuario');
     }
 }
