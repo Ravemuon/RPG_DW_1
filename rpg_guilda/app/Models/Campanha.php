@@ -18,6 +18,13 @@ class Campanha extends Model
         'criador_id'
     ];
 
+    // Relação com missões
+    public function missoes()
+    {
+        return $this->hasMany(Missao::class, 'campanha_id');
+    }
+    
+
     // Relação com o mestre (criador)
     public function criador()
     {

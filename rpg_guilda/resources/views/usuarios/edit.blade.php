@@ -1,89 +1,91 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Perfil – RPG Manager')
+@section('title', 'Editar Campanha')
 
 @section('content')
-<div class="container py-5 text-light">
+<div class="container py-4">
+    <h2 class="fw-bold text-warning mb-4">🛡️ Editar Campanha</h2>
 
-    {{-- Cabeçalho --}}
-    <div class="text-center mb-5">
-        <h1 class="text-warning fw-bold display-4">⚙️ Editar Perfil</h1>
-        <p class="lead text-secondary">Atualize suas informações de usuário e preferências de tema.</p>
-    </div>
+    <form action="{{ route('campanhas.update', $campanha->id) }}" method="POST">
+        @csrf
+        @method('PUT')
 
-    {{-- Card de Edição --}}
-    <div class="card bg-dark border-warning shadow-lg mx-auto" style="max-width: 600px;">
-        <div class="card-header text-center text-warning">
-            <h3>Informações do Usuário</h3>
+        <!-- Nome da campanha -->
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome da Campanha</label>
+            <input type="text" class="form-control" id="nome" name="nome" value="{{ old('nome', $campanha->nome) }}" required>
         </div>
-        <div class="card-body">
-            <form action="{{ route('usuarios.update', $usuario->id) }}" method="POST">
-                @csrf
-                @method('PUT')
 
-                {{-- Nome --}}
-                <div class="mb-3">
-                    <label for="nome" class="form-label text-warning">Nome</label>
-                    <input type="text" name="nome" id="nome" class="form-control bg-secondary text-light border-warning"
-                           value="{{ old('nome', $usuario->nome) }}" required>
-                    @error('nome') <small class="text-danger">{{ $message }}</small> @enderror
-                </div>
-
-                {{-- Email (somente leitura) --}}
-                <div class="mb-3">
-                    <label for="email" class="form-label text-warning">Email</label>
-                    <input type="email" id="email" class="form-control bg-dark text-light border-secondary"
-                           value="{{ $usuario->email }}" readonly>
-                </div>
-
-                {{-- Tipo de Usuário --}}
-                <div class="mb-3">
-                    <label class="form-label text-warning">Tipo de Usuário</label>
-                    <input type="text" class="form-control bg-dark text-light border-secondary"
-                           value="@if($usuario->is_admin ?? false) Administrador
-                                  @elseif($usuario->tipo === 'mestre') Mestre
-                                  @else Jogador @endif" readonly>
-                </div>
-
-                {{-- Tema --}}
-                <div class="mb-3">
-                    <label for="tema" class="form-label text-warning">Tema</label>
-                    <select name="tema" id="tema" class="form-select bg-secondary text-light border-warning" required>
-                        <option value="medieval" {{ $usuario->tema === 'medieval' ? 'selected' : '' }}>Medieval</option>
-                        <option value="sobrenatural" {{ $usuario->tema === 'sobrenatural' ? 'selected' : '' }}>Sobrenatural</option>
-                        <option value="cyberpunk" {{ $usuario->tema === 'cyberpunk' ? 'selected' : '' }}>Cyberpunk</option>
-                    </select>
-                    @error('tema') <small class="text-danger">{{ $message }}</small> @enderror
-                </div>
-
-                {{-- Senha Atual --}}
-                <div class="mb-3">
-                    <label for="current_password" class="form-label text-warning">Senha Atual</label>
-                    <input type="password" name="current_password" id="current_password" class="form-control bg-secondary text-light border-warning" required>
-                    @error('current_password') <small class="text-danger">{{ $message }}</small> @enderror
-                </div>
-
-                {{-- Nova Senha --}}
-                <div class="mb-3">
-                    <label for="new_password" class="form-label text-warning">Nova Senha (opcional)</label>
-                    <input type="password" name="new_password" id="new_password" class="form-control bg-secondary text-light border-warning">
-                    @error('new_password') <small class="text-danger">{{ $message }}</small> @enderror
-                </div>
-
-                {{-- Confirmar Nova Senha --}}
-                <div class="mb-3">
-                    <label for="new_password_confirmation" class="form-label text-warning">Confirmar Nova Senha</label>
-                    <input type="password" name="new_password_confirmation" id="new_password_confirmation" class="form-control bg-secondary text-light border-warning">
-                </div>
-
-                <button type="submit" class="btn btn-warning btn-custom w-100 mt-3">Salvar Alterações</button>
-            </form>
+        <!-- Sistema (somente leitura) -->
+        <div class="mb-3">
+            <label for="sistemaRPG" class="form-label">Sistema RPG</label>
+            <input type="text" class="form-control" id="sistemaRPG" value="{{ $campanha->sistemaRPG }}" readonly>
         </div>
+
+        <!-- Descrição -->
+        <div class="mb-3">
+            <label for="descricao" class="form-label">Descrição</label>
+            <textarea class="form-control" id="descricao" name="descricao" rows="4">{{ old('descricao', $campanha->descricao) }}</textarea>
+        </div>
+
+        <!-- Campanha privada -->
+        <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="privada" name="privada" value="1" {{ $campanha->privada ? 'checked' : '' }}>
+            <label class="form-check-label" for="privada">Campanha Privada</label>
+        </div>
+
+        <!-- Código de convite -->
+        <div class="mb-3" id="codigoConviteDiv" style="display: {{ $campanha->privada ? 'block' : 'none' }};">
+            <label for="codigo_convite" class="form-label">Código de Convite</label>
+            <input type="text" class="form-control" id="codigo_convite" name="codigo_convite" value="{{ $campanha->codigo_convite }}" readonly>
+        </div>
+
+        <button type="submit" class="btn btn-warning mb-4">Atualizar Campanha</button>
+    </form>
+
+    <!-- Participantes -->
+    <h4 class="fw-bold text-warning mt-5 mb-3">🎲 Participantes</h4>
+    <div class="list-group mb-4">
+        @foreach($campanha->jogadores as $jogador)
+            <div class="list-group-item d-flex justify-content-between align-items-center bg-dark border-warning text-warning">
+                {{ $jogador->nome }} <span class="badge bg-secondary">{{ $jogador->pivot->status }}</span>
+                @if($jogador->id !== $campanha->criador_id)
+                    <form action="{{ route('campanhas.remover-jogador', $campanha->id) }}" method="POST" class="mb-0">
+                        @csrf
+                        <input type="hidden" name="user_id" value="{{ $jogador->id }}">
+                        <button type="submit" class="btn btn-sm btn-danger">Remover</button>
+                    </form>
+                @endif
+            </div>
+        @endforeach
     </div>
 
-    {{-- Link de Voltar --}}
-    <div class="text-center mt-4">
-        <a href="{{ route('perfil') }}" class="btn btn-outline-warning">← Voltar ao Perfil</a>
-    </div>
+    <!-- Adicionar jogador -->
+    <h5 class="text-warning mb-2">➕ Adicionar jogador</h5>
+    <form action="{{ route('campanhas.adicionar-jogador', $campanha->id) }}" method="POST" class="mb-4">
+        @csrf
+        <div class="input-group">
+            <input type="text" name="user_id" class="form-control" placeholder="ID do usuário ou e-mail" required>
+            <button type="submit" class="btn btn-success">Adicionar</button>
+        </div>
+    </form>
 </div>
+
+<script>
+    const privadaCheckbox = document.getElementById('privada');
+    const codigoDiv = document.getElementById('codigoConviteDiv');
+    const codigoInput = document.getElementById('codigo_convite');
+
+    privadaCheckbox.addEventListener('change', function() {
+        if(this.checked) {
+            codigoDiv.style.display = 'block';
+            if(!codigoInput.value) {
+                codigoInput.value = Math.random().toString(36).substring(2, 8).toUpperCase();
+            }
+        } else {
+            codigoDiv.style.display = 'none';
+            codigoInput.value = '';
+        }
+    });
+</script>
 @endsection

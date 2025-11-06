@@ -64,6 +64,34 @@ class User extends Authenticatable
         return $this->hasOne(Arquivo::class, 'usuario_id')->where('tipo', 'banner');
     }
 
+    public function amizadesEnviadas()
+    {
+        return $this->hasMany(Amizade::class, 'user_id');
+    }
 
+    public function amizadesRecebidas()
+    {
+        return $this->hasMany(Amizade::class, 'friend_id');
+    }
+
+    // Buscar todos os amigos aceitos
+    public function amigos()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'amizades',
+            'user_id',
+            'friend_id'
+        )->wherePivot('status', 'aceita')
+        ->withPivot('status')
+        ->withTimestamps();
+    }
+
+    public function campanhasComoJogador()
+    {
+        return $this->belongsToMany(Campanha::class, 'campanha_usuario')
+                    ->withPivot('status')
+                    ->withTimestamps();
+    }
 
 }

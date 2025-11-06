@@ -16,35 +16,69 @@
             </p>
 
             {{-- Botões principais --}}
-            <div class="row g-3 justify-content-center text-center">
-                @php
-                    $botaoClass = 'btn btn-custom w-100 py-3 shadow-lg fw-bold';
-                @endphp
-                <div class="col-6 col-md-2">
-                    <a href="{{ route('campanhas.index') }}" class="{{ $botaoClass }}">🏕️ Campanhas</a>
-                </div>
-                <div class="col-6 col-md-2">
-                    <a href="{{ route('personagens.index') }}" class="{{ $botaoClass }}">🧝 Personagens</a>
-                </div>
-                <div class="col-6 col-md-2">
-                    <a href="{{ route('classes.index') }}" class="{{ $botaoClass }}">⚔️ Classes</a>
-                </div>
-                <div class="col-6 col-md-2">
-                    <a href="{{ route('missoes.index') }}" class="{{ $botaoClass }}">🗺️ Missões</a>
-                </div>
-                <div class="col-6 col-md-2">
-                    <a href="{{ route('sistemas.index') }}" class="{{ $botaoClass }}">📜 Sistemas</a>
-                </div>
+            <div class="row g-3 justify-content-center text-center mb-4">
+                @php $botaoClass = 'btn btn-custom w-100 py-3 shadow-lg fw-bold'; @endphp
+                <div class="col-6 col-md-2"><a href="{{ route('campanhas.index') }}" class="{{ $botaoClass }}">🏕️ Campanhas</a></div>
+                <div class="col-6 col-md-2"><a href="{{ route('personagens.index') }}" class="{{ $botaoClass }}">🧝 Personagens</a></div>
+                <div class="col-6 col-md-2"><a href="{{ route('classes.index') }}" class="{{ $botaoClass }}">⚔️ Classes</a></div>
+                <div class="col-6 col-md-2"><a href="{{ route('missoes.index') }}" class="{{ $botaoClass }}">🗺️ Missões</a></div>
+                <div class="col-6 col-md-2"><a href="{{ route('sistemas.index') }}" class="{{ $botaoClass }}">📜 Sistemas</a></div>
+                {{-- Botão Adicionar Amigos --}}
+                <div class="col-6 col-md-2"><a href="{{ route('usuarios.index') }}" class="{{ $botaoClass }}">➕ Amigos</a></div>
             </div>
 
-            {{-- Criar campanha apenas para mestre/administrador --}}
+            {{-- Criar campanha --}}
             @if(in_array(Auth::user()->tipo, ['mestre', 'administrador']))
-                <div class="mt-4">
-                    <a href="{{ route('campanhas.create') }}" class="btn btn-outline-warning btn-lg px-5 py-3 shadow-lg"
-                       style="text-shadow: 0 0 6px var(--btn-bg);">
+                <div class="mb-5">
+                    <a href="{{ route('campanhas.create') }}" class="btn btn-outline-warning btn-lg px-5 py-3 shadow-lg" style="text-shadow: 0 0 6px var(--btn-bg);">
                         ✨ Criar Nova Campanha
                     </a>
                 </div>
+            @endif
+        </div>
+
+        {{-- Campanhas do usuário --}}
+        <div class="mb-5">
+            <h3 class="fw-bold text-warning mb-3" style="text-shadow: 0 0 6px var(--btn-bg);">🔥 Minhas Campanhas</h3>
+
+            @if(!empty($campanhasUsuario) && $campanhasUsuario->count() > 0)
+                <div id="carouselCampanhas" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        @foreach($campanhasUsuario as $index => $campanha)
+                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                                <div class="card p-3 shadow-lg bg-dark border-warning mx-auto" style="max-width: 400px;">
+                                    <h5 class="fw-bold text-warning">{{ $campanha->nome }}</h5>
+                                    <p class="mb-2 text-light"><strong>Sistema:</strong> {{ $campanha->sistemaRPG }}</p>
+                                    <p class="text-light">
+                                        <strong>Status:</strong>
+                                        @if($campanha->status === 'ativa')
+                                            <span class="badge bg-success">Ativa</span>
+                                        @elseif($campanha->status === 'pausada')
+                                            <span class="badge bg-warning text-dark">Pausada</span>
+                                        @else
+                                            <span class="badge bg-secondary">Encerrada</span>
+                                        @endif
+                                    </p>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <a href="{{ route('campanhas.show', $campanha->id) }}" class="btn btn-outline-warning btn-sm flex-fill me-2">🔍 Ver</a>
+                                        <a href="{{ route('campanhas.chat', $campanha->id) }}" class="btn btn-warning btn-sm flex-fill ms-2">💬 Abrir Chat</a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carouselCampanhas" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Anterior</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carouselCampanhas" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Próximo</span>
+                    </button>
+                </div>
+            @else
+                <p class="text-center text-secondary fst-italic">Você ainda não participa de nenhuma campanha. ⚔️</p>
             @endif
         </div>
 
@@ -58,69 +92,12 @@
                 O <strong>RPG Manager</strong> é o seu portal digital para aventuras.
                 Crie campanhas, gerencie fichas, organize sessões e receba notificações automáticas.
             </p>
-
-            {{-- Botões registro/login --}}
             <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
-                <a href="{{ route('register') }}" class="btn btn-custom btn-lg px-5 py-3 shadow-lg">
-                    ✨ Crie sua conta
-                </a>
-                <a href="{{ route('login') }}" class="btn btn-outline-light btn-lg px-5 py-3 shadow">
-                    🔑 Já tenho uma conta
-                </a>
-            </div>
-
-            {{-- Sobre o site --}}
-            <div class="mt-5 text-center text-light">
-                <hr class="border-warning my-4 opacity-25">
-                <h2 class="fw-bold mb-3 text-warning" style="text-shadow: 0 0 6px var(--btn-bg);">
-                    🎲 O que é o RPG Manager?
-                </h2>
-                <p class="mx-auto mb-5" style="max-width: 850px; text-shadow: 0 0 2px #000;">
-                    Plataforma completa para mestres, jogadores e administradores, reunindo todas as ferramentas de RPG em um único portal.
-                </p>
-
-                <div class="row g-4 justify-content-center">
-                    @foreach(['Mestres'=>'🧙 Gerencie campanhas e sessões.',
-                              'Jogadores'=>'🎮 Monte fichas e participe de missões.',
-                              'Administradores'=>'👑 Moderam o sistema e mantêm a magia.'] as $role => $desc)
-                        <div class="col-12 col-md-3">
-                            <div class="p-4 border border-warning rounded-4 bg-dark shadow-lg h-100"
-                                 style="text-shadow: 0 0 4px #000;">
-                                <h5>{{ $role }}</h5>
-                                <p>{{ $desc }}</p>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                {{-- Recursos adicionais --}}
-                <div class="mt-5">
-                    <h3 class="fw-bold text-warning mb-3" style="text-shadow: 0 0 6px var(--btn-bg);">✨ Recursos</h3>
-                    <div class="row g-4 justify-content-center">
-                        @foreach([
-                            'Sistemas Personalizados'=>'📜 Escolha ou crie sistemas de regras.',
-                            'Notificações'=>'🔔 Receba alertas em tempo real.',
-                            'Upload de Arquivos'=>'📂 Adicione mapas e fichas facilmente.'
-                        ] as $title => $desc)
-                        <div class="col-12 col-md-3">
-                            <div class="p-4 border border-warning rounded-4 bg-dark shadow-lg h-100"
-                                 style="text-shadow: 0 0 3px #000;">
-                                <h5>{{ $title }}</h5>
-                                <p>{{ $desc }}</p>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- CTA final --}}
-                <div class="mt-5 text-center">
-                    <a href="{{ route('register') }}" class="btn btn-custom btn-lg px-5 py-3 shadow-lg" style="text-shadow: 0 0 6px var(--btn-bg);">
-                        Comece sua aventura agora ✨
-                    </a>
-                </div>
+                <a href="{{ route('register') }}" class="btn btn-custom btn-lg px-5 py-3 shadow-lg">✨ Crie sua conta</a>
+                <a href="{{ route('login') }}" class="btn btn-outline-light btn-lg px-5 py-3 shadow">🔑 Já tenho uma conta</a>
             </div>
         </div>
     @endif
+
 </div>
 @endsection

@@ -91,6 +91,7 @@ class UsuarioController extends Controller
     {
         $users = User::all();
         return view('usuarios.index', compact('users'));
+
     }
 
     // Atualizar perfil
@@ -161,6 +162,14 @@ class UsuarioController extends Controller
         return back()->with('success', 'Avatar atualizado!');
     }
 
+    public function home()
+    {
+        if (Auth::check()) {
+            $campanhasUsuario = Auth::user()->campanhasComoJogador()->get();
+            return view('home', compact('campanhasUsuario'));
+        }
 
+        return view('home');
+    }
 
 }

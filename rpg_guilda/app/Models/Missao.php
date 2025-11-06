@@ -9,6 +9,8 @@ class Missao extends Model
 {
     use HasFactory;
 
+    protected $table = 'missoes'; // tabela correta no banco
+
     protected $fillable = [
         'campanha_id',
         'user_id',
