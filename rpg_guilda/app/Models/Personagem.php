@@ -9,6 +9,8 @@ class Personagem extends Model
 {
     use HasFactory;
 
+    protected $table = 'personagens';
+
     protected $fillable = [
         'user_id',
         'campanha_id',
@@ -162,6 +164,15 @@ class Personagem extends Model
                 ['valor'=>$valor,'definida'=>false]
             );
         }
+    }
+
+    public function perfil()
+    {
+        $usuario = Auth::user();
+
+        $personagemCount = Personagem::where('user_id', $usuario->id)->count();
+
+        return view('usuarios.perfil', compact('usuario', 'personagemCount'));
     }
 
 }

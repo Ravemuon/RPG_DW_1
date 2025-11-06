@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User; // <- Use o model correto
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Arquivo;
 
 class UsuarioController extends Controller
 {
@@ -53,7 +54,7 @@ class UsuarioController extends Controller
     {
         $request->validate([
             'nome' => 'required|string|max:100',
-            'email' => 'required|email|unique:users,email', // <- tabela correta
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
             'tema' => 'required|in:medieval,sobrenatural,cyberpunk',
         ]);
@@ -61,9 +62,9 @@ class UsuarioController extends Controller
         $user = User::create([
             'nome' => $request->nome,
             'email' => $request->email,
-            'password' => Hash::make($request->password), // <- coluna correta
+            'password' => Hash::make($request->password),
             'tema' => $request->tema,
-            'tipo' => 'jogador', // define padrão
+            'tipo' => 'jogador',
         ]);
 
         Auth::login($user);
@@ -74,8 +75,15 @@ class UsuarioController extends Controller
     // Perfil do usuário
     public function perfil()
     {
-        $user = Auth::user();
-        return view('usuarios.perfil', compact('user'));
+        $usuario = Auth::user();
+
+        // Contar personagens
+        $personagemCount = $usuario->personagens()->count();
+
+        // Buscar campanhas do usuário via pivot
+        $campanhas = $usuario->campanhas()->get();
+
+        return view('usuarios.perfil', compact('usuario', 'personagemCount', 'campanhas'));
     }
 
     // Listar todos usuários (opcional)
@@ -84,4 +92,75 @@ class UsuarioController extends Controller
         $users = User::all();
         return view('usuarios.index', compact('users'));
     }
+
+    // Atualizar perfil
+    public function update(Request $request)
+    {
+        $usuario = Auth::user();
+
+        $request->validate([
+            'nome' => 'required|string|max:100',
+            'tema' => 'required|in:medieval,sobrenatural,cyberpunk',
+            'current_password' => 'required',
+            'new_password' => 'nullable|min:6|confirmed',
+        ]);
+
+        // Verifica senha atual
+        if (!Hash::check($request->current_password, $usuario->password)) {
+            return back()->withErrors(['current_password' => 'Senha atual incorreta']);
+        }
+
+        $usuario->nome = $request->nome;
+        $usuario->tema = $request->tema;
+
+        // Atualiza senha apenas se fornecida
+        if ($request->new_password) {
+            $usuario->password = Hash::make($request->new_password);
+        }
+
+        $usuario->save();
+
+        return redirect()->route('perfil')->with('success', 'Perfil atualizado com sucesso!');
+    }
+    public function edit($id)
+    {
+        $usuario = User::findOrFail($id);
+        return view('usuarios.edit', compact('usuario'));
+    }
+
+    public function uploadBanner(Request $request, $id)
+    {
+        $request->validate([
+            'banner_arquivo' => 'required|image|max:2048',
+        ]);
+
+        $usuario = User::findOrFail($id);
+
+        if ($request->hasFile('banner_arquivo')) {
+            $path = $request->file('banner_arquivo')->store('banners', 'public');
+            $usuario->banner()->updateOrCreate([], ['caminho' => $path]);
+        }
+
+        return back()->with('success', 'Banner atualizado!');
+    }
+
+
+    public function uploadPerfil(Request $request, $id)
+    {
+        $request->validate([
+            'perfil_arquivo' => 'required|image|max:2048',
+        ]);
+
+        $usuario = User::findOrFail($id);
+
+        if ($request->hasFile('perfil_arquivo')) {
+            $path = $request->file('perfil_arquivo')->store('perfis', 'public');
+            $usuario->perfil()->updateOrCreate([], ['caminho' => $path]);
+        }
+
+        return back()->with('success', 'Avatar atualizado!');
+    }
+
+
+
 }

@@ -16,6 +16,7 @@ class Notificacao extends Model
         'mensagem',
         'lida',
     ];
+    protected $table = 'notificacoes';
 
     // Relação com o usuário que recebe a notificação
     public function usuario()

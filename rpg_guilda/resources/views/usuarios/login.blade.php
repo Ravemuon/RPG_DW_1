@@ -68,32 +68,4 @@
 
             </div>
 
-            {{-- Extras temáticos --}}
-            <div class="mt-4 text-center text-light">
-                <p>Descubra um mundo de campanhas, missões e personagens únicos!</p>
-                <div class="row justify-content-center">
-                    <div class="col-md-4 p-2">
-                        <div class="p-3 border border-warning rounded-4 shadow bg-secondary">
-                            <h6>🧙 Mestres</h6>
-                            <p class="mb-0">Gerencie suas campanhas e aventureiros.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4 p-2">
-                        <div class="p-3 border border-warning rounded-4 shadow bg-secondary">
-                            <h6>🎮 Jogadores</h6>
-                            <p class="mb-0">Crie fichas e participe de missões em tempo real.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4 p-2">
-                        <div class="p-3 border border-warning rounded-4 shadow bg-secondary">
-                            <h6>👑 Administradores</h6>
-                            <p class="mb-0">Mantenha o equilíbrio do reino e a magia fluindo.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
 @endsection

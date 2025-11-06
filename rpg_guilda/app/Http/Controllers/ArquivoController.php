@@ -10,13 +10,19 @@ use Illuminate\Support\Facades\Storage;
 class ArquivoController extends Controller
 {
     /**
-     * Upload de arquivo ou cadastro de URL
-     * Pode ser chamado de qualquer página (chat, mapa, etc.)
+     * Upload universal de arquivo ou URL
+     * Pode ser usado para usuário, chat ou campanha
+     *
+     * @param Request $request
+     * @param int|null $usuario_id
+     * @param int|null $campanha_id
+     * @param int|null $chat_id
+     * @return Arquivo
      */
-    public static function upload(Request $request, $campanha_id = null)
+    public static function upload(Request $request, $usuario_id = null, $campanha_id = null, $chat_id = null)
     {
         $request->validate([
-            'arquivo' => 'nullable|file|max:10240', // max 10MB
+            'arquivo' => 'nullable|file|max:10240', // até 10MB
             'url' => 'nullable|url',
         ]);
 
@@ -37,9 +43,15 @@ class ArquivoController extends Controller
             $tipo = 'url';
         }
 
+        // Se nenhum arquivo ou URL foi enviado
+        if (!$caminho) {
+            throw new \Exception('Nenhum arquivo ou URL válido fornecido.');
+        }
+
         $arquivo = Arquivo::create([
-            'usuario_id' => Auth::id(),
+            'usuario_id' => $usuario_id ?? Auth::id(),
             'campanha_id' => $campanha_id,
+            'chat_id' => $chat_id,
             'nome_original' => $nome_original,
             'caminho' => $caminho,
             'tipo' => $tipo,
