@@ -2,118 +2,173 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sistema;
+use App\Models\Sessao;
+use App\Models\Campanha;
+use App\Models\Personagem;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
-class SistemaController extends Controller
+class SessaoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    // ===================================================
+    // 🔹 Lista sessões de uma campanha
+    // ===================================================
+    public function index(Campanha $campanha)
     {
-        // Carrega apenas relações existentes: classes, origens, raças e pericias
-        $sistemas = Sistema::with(['classes', 'origens', 'racas', 'pericias'])->get();
+        $this->authorize('view', $campanha);
 
-        return view('sistemas.index', compact('sistemas'));
+        $sessoes = $campanha->sessoes()->with('personagens')->get();
+
+        return view('sessoes.index', compact('campanha', 'sessoes'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    // ===================================================
+    // 🔹 Formulário de criação de sessão
+    // ===================================================
+    public function create(Campanha $campanha)
     {
-        return view('sistemas.create');
+        $this->authorize('update', $campanha);
+
+        return view('sessoes.create', compact('campanha'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    // ===================================================
+    // 🔹 Armazena nova sessão
+    // ===================================================
+    public function store(Request $request, Campanha $campanha)
     {
-        try {
-            $validatedData = $request->validate([
-                'nome' => 'required|string|max:100|unique:sistemas,nome',
-                'descricao' => 'nullable|string',
-                'foco' => 'nullable|string|max:100',
-                'mecanica_principal' => 'nullable|string|max:50',
-                'complexidade' => 'nullable|string|max:50',
-                'regras_opcionais' => 'nullable|json',
-                'max_atributos' => 'required|integer|min:1|max:6',
-                'atributo1_nome' => 'nullable|string|max:50',
-                'atributo2_nome' => 'nullable|string|max:50',
-                'atributo3_nome' => 'nullable|string|max:50',
-                'atributo4_nome' => 'nullable|string|max:50',
-                'atributo5_nome' => 'nullable|string|max:50',
-                'atributo6_nome' => 'nullable|string|max:50',
-                'pagina' => 'nullable|string|max:50',
-            ]);
+        $this->authorize('update', $campanha);
 
-            Sistema::create($validatedData);
+        $request->validate([
+            'titulo' => 'required|string|max:150',
+            'data_hora' => 'required|date',
+            'resumo' => 'nullable|string'
+        ]);
 
-            return redirect()->route('sistemas.index')->with('success', 'Sistema criado com sucesso!');
-        } catch (ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
+        $sessao = $campanha->sessoes()->create([
+            'criado_por' => Auth::id(),
+            'titulo' => $request->titulo,
+            'data_hora' => $request->data_hora,
+            'resumo' => $request->resumo
+        ]);
+
+        return redirect()->route('sessoes.index', $campanha)
+                         ->with('success', 'Sessão criada com sucesso!');
+    }
+
+    // ===================================================
+    // 🔹 Exibe detalhes da sessão
+    // ===================================================
+    public function show(Sessao $sessao)
+    {
+        $this->authorize('view', $sessao->campanha);
+
+        $sessao->load('personagens', 'campanha');
+
+        return view('sessoes.show', compact('sessao'));
+    }
+
+    // ===================================================
+    // 🔹 Formulário de edição da sessão
+    // ===================================================
+    public function edit(Sessao $sessao)
+    {
+        $this->authorize('update', $sessao->campanha);
+
+        $sessao->load('personagens', 'campanha');
+
+        return view('sessoes.edit', compact('sessao'));
+    }
+
+    // ===================================================
+    // 🔹 Atualiza sessão
+    // ===================================================
+    public function update(Request $request, Sessao $sessao)
+    {
+        $this->authorize('update', $sessao->campanha);
+
+        $request->validate([
+            'titulo' => 'required|string|max:150',
+            'data_hora' => 'required|date',
+            'resumo' => 'nullable|string',
+            'status' => 'required|in:agendada,em_andamento,concluida,cancelada'
+        ]);
+
+        $sessao->update($request->only('titulo', 'data_hora', 'resumo', 'status'));
+
+        // Se a sessão foi concluída, permite exportar PDF direto
+        if ($request->status === 'concluida') {
+            return $this->exportarPdf($sessao);
         }
+
+        return redirect()->route('sessoes.show', $sessao)
+                         ->with('success', 'Sessão atualizada com sucesso!');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Sistema $sistema)
+    // ===================================================
+    // 🔹 Remove sessão
+    // ===================================================
+    public function destroy(Campanha $campanha, Sessao $sessao)
     {
-        // Carrega relações necessárias para o show
-        $sistema->load(['classes', 'origens', 'racas', 'pericias']);
-        return view('sistemas.show', compact('sistema'));
+        $this->authorize('delete', $campanha);
+
+        $sessao->delete();
+
+        return redirect()->route('sessoes.index', $campanha)
+                         ->with('success', 'Sessão deletada com sucesso!');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Sistema $sistema)
+    // ===================================================
+    // 🔹 Vincula personagem à sessão
+    // ===================================================
+    public function adicionarPersonagem(Request $request, Sessao $sessao)
     {
-        return view('sistemas.edit', compact('sistema'));
+        $this->authorize('update', $sessao->campanha);
+
+        $request->validate([
+            'personagem_id' => 'required|exists:personagens,id',
+            'presente' => 'nullable|boolean'
+        ]);
+
+        $sessao->personagens()->syncWithoutDetaching([
+            $request->personagem_id => ['presente' => $request->boolean('presente')]
+        ]);
+
+        return redirect()->back()->with('success', 'Personagem adicionado à sessão!');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Sistema $sistema)
+    // ===================================================
+    // 🔹 Atualiza presença ou resultado do personagem na sessão
+    // ===================================================
+    public function atualizarPersonagem(Request $request, Sessao $sessao, Personagem $personagem)
     {
-        try {
-            $validatedData = $request->validate([
-                'nome' => 'required|string|max:100|unique:sistemas,nome,' . $sistema->id,
-                'descricao' => 'nullable|string',
-                'foco' => 'nullable|string|max:100',
-                'mecanica_principal' => 'nullable|string|max:50',
-                'complexidade' => 'nullable|string|max:50',
-                'regras_opcionais' => 'nullable|json',
-                'max_atributos' => 'required|integer|min:1|max:6',
-                'atributo1_nome' => 'nullable|string|max:50',
-                'atributo2_nome' => 'nullable|string|max:50',
-                'atributo3_nome' => 'nullable|string|max:50',
-                'atributo4_nome' => 'nullable|string|max:50',
-                'atributo5_nome' => 'nullable|string|max:50',
-                'atributo6_nome' => 'nullable|string|max:50',
-                'pagina' => 'nullable|string|max:50',
-            ]);
+        $this->authorize('update', $sessao->campanha);
 
-            $sistema->update($validatedData);
+        $request->validate([
+            'presente' => 'nullable|boolean',
+            'resultado' => 'nullable|array'
+        ]);
 
-            return redirect()->route('sistemas.index')->with('success', 'Sistema atualizado com sucesso!');
-        } catch (ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        }
+        $sessao->personagens()->updateExistingPivot($personagem->id, [
+            'presente' => $request->boolean('presente'),
+            'resultado' => $request->resultado
+        ]);
+
+        return redirect()->back()->with('success', 'Status do personagem atualizado!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Sistema $sistema)
+    public function exportarPdf(Sessao $sessao)
     {
-        $sistema->delete();
+        $this->authorize('view', $sessao->campanha);
 
-        return redirect()->route('sistemas.index')->with('success', 'Sistema excluído com sucesso!');
+        $sessao->load(['campanha', 'personagens']);
+
+        $pdf = Pdf::loadView('sessoes.relatorio', [
+            'sessao' => $sessao,
+            'personagens' => $sessao->personagens
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('sessao_' . $sessao->id . '.pdf');
     }
 }

@@ -43,4 +43,8 @@ class Classe extends Model
     {
         return $this->hasMany(Personagem::class, 'classe');
     }
+    public function sistema()
+    {
+        return $this->belongsTo(Sistema::class, 'sistema_id');
+    }
 }

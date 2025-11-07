@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('racas', function (Blueprint $table) {
             $table->id();
-            $table->string('nome')->unique();
+            $table->string('nome');
             $table->foreignId('sistema_id')->constrained('sistemas')->onDelete('cascade');
             $table->text('descricao')->nullable();
             $table->integer('forca_bonus')->default(0);
@@ -19,6 +19,8 @@ return new class extends Migration {
             $table->integer('carisma_bonus')->default(0);
             $table->string('pagina', 50)->nullable();
             $table->timestamps();
+
+            $table->unique(['nome', 'sistema_id']);
         });
     }
 

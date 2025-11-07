@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Sistema;
 use Illuminate\Http\Request;
 use App\Models\Classe;
 
@@ -10,10 +11,10 @@ class ClasseController extends Controller
     // ===================================================
     // 🔹 Lista todas as classes
     // ===================================================
-    public function index()
+    public function index($sistemaId)
     {
-        $classes = Classe::all();
-        return view('classes.index', compact('classes'));
+        $sistema = Sistema::with('classes')->findOrFail($sistemaId);
+        return view('sistemas.classes.index', compact('sistema'));
     }
 
     // ===================================================

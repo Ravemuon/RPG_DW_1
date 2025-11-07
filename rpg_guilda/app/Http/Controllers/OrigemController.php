@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Sistema;
 use Illuminate\Http\Request;
 use App\Models\Origem;
 
 class OrigemController extends Controller
 {
-    public function index()
+    public function index($sistemaId)
     {
-        $origens = Origem::all();
-        return view('origens.index', compact('origens'));
+        $sistema = Sistema::with('origens')->findOrFail($sistemaId);
+        return view('sistemas.origens.index', compact('sistema'));
     }
 
     public function create()

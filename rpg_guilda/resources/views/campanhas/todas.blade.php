@@ -1,174 +1,77 @@
-{{-- resources/views/campanhas/todas.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Todas as Campanhas')
 
 @section('content')
-<div class="container py-5">
-    <h1 class="text-warning text-center mb-5" style="text-shadow: 0 0 8px var(--btn-bg);">
-        📜 Todas as Campanhas
-    </h1>
+<div class="container py-5 bg-dark text-light min-vh-100">
+    <h1 class="fw-bold text-warning mb-4">🗺️ Todas as Campanhas Disponíveis</h1>
 
-    {{-- Botões de navegação --}}
-    @auth
-        <div class="text-center mb-4 d-flex flex-wrap justify-content-center gap-3">
-            <a href="{{ route('campanhas.minhas') }}"
-               class="btn btn-outline-warning fw-bold px-4 py-2"
-               style="text-shadow: 0 0 4px var(--btn-bg);">
-                🧭 Minhas Campanhas
-            </a>
+    {{-- Filtros e ações --}}
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <form action="{{ route('campanhas.todas') }}" method="GET" class="d-flex gap-2 flex-wrap">
+            <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm bg-dark text-light border-warning" placeholder="🔍 Pesquisar campanhas">
+            <button type="submit" class="btn btn-warning btn-sm">Pesquisar</button>
+        </form>
+        <a href="{{ route('campanhas.create') }}" class="btn btn-success fw-bold">➕ Criar Nova Campanha</a>
+    </div>
 
-            <a href="{{ route('campanhas.create') }}"
-               class="btn btn-success fw-bold px-4 py-2"
-               style="background-color: var(--btn-bg); color: var(--btn-text); text-shadow: 0 0 4px var(--btn-bg);">
-                ✨ Criar Nova Campanha
-            </a>
-        </div>
-    @endauth
+    <div class="row g-4">
+        @forelse($todasCampanhas as $campanha)
+            <div class="col-md-4">
+                <div class="card bg-secondary text-light h-100 border-info shadow">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title fw-bold">{{ $campanha->nome }}</h5>
+                        <p class="card-text small text-warning">Mestre: {{ $campanha->criador->nome ?? 'Desconhecido' }}</p>
+                        <p class="card-text small">{{ Str::limit($campanha->descricao, 80, '...') }}</p>
+                        <p class="card-text small text-muted mb-3">
+                            Sistema: {{ $campanha->sistema->nome ?? 'N/A' }} |
+                            Status: <span class="badge bg-{{ $campanha->status === 'ativa' ? 'success' : 'secondary' }}">{{ ucfirst($campanha->status) }}</span> |
+                            Privada: <span class="badge bg-{{ $campanha->privada ? 'warning text-dark' : 'info' }}">{{ $campanha->privada ? 'Sim' : 'Não' }}</span>
+                        </p>
 
-    {{-- Campo de busca --}}
-    <form method="GET" action="{{ route('campanhas.todas') }}" class="mb-4 d-flex justify-content-center gap-2 flex-wrap">
-        <input type="text" name="search" class="form-control w-auto" placeholder="Buscar por nome..." value="{{ request('search') }}">
-        <button type="submit" class="btn btn-warning fw-bold">🔍 Buscar</button>
-    </form>
+                        <div class="mt-auto d-flex gap-2 flex-wrap">
+                            <a href="{{ route('campanhas.show', $campanha->id) }}" class="btn btn-outline-warning btn-sm">Ver Detalhes</a>
 
-    @php $userId = auth()->id(); @endphp
-
-    @forelse($campanhasPorSistema as $sistemaNome => $campanhasDoSistema)
-        <h3 class="text-warning mt-5 mb-3 p-2 rounded bg-dark bg-opacity-50"
-            style="text-shadow: 0 0 6px var(--btn-bg);">
-            📜 Sistema: {{ $sistemaNome }}
-        </h3>
-
-        <div class="row g-4">
-            @foreach($campanhasDoSistema as $campanha)
-                @php
-                    // Ordena as sessões por data
-                    $sessoesOrdenadas = $campanha->sessoes->sortBy('data');
-
-                    // Próxima sessão
-                    $proximaSessao = $sessoesOrdenadas
-                        ->filter(fn($s) => $s->data >= now())
-                        ->sortBy('data')
-                        ->first();
-
-                    // Última sessão
-                    $ultimaSessao = $sessoesOrdenadas
-                        ->filter(fn($s) => $s->data < now())
-                        ->sortByDesc('data')
-                        ->first();
-
-                    $jogador = $campanha->jogadores->firstWhere('id', $userId);
-                    $status = $jogador?->pivot?->status ?? null;
-                @endphp
-
-                <div class="col-12 col-md-4">
-                    <div class="card h-100 border-warning shadow-lg p-3"
-                         style="background-color: var(--card-bg); border-color: var(--card-border);">
-
-                        {{-- Imagem da campanha --}}
-                        @if($campanha->imagem)
-                            <img src="{{ asset('storage/' . $campanha->imagem) }}"
-                                 class="card-img-top mb-3 rounded" alt="{{ $campanha->nome }}">
-                        @endif
-
-                        {{-- Nome da campanha --}}
-                        <h4 class="fw-bold text-warning text-center mb-3 p-2 rounded"
-                            style="background-color: var(--card-header-bg); text-shadow: 0 0 6px var(--btn-bg);">
-                            {{ $campanha->nome }}
-                        </h4>
-
-                        {{-- Informações --}}
-                        <ul class="list-group list-group-flush mb-3">
-                            <li class="list-group-item d-flex justify-content-between align-items-center"
-                                style="background-color: var(--card-bg); border-color: var(--card-border);">
-                                <span class="text-light">Mestre:</span>
-                                <span class="badge bg-warning text-dark fs-6">
-                                    {{ $campanha->criador->nome ?? 'Desconhecido' }}
-                                </span>
-                            </li>
-
-                            <li class="list-group-item d-flex justify-content-between align-items-center"
-                                style="background-color: var(--card-bg); border-color: var(--card-border);">
-                                <span class="text-light">Players:</span>
-                                <span class="badge bg-info text-dark fs-6">{{ $campanha->jogadores->count() }}</span>
-                            </li>
-
-                            <li class="list-group-item"
-                                style="background-color: var(--card-bg); border-color: var(--card-border); color: var(--bs-body-color);">
-                                <strong>Sistema:</strong> {{ $campanha->sistema_rpg }}
-                            </li>
-
-                            <li class="list-group-item"
-                                style="background-color: var(--card-bg); border-color: var(--card-border); color: var(--bs-body-color);">
-                                <strong>Missões realizadas:</strong> {{ $campanha->missoes->count() }}
-                            </li>
-
-                            <li class="list-group-item"
-                                style="background-color: var(--card-bg); border-color: var(--card-border); color: var(--bs-body-color);">
-                                <strong>Última sessão:</strong>
-                                {{ $ultimaSessao?->data ? $ultimaSessao->data->format('d/m/Y H:i') : 'Nenhuma sessão ainda' }}
-                            </li>
-
-                            <li class="list-group-item"
-                                style="background-color: var(--card-bg); border-color: var(--card-border); color: var(--bs-body-color);">
-                                <strong>Próximo encontro:</strong>
-                                {{ $proximaSessao?->data ? $proximaSessao->data->format('d/m/Y H:i') : 'Não agendado' }}
-                            </li>
-                        </ul>
-
-                        {{-- Botões --}}
-                        @auth
-                            @if($status === 'ativo' || $status === 'mestre')
-                                <a href="{{ route('campanhas.show', $campanha->id) }}"
-                                   class="btn w-100 fw-bold"
-                                   style="background-color: var(--btn-bg); color: var(--btn-text);">
-                                    🎯 Participando ({{ $status === 'mestre' ? 'Mestre' : 'Jogador' }})
-                                </a>
-                            @elseif($status === 'pendente')
-                                <a href="{{ route('campanhas.show', $campanha->id) }}"
-                                   class="btn btn-info w-100 fw-bold">
-                                    ⏳ Solicitação Enviada
-                                </a>
-                            @else
-                                <form action="{{ route('campanhas.entrar', $campanha->id) }}"
-                                      method="POST" class="d-flex flex-column gap-2">
-                                    @csrf
-                                    @if($campanha->privada)
-                                        <input type="text" name="codigo"
-                                               class="form-control bg-secondary text-light"
-                                               placeholder="Código de acesso" required>
-                                        <button type="submit"
-                                                class="btn w-100 fw-bold"
-                                                style="background-color: var(--btn-bg); color: var(--btn-text);">
-                                            🔑 Solicitar Entrada (Privada)
+                            @auth
+                                {{-- Solicitar entrada --}}
+                                @if(auth()->id() !== $campanha->criador_id && !$campanha->jogadores->pluck('id')->contains(auth()->id()))
+                                    <form action="{{ route('campanhas.solicitar', $campanha->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Deseja solicitar entrada nesta campanha?')">
+                                            Pedir para Entrar
                                         </button>
-                                    @else
-                                        <button type="submit"
-                                                class="btn w-100 fw-bold"
-                                                style="background-color: var(--btn-bg); color: var(--btn-text);">
-                                            🔓 Solicitar Entrada (Pública)
+                                    </form>
+                                @endif
+
+                                {{-- Editar/Excluir apenas para mestre/admin --}}
+                                @if(auth()->id() === $campanha->criador_id || auth()->user()->tipo === 'administrador')
+                                    <a href="{{ route('campanhas.edit', $campanha->id) }}" class="btn btn-outline-info btn-sm">✏️ Editar</a>
+
+                                    <form action="{{ route('campanhas.destroy', $campanha->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Deseja realmente excluir esta campanha?')">
+                                            🗑️ Excluir
                                         </button>
-                                    @endif
-                                    @error('codigo')
-                                        <p class="text-danger mt-1">{{ $message }}</p>
-                                    @enderror
-                                </form>
-                            @endif
-                        @endauth
-
-                        @guest
-                            <a href="{{ route('login') }}" class="btn btn-outline-warning w-100 fw-bold">
-                                🔐 Faça login para participar
-                            </a>
-                        @endguest
-
+                                    </form>
+                                @endif
+                            @endauth
+                        </div>
                     </div>
                 </div>
-            @endforeach
-        </div>
-    @empty
-        <p class="text-light fst-italic fs-5 mt-4">Nenhuma campanha disponível no momento.</p>
-    @endforelse
+            </div>
+        @empty
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    Nenhuma campanha disponível no momento.
+                </div>
+            </div>
+        @endforelse
+    </div>
+
+    {{-- Paginação --}}
+    <div class="mt-4">
+        {{ $todasCampanhas->withQueryString()->links() }}
+    </div>
 </div>
 @endsection

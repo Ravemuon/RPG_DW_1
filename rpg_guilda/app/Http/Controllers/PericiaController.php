@@ -4,15 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Pericia;
+use App\Models\Sistema;
 
 class PericiaController extends Controller
 {
-    public function index()
+    public function index($sistemaId)
     {
-        $pericias = Pericia::all();
-        return view('pericias.index', compact('pericias'));
+        $sistema = Sistema::with('pericias')->findOrFail($sistemaId);
+        return view('sistemas.pericias.index', compact('sistema'));
     }
-
     public function create()
     {
         return view('pericias.create');

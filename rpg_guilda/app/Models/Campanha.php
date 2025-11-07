@@ -40,12 +40,14 @@ class Campanha extends Model
     {
         return $this->belongsTo(User::class, 'criador_id');
     }
-
+    
     public function jogadores()
     {
-        return $this->belongsToMany(User::class, 'campanha_usuario', 'campanha_id', 'user_id')
+        return $this->belongsToMany(User::class, 'campanha_usuario')
+                    ->withPivot('status') // necessário para pivot_status
                     ->withTimestamps();
     }
+
 
     public function personagens()
     {

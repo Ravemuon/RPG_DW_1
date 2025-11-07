@@ -4,211 +4,176 @@
 
 @section('content')
 <div class="container py-5">
+    @php
+        $user = auth()->user();
+        $isMestre = $user && $user->id === $campanha->criador_id;
+        $proximaSessao = $campanha->sessoes->where('data', '>=', now())->sortBy('data')->first();
+        $jogadoresAtivos = $campanha->jogadores->where('pivot.status', 'ativo')->pluck('nome')->implode(', ');
+        $userStatus = $isMestre ? 'mestre' : ($campanha->jogadores->firstWhere('id', $user?->id)?->pivot->status ?? null);
+    @endphp
 
-    {{-- Cabeçalho da campanha --}}
-    <div class="text-center mb-5">
-        <h2 class="fw-bold text-warning mb-2">{{ $campanha->nome }}</h2>
-        <p class="text-light mb-1"><strong>Sistema:</strong> {{ $campanha->sistema->nome ?? 'Desconhecido' }}</p>
-        <p class="text-light mb-3">{{ $campanha->descricao ?? 'Sem descrição.' }}</p>
-        <p class="text-light mb-3">
-            <strong>Status:</strong>
-            @php
-                $statusBadge = match($campanha->status ?? 'ativa') {
-                    'ativa' => '<span class="badge bg-success">Ativa</span>',
-                    'pausada' => '<span class="badge bg-warning text-dark">Pausada</span>',
-                    'encerrada' => '<span class="badge bg-secondary">Encerrada</span>',
-                    default => '<span class="badge bg-secondary">Desconhecido</span>'
-                };
-            @endphp
-            {!! $statusBadge !!}
-        </p>
+    {{-- Cabeçalho --}}
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold text-warning mb-1">{{ $campanha->nome }}</h2>
+            <p class="text-light mb-0 small">Mestre: {{ $campanha->criador->nome ?? 'Desconhecido' }}</p>
+            <p class="text-light mb-0 small">📅 Próx. Sessão: {{ $proximaSessao ? $proximaSessao->data->format('d/m/Y H:i') : 'N/A' }}</p>
+            <p class="text-light mb-0 small">👥 Jogadores ativos: {{ $jogadoresAtivos ?: 'Nenhum ativo' }}</p>
+            <p class="text-light mb-0 small">Sistema: {{ $campanha->sistema->nome ?? 'Desconhecido' }}</p>
+            <p class="text-light mt-2">{{ $campanha->descricao ?? 'Sem descrição.' }}</p>
+        </div>
 
-        <div class="d-flex justify-content-center gap-2 flex-wrap">
+        {{-- Botões --}}
+        <div class="d-flex gap-2 flex-wrap">
             <a href="{{ route('campanhas.todas') }}" class="btn btn-outline-light btn-sm">⬅️ Voltar</a>
             @auth
-                @if(auth()->user()->id === $campanha->criador_id || auth()->user()->tipo === 'administrador')
+                @if($isMestre || $user->tipo === 'administrador')
                     <a href="{{ route('campanhas.edit', $campanha->id) }}" class="btn btn-outline-success btn-sm">✏️ Editar</a>
-                    <a href="{{ route('campanhas.chat', $campanha->id) }}" class="btn btn-warning btn-sm">💬 Chat</a>
+                @endif
+                <a href="{{ route('campanhas.chat', $campanha->id) }}" class="btn btn-warning btn-sm">💬 Chat</a>
+                @if($isMestre)
+                    <a href="{{ route('campanhas.mestre', $campanha->id) }}" class="btn btn-danger btn-sm">⚙️ Área do Mestre</a>
                 @endif
             @endauth
         </div>
     </div>
 
-    {{-- Status do usuário logado --}}
+    <hr class="text-light">
+
+    {{-- Status --}}
     @auth
-        @php
-            $isMestre = auth()->user()->id === $campanha->criador_id;
-
-            if($isMestre) {
-                $userStatus = 'mestre';
-            } else {
-                $userPivot = $campanha->jogadores->firstWhere('id', auth()->user()->id)?->pivot;
-                $userStatus = $userPivot->status ?? null;
-            }
-        @endphp
-
-        <div class="mb-4">
-            @if($userStatus === 'pendente')
-                <div class="alert alert-warning text-center">⏳ Solicitação de entrada enviada, aguardando aprovação.</div>
-            @elseif($userStatus === 'ativo')
-                <div class="alert alert-success text-center">✅ Você é jogador desta campanha.</div>
-            @elseif($userStatus === 'mestre')
-                <div class="alert alert-success text-center">✅ Você é o mestre desta campanha.</div>
-            @endif
-        </div>
+        @if($userStatus)
+            <div class="alert {{ $userStatus === 'pendente' ? 'alert-warning' : 'alert-success' }} text-center">
+                @if($userStatus === 'pendente') ⏳ Solicitação enviada, aguardando aprovação.
+                @elseif($userStatus === 'ativo') ✅ Você é jogador desta campanha.
+                @elseif($userStatus === 'mestre') ✅ Você é o mestre desta campanha.
+                @endif
+            </div>
+        @endif
     @endauth
 
-    {{-- Abas: Jogadores / NPCs --}}
+    {{-- Aba Jogadores --}}
     <ul class="nav nav-tabs mb-3" id="campanhaTab" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="jogadores-tab" data-bs-toggle="tab" data-bs-target="#jogadores" type="button" role="tab" aria-controls="jogadores" aria-selected="true">
                 👥 Jogadores
             </button>
         </li>
-        @if($isMestre)
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="npcs-tab" data-bs-toggle="tab" data-bs-target="#npcs" type="button" role="tab" aria-controls="npcs" aria-selected="false">
-                🗡️ NPCs
-            </button>
-        </li>
-        @endif
     </ul>
 
-    <div class="tab-content" id="campanhaTabContent">
-        {{-- Jogadores --}}
+    <div class="tab-content mb-5" id="campanhaTabContent">
         <div class="tab-pane fade show active" id="jogadores" role="tabpanel" aria-labelledby="jogadores-tab">
-            @include('campanhas.partials.jogadores', ['campanha' => $campanha, 'isMestre' => $isMestre])
-        </div>
+            @if($campanha->jogadores->count())
+                <ul class="list-group list-group-flush">
+                    @foreach($campanha->jogadores as $jogador)
+                        <li class="list-group-item d-flex justify-content-between align-items-center bg-dark text-light border-secondary">
+                            <div>
+                                <strong>{{ $jogador->nome }}</strong>
+                                <span class="text-secondary small">({{ $jogador->papel ?? 'Jogador' }})</span>
+                            </div>
+                            <span class="badge
+                                {{ $jogador->pivot->status === 'ativo' ? 'bg-success' : ($jogador->pivot->status === 'pendente' ? 'bg-warning text-dark' : 'bg-secondary') }}">
+                                {{ ucfirst($jogador->pivot->status) }}
+                            </span>
 
-        {{-- NPCs (apenas mestre) --}}
-        @if($isMestre)
-        <div class="tab-pane fade" id="npcs" role="tabpanel" aria-labelledby="npcs-tab">
-            <div class="d-flex justify-content-end mb-3">
-                <a href="{{ route('personagens.create', ['campanha_id' => $campanha->id, 'npc' => true]) }}" class="btn btn-outline-warning btn-sm">➕ Criar NPC</a>
-            </div>
-
-            @php
-                $npcs = $campanha->personagens->where('npc', true);
-            @endphp
-
-            @if($npcs->count())
-                <div class="row g-3">
-                    @foreach($npcs as $npc)
-                        @include('campanhas.partials.card', [
-                            'titulo' => $npc->nome,
-                            'descricao' => $npc->descricao ?? 'Sem descrição',
-                            'borda' => 'border-secondary',
-                            'acoes' => [
-                                [
-                                    'tipo' => 'link',
-                                    'rota' => route('personagens.edit', $npc->id),
-                                    'classe' => 'btn-outline-success btn-sm',
-                                    'texto' => '✏️ Editar'
-                                ],
-                                [
-                                    'tipo' => 'form',
-                                    'rota' => route('personagens.destroy', $npc->id),
-                                    'classe' => 'btn-outline-danger btn-sm',
-                                    'texto' => '❌ Remover',
-                                    'metodo' => 'DELETE',
-                                    'confirm' => 'Tem certeza que deseja excluir este NPC?'
-                                ]
-                            ]
-                        ])
+                            @if($isMestre && $jogador->id !== $user->id)
+                                <form action="{{ route('campanhas.usuarios.gerenciar', $campanha->id) }}" method="POST" class="ms-2 d-inline-flex gap-1">
+                                    @csrf
+                                    <input type="hidden" name="user_id" value="{{ $jogador->id }}">
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="ativo" {{ $jogador->pivot->status === 'ativo' ? 'selected' : '' }}>Ativo</option>
+                                        <option value="pendente" {{ $jogador->pivot->status === 'pendente' ? 'selected' : '' }}>Pendente</option>
+                                        <option value="rejeitado" {{ $jogador->pivot->status === 'rejeitado' ? 'selected' : '' }}>Rejeitado</option>
+                                        <option value="remover">Remover</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-light">✅</button>
+                                </form>
+                            @endif
+                        </li>
                     @endforeach
-                </div>
+                </ul>
             @else
-                <p class="text-secondary fst-italic mt-3">Nenhum NPC criado ainda.</p>
+                <p class="text-secondary fst-italic">Nenhum jogador cadastrado nesta campanha.</p>
+            @endif
+
+            {{-- Convidar Amigos --}}
+            @if($isMestre)
+                <hr class="text-light mt-4">
+                <h5 class="text-warning">➕ Convidar Amigos</h5>
+                @if($amigos->count())
+                    <form action="{{ route('campanhas.usuarios.adicionar', $campanha->id) }}" method="POST" class="row g-3 mt-2">
+                        @csrf
+                        <div class="col-md-6">
+                            <select name="user_id" class="form-select">
+                                @foreach($amigos as $amigo)
+                                    <option value="{{ $amigo->id }}">{{ $amigo->nome }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-info btn-sm">Enviar Convite</button>
+                        </div>
+                    </form>
+                @else
+                    <p class="text-secondary fst-italic mt-2">Nenhum amigo disponível para convite.</p>
+                @endif
             @endif
         </div>
-        @endif
     </div>
 
-    {{-- Adicionar amigos (apenas mestre) --}}
-    @auth
-        @if($isMestre)
-            <div class="mb-5 mt-5">
-                <h4 class="fw-bold text-warning mb-3">➕ Adicionar amigos à campanha</h4>
-                <form action="{{ route('campanhas.usuarios.adicionar', $campanha->id) }}" method="POST" class="row g-3">
-                    @csrf
-                    <div class="col-md-6">
-                        <select name="user_id" class="form-select" required>
-                            <option value="">Selecione um amigo</option>
-                            @foreach($amigos as $amigo)
-                                @if(!$campanha->jogadores->contains($amigo->id))
-                                    <option value="{{ $amigo->id }}">{{ $amigo->nome }}</option>
-                                @endif
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-outline-success w-100">Enviar convite</button>
-                    </div>
-                </form>
-            </div>
-        @endif
-    @endauth
+    <hr class="text-light">
 
     {{-- Sessões --}}
-    <div class="mb-5 mt-5">
-        <h4 class="fw-bold text-warning mb-3">🗺️ Sessões</h4>
-        @php
-            $proximaSessao = $campanha->sessoes->where('data', '>=', now())->sortBy('data')->first();
-            $ultimaSessao = $campanha->sessoes->where('data', '<', now())->sortByDesc('data')->first();
-        @endphp
+    <div class="mb-5 mt-5 d-flex flex-column gap-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="fw-bold text-warning mb-0">🗺️ Sessões</h3>
 
-        <div class="row g-3">
-            @if($proximaSessao)
-                @include('campanhas.partials.card', [
-                    'titulo' => "📅 Próxima Sessão: {$proximaSessao->titulo}",
-                    'descricao' => "Data: {$proximaSessao->data->format('d/m/Y H:i')}",
-                    'borda' => 'border-warning'
-                ])
-            @endif
-            @if($ultimaSessao)
-                @include('campanhas.partials.card', [
-                    'titulo' => "🕒 Última Sessão: {$ultimaSessao->titulo}",
-                    'descricao' => "Data: {$ultimaSessao->data->format('d/m/Y H:i')}",
-                    'borda' => 'border-info'
-                ])
-            @endif
+            {{-- Botão Criar Sessão apenas para o mestre --}}
+            @auth
+                @if($isMestre)
+                    <a href="{{ route('sessoes.create', $campanha->id) }}" class="btn btn-success btn-sm">
+                        ➕ Criar Nova Sessão
+                    </a>
+                @endif
+            @endauth
         </div>
 
+        {{-- Próxima Sessão --}}
+        @if($proximaSessao)
+            <div class="card bg-dark text-light border-warning shadow-sm mb-4 p-3">
+                <h5 class="text-warning mb-1">🔥 Próxima Sessão 🔥</h5>
+                <p><strong>{{ $proximaSessao->titulo }}</strong> em <span class="badge bg-warning text-dark">{{ $proximaSessao->data->format('d/m/Y H:i') }}</span></p>
+                @if($proximaSessao->descricao)
+                    <p class="small fst-italic">{{ $proximaSessao->descricao }}</p>
+                @endif
+                <a href="{{ route('sessoes.show', $proximaSessao->id) }}" class="btn btn-outline-warning btn-sm">🔍 Ver Detalhes</a>
+            </div>
+        @else
+            <div class="alert alert-info text-center">Nenhuma próxima sessão agendada.</div>
+        @endif
+
+        {{-- Histórico e Próximas --}}
+        <h4 class="fw-bold text-light mt-4 mb-3">Histórico e Próximas</h4>
         @if($campanha->sessoes->count())
             <ul class="list-group list-group-flush mt-3">
-                @foreach($campanha->sessoes->sortBy('data') as $sessao)
-                    <li class="list-group-item d-flex justify-content-between align-items-center bg-dark text-light">
+                @foreach($campanha->sessoes->sortByDesc('data') as $sessao)
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-dark text-light border-secondary">
                         <div>
-                            <strong>{{ $sessao->titulo }}</strong>
-                            <span class="text-secondary">— {{ $sessao->data?->format('d/m/Y') ?? 'Sem data' }}</span>
-                        </div>
-                        <div class="d-flex gap-2">
-                            @if(in_array($userStatus, ['mestre','ativo']))
-                                <a href="{{ route('sessoes.show', $sessao->id) }}" class="btn btn-outline-info btn-sm">🔍 Ver</a>
+                            <strong class="{{ $sessao->data->isFuture() ? 'text-info' : 'text-light' }}">{{ $sessao->titulo }}</strong>
+                            <span class="text-secondary">— {{ $sessao->data?->format('d/m/Y H:i') ?? 'Sem data' }}</span>
+                            @if($sessao->data->isFuture())
+                                <span class="badge bg-info">Próxima</span>
                             @endif
-                            @auth
-                                @if($userStatus === 'mestre')
-                                    <a href="{{ route('sessoes.edit', $sessao->id) }}" class="btn btn-outline-success btn-sm">✏️ Editar</a>
-                                    <form action="{{ route('sessoes.destroy', ['campanha' => $campanha->id, 'sessao' => $sessao->id]) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir esta sessão?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">❌ Remover</button>
-                                    </form>
-                                @endif
-                            @endauth
                         </div>
+                        @if($userStatus && in_array($userStatus, ['mestre','ativo']))
+                            <a href="{{ route('sessoes.show', $sessao->id) }}" class="btn btn-outline-info btn-sm">🔍 Ver</a>
+                        @endif
                     </li>
                 @endforeach
             </ul>
         @else
             <p class="text-secondary fst-italic mt-3">Nenhuma sessão criada ainda.</p>
         @endif
-
-        @auth
-            @if($userStatus === 'mestre')
-                <a href="{{ route('sessoes.create', ['campanha' => $campanha->id]) }}" class="btn btn-outline-warning btn-sm mt-3">➕ Criar Sessão</a>
-            @endif
-        @endauth
     </div>
-</div>
+
 @endsection

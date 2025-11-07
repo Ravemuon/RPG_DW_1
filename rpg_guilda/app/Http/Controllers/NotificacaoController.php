@@ -21,8 +21,8 @@ class NotificacaoController extends Controller
         $usuario = Auth::user();
 
         $notificacoes = Notificacao::where('usuario_id', $usuario->id)
-                                   ->orderByDesc('created_at')
-                                   ->get();
+            ->orderByDesc('created_at')
+            ->get();
 
         return view('notificacoes.index', compact('notificacoes'));
     }
@@ -32,13 +32,14 @@ class NotificacaoController extends Controller
     // ===================================================
     public function marcarComoLida($id)
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
 
         $notificacao = Notificacao::where('id', $id)
-                                  ->where('usuario_id', $user->id)
-                                  ->firstOrFail();
+            ->where('usuario_id', $usuario->id)
+            ->firstOrFail();
 
-        $notificacao->update(['lida' => true]);
+        $notificacao->lida = true;
+        $notificacao->save();
 
         return redirect()->back()->with('success', 'Notificação marcada como lida.');
     }
@@ -49,8 +50,8 @@ class NotificacaoController extends Controller
     public function marcarTodasComoLidas()
     {
         Notificacao::where('usuario_id', Auth::id())
-                   ->where('lida', false)
-                   ->update(['lida' => true]);
+            ->where('lida', false)
+            ->update(['lida' => true]);
 
         return redirect()->back()->with('success', 'Todas as notificações marcadas como lidas.');
     }
@@ -60,14 +61,28 @@ class NotificacaoController extends Controller
     // ===================================================
     public function destroy($id)
     {
-        $user = Auth::user();
+        $usuario = Auth::user();
 
         $notificacao = Notificacao::where('id', $id)
-                                  ->where('usuario_id', $user->id)
-                                  ->firstOrFail();
+            ->where('usuario_id', $usuario->id)
+            ->firstOrFail();
 
         $notificacao->delete();
 
         return redirect()->back()->with('success', 'Notificação deletada com sucesso.');
+    }
+
+    // ===================================================
+    // 🔹 Método extra para criar notificações de forma genérica
+    // ===================================================
+    public static function criarNotificacao($usuarioId, $mensagem, $tipo = 'geral', $sessaoId = null)
+    {
+        return Notificacao::create([
+            'usuario_id' => $usuarioId,
+            'sessao_id' => $sessaoId,
+            'tipo' => $tipo,
+            'mensagem' => $mensagem,
+            'lida' => false,
+        ]);
     }
 }

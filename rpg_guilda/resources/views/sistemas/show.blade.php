@@ -3,14 +3,15 @@
 @section('content')
 <div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="fw-bold">Detalhes do Sistema: {{ $sistema->nome }}</h1>
 
         @if(auth()->user()->is_admin)
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('sistemas.edit', $sistema) }}" class="btn btn-warning">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
+
                 <form action="{{ route('sistemas.destroy', $sistema) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este sistema?');">
                     @csrf
                     @method('DELETE')
@@ -18,6 +19,11 @@
                         <i class="bi bi-trash"></i> Excluir
                     </button>
                 </form>
+
+                <!-- Botão Gerar PDF -->
+                <a href="{{ route('sistemas.exportar-pdf-unico', $sistema->id) }}" target="_blank" class="btn btn-danger">
+                    <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
+                </a>
             </div>
         @endif
     </div>

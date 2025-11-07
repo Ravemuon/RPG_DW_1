@@ -34,9 +34,6 @@ class RPGSeeder extends Seeder
             RacasTableSeeder::class,
             OrigensTableSeeder::class,
             PericiasTableSeeder::class,
-            SistemaClasseTableSeeder::class,
-            SistemaRacaTableSeeder::class,
-            SistemaPericiaTableSeeder::class,
             CampanhasTableSeeder::class,
             PersonagemSeeder::class,
         ]);

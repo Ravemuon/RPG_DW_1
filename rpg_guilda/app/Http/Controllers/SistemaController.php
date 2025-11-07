@@ -2,26 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sistema; // Assumindo que seu Model se chama Sistema
+use App\Models\Sistema;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\ValidationException;
 
 class SistemaController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     * Exibe uma lista de todos os sistemas.
+     * Lista todos os sistemas com suas relações.
      */
     public function index()
     {
-        $sistemas = Sistema::with(['classes', 'origens', 'racas', 'atributos', 'pericias'])->get();
+        $sistemas = Sistema::with(['classes', 'origens', 'racas', 'pericias'])->get();
         return view('sistemas.index', compact('sistemas'));
     }
 
-
     /**
-     * Show the form for creating a new resource.
-     * Exibe o formulário para criar um novo sistema.
+     * Exibe formulário de criação de sistema.
      */
     public function create()
     {
@@ -29,8 +27,7 @@ class SistemaController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     * Armazena um novo sistema no banco de dados.
+     * Armazena um novo sistema.
      */
     public function store(Request $request)
     {
@@ -42,7 +39,7 @@ class SistemaController extends Controller
                 'mecanica_principal' => 'nullable|string|max:50',
                 'complexidade' => 'nullable|string|max:50',
                 'regras_opcionais' => 'nullable|json',
-                'max_atributos' => 'required|integer|min:1|max:6', // Max 6 conforme a tabela
+                'max_atributos' => 'required|integer|min:1|max:6',
                 'atributo1_nome' => 'nullable|string|max:50',
                 'atributo2_nome' => 'nullable|string|max:50',
                 'atributo3_nome' => 'nullable|string|max:50',
@@ -52,10 +49,7 @@ class SistemaController extends Controller
                 'pagina' => 'nullable|string|max:50',
             ]);
 
-            // Se o campo 'regras_opcionais' for enviado como string JSON, ele será armazenado corretamente no MySQL como JSON.
-            // Para outros bancos, ou se o front-end envia um array, pode ser necessário um cast no Model.
-
-            $sistema = Sistema::create($validatedData);
+            Sistema::create($validatedData);
 
             return redirect()->route('sistemas.index')->with('success', 'Sistema criado com sucesso!');
         } catch (ValidationException $e) {
@@ -64,17 +58,16 @@ class SistemaController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     * Exibe os detalhes de um sistema específico.
+     * Exibe detalhes de um sistema específico.
      */
     public function show(Sistema $sistema)
     {
+        $sistema->load(['classes', 'origens', 'racas', 'pericias']);
         return view('sistemas.show', compact('sistema'));
     }
 
     /**
-     * Show the form for editing the specified resource.
-     * Exibe o formulário para editar um sistema existente.
+     * Exibe formulário de edição do sistema.
      */
     public function edit(Sistema $sistema)
     {
@@ -82,14 +75,12 @@ class SistemaController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
-     * Atualiza um sistema existente no banco de dados.
+     * Atualiza um sistema existente.
      */
     public function update(Request $request, Sistema $sistema)
     {
         try {
             $validatedData = $request->validate([
-                // 'nome' deve ser único, exceto para o registro atual
                 'nome' => 'required|string|max:100|unique:sistemas,nome,' . $sistema->id,
                 'descricao' => 'nullable|string',
                 'foco' => 'nullable|string|max:100',
@@ -115,8 +106,7 @@ class SistemaController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     * Remove um sistema do banco de dados.
+     * Remove um sistema.
      */
     public function destroy(Sistema $sistema)
     {
@@ -124,4 +114,32 @@ class SistemaController extends Controller
 
         return redirect()->route('sistemas.index')->with('success', 'Sistema excluído com sucesso!');
     }
+
+    public function classes(Sistema $sistema)
+    {
+        return redirect()->route('sistemas.classes.index', $sistema->id);
+    }
+
+    public function origens(Sistema $sistema)
+    {
+        return redirect()->route('sistemas.origens.index', $sistema->id);
+    }
+
+    public function racas(Sistema $sistema)
+    {
+        return redirect()->route('sistemas.racas.index', $sistema->id);
+    }
+
+    public function pericias(Sistema $sistema)
+    {
+        return redirect()->route('sistemas.pericias.index', $sistema->id);
+    }
+    
+    public function exportarPdf()
+    {
+        $sistemas = Sistema::all();
+        $pdf = Pdf::loadView('sistemas.pdf', compact('sistemas'));
+        return $pdf->download('sistemas.pdf');
+    }
+
 }
