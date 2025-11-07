@@ -14,9 +14,10 @@ class SistemaController extends Controller
      */
     public function index()
     {
-        $sistemas = Sistema::all();
+        $sistemas = Sistema::with(['classes', 'origens', 'racas', 'atributos', 'pericias'])->get();
         return view('sistemas.index', compact('sistemas'));
     }
+
 
     /**
      * Show the form for creating a new resource.

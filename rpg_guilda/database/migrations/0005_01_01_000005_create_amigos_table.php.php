@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('amizades', function (Blueprint $table) {
             $table->id();
 
-            //  Relação entre usuários
+            // Relação entre usuários
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->onDelete('cascade')
@@ -22,17 +22,18 @@ return new class extends Migration
                 ->onDelete('cascade')
                 ->comment('Usuário que recebe a solicitação');
 
-            //  Status da amizade
-            $table->enum('status', ['pendente', 'aceita'])->default('pendente')
+            // Status da amizade
+            $table->enum('status', ['pendente', 'aceito', 'recusado'])
+                ->default('pendente')
                 ->comment('Status da amizade');
 
-            //  Timestamps
+            // Timestamps
             $table->timestamps();
 
-            //  Evita duplicidade de solicitações entre os mesmos usuários (ordem não importa)
+            // Evita duplicidade de solicitações na mesma direção
             $table->unique(['user_id', 'friend_id']);
 
-            //  Índice para buscas rápidas de status
+            // Índice para buscas rápidas de status
             $table->index(['status']);
         });
     }

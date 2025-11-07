@@ -28,4 +28,42 @@ class Amizade extends Model
     {
         return $this->belongsTo(User::class, 'friend_id');
     }
+
+    /**
+     * Scope para buscar amizades aceitas
+     */
+    public function scopeAceitas($query)
+    {
+        return $query->where('status', 'aceito');
+    }
+
+    /**
+     * Scope para buscar solicitações pendentes recebidas
+     */
+    public function scopePendentesRecebidas($query, $userId)
+    {
+        return $query->where('friend_id', $userId)
+                     ->where('status', 'pendente');
+    }
+
+    /**
+     * Scope para buscar solicitações pendentes enviadas
+     */
+    public function scopePendentesEnviadas($query, $userId)
+    {
+        return $query->where('user_id', $userId)
+                     ->where('status', 'pendente');
+    }
+
+    /**
+     * Verifica se existe amizade ou solicitação entre dois usuários
+     */
+    public static function existeEntre($userId, $friendId)
+    {
+        return self::where(function($q) use ($userId, $friendId) {
+            $q->where('user_id', $userId)->where('friend_id', $friendId);
+        })->orWhere(function($q) use ($userId, $friendId) {
+            $q->where('user_id', $friendId)->where('friend_id', $userId);
+        })->exists();
+    }
 }

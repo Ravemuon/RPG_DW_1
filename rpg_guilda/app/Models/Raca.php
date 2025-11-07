@@ -13,7 +13,7 @@ class Raca extends Model
 
     protected $fillable = [
         'nome',
-        'sistema_rpg',
+        'sistema_id',
         'descricao',
         'forca_bonus',
         'destreza_bonus',
@@ -21,11 +21,11 @@ class Raca extends Model
         'inteligencia_bonus',
         'sabedoria_bonus',
         'carisma_bonus',
+        'pagina'
     ];
 
-    // Se quiser relacionar com personagens
-    public function personagens()
+    public function sistema()
     {
-        return $this->hasMany(Personagem::class, 'raca_id');
+        return $this->belongsTo(Sistema::class);
     }
 }

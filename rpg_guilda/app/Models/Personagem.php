@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ class Personagem extends Model
         'sistema_rpg',
         'user_id',
         'campanha_id',
-        'raca_id',          // ✅ Adicionado
+        'raca_id',
         'atributos',
         'descricao',
         'ativo'
@@ -25,7 +26,7 @@ class Personagem extends Model
     ];
 
     // ===============================
-    // 🔹 Relações
+    //  Relações
     // ===============================
 
     public function user()
@@ -43,7 +44,7 @@ class Personagem extends Model
         return $this->belongsTo(Classe::class, 'classe', 'nome');
     }
 
-    public function raca() // ✅ Nova relação
+    public function raca()
     {
         return $this->belongsTo(Raca::class);
     }
@@ -74,7 +75,7 @@ class Personagem extends Model
                 'forca', 'destreza', 'constituicao', 'inteligencia',
                 'sabedoria', 'carisma', 'agilidade', 'intelecto',
                 'presenca', 'vigor', 'nex', 'sanidade',
-                'forca_cth', 'destreza_cth', 'constituição_cth', 'inteligencia_cth',
+                'forca_cth', 'destreza_cth', 'constituicao_cth', 'inteligencia_cth',
                 'poder', 'sanidade_cth', 'aparencia', 'educacao', 'tamanho', 'pontos_vida'
             ]);
 
@@ -85,10 +86,10 @@ class Personagem extends Model
             }
         }
 
-        // 2️⃣ Aplica bônus das origens
-        foreach ($this->origens as $origem) {
-            $bonus = $origem->bônus ?? [];
-            foreach ($bonus as $key => $value) {
+        // 2️⃣ Aplica atributos base da Raça
+        if ($this->raca) {
+            $atributosRaca = $this->raca->atributosBase() ?? [];
+            foreach ($atributosRaca as $key => $value) {
                 if (isset($atributos[$key])) {
                     $atributos[$key] += $value;
                 } else {
@@ -97,10 +98,10 @@ class Personagem extends Model
             }
         }
 
-        // 3️⃣ Aplica bônus da raça, se houver
-        if ($this->raca) {
-            $bonusRaca = $this->raca->bonus ?? [];
-            foreach ($bonusRaca as $key => $value) {
+        // 3️⃣ Aplica bônus das origens
+        foreach ($this->origens as $origem) {
+            $bonus = $origem->bonus ?? [];
+            foreach ($bonus as $key => $value) {
                 if (isset($atributos[$key])) {
                     $atributos[$key] += $value;
                 } else {
@@ -113,12 +114,14 @@ class Personagem extends Model
         $this->save();
     }
 
+    // ===============================
+    // 🔹 Relação com Raças adicionais (opcional)
+    // ===============================
     public function racas()
     {
         return $this->belongsToMany(Raca::class, 'personagem_raca')
-                    ->using(PersonagemRaca::class) // usa o pivot customizado
+                    ->using(PersonagemRaca::class) // Pivot customizado
                     ->withPivot('nivel', 'descricao_personalizada')
                     ->withTimestamps();
     }
-
 }

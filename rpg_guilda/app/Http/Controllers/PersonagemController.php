@@ -9,6 +9,7 @@ use App\Models\Classe;
 use App\Models\Origem;
 use App\Models\Pericia;
 use App\Models\Campanha;
+use App\Models\Racas;
 
 class PersonagemController extends Controller
 {

@@ -21,6 +21,10 @@ return new class extends Migration
                   ->constrained('campanhas')
                   ->onDelete('cascade');
 
+            // Status do jogador na campanha
+            $table->enum('status', ['pendente', 'ativo', 'mestre'])->default('pendente')
+                  ->comment('Status do jogador na campanha');
+
             $table->timestamps();
 
             // Evita duplicidade

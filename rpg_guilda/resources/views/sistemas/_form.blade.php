@@ -1,8 +1,7 @@
-{{-- Este é o formulário parcial reutilizado por create.blade.php e edit.blade.php --}}
 
 <form action="{{ $action }}" method="POST">
     @csrf
-    @method($method) {{-- Será POST para criação e PUT/PATCH para edição --}}
+    @method($method)
 
     @if ($errors->any())
         <div class="alert alert-danger">
@@ -111,4 +110,4 @@
 
     <button type="submit" class="btn btn-success mt-3">Salvar Sistema</button>
     <a href="{{ route('sistemas.index') }}" class="btn btn-secondary mt-3">Cancelar</a>
-</form> 
+</form>

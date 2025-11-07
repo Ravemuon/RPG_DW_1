@@ -8,8 +8,13 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificacaoController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     // ===================================================
-    // Listar notificações do usuário logado
+    // 🔹 Lista todas as notificações do usuário logado
     // ===================================================
     public function index()
     {
@@ -23,11 +28,15 @@ class NotificacaoController extends Controller
     }
 
     // ===================================================
-    // Marcar uma notificação como lida
+    // 🔹 Marca uma notificação como lida
     // ===================================================
-    public function marcarComoLida(Notificacao $notificacao)
+    public function marcarComoLida($id)
     {
-        $this->authorize('update', $notificacao); // Segurança: só dono pode marcar como lida
+        $user = Auth::user();
+
+        $notificacao = Notificacao::where('id', $id)
+                                  ->where('usuario_id', $user->id)
+                                  ->firstOrFail();
 
         $notificacao->update(['lida' => true]);
 
@@ -35,7 +44,7 @@ class NotificacaoController extends Controller
     }
 
     // ===================================================
-    // Marcar todas as notificações como lidas
+    // 🔹 Marca todas as notificações como lidas
     // ===================================================
     public function marcarTodasComoLidas()
     {
@@ -47,11 +56,15 @@ class NotificacaoController extends Controller
     }
 
     // ===================================================
-    // Deletar notificação
+    // 🔹 Deleta uma notificação
     // ===================================================
-    public function destroy(Notificacao $notificacao)
+    public function destroy($id)
     {
-        $this->authorize('delete', $notificacao); // Segurança: só dono pode deletar
+        $user = Auth::user();
+
+        $notificacao = Notificacao::where('id', $id)
+                                  ->where('usuario_id', $user->id)
+                                  ->firstOrFail();
 
         $notificacao->delete();
 

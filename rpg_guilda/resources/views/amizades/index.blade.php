@@ -23,6 +23,8 @@
             @foreach($usuarios as $usuario)
                 <div class="col-md-3">
                     <div class="card text-center p-3 shadow-sm border-0 bg-dark text-light">
+
+                        {{-- avatar --}}
                         <img src="{{ $usuario->avatar_url ?? asset('imagens/default-avatar.png') }}"
                              alt="{{ $usuario->nome }}"
                              class="rounded-circle mx-auto mb-2 border border-warning"
@@ -30,14 +32,28 @@
 
                         <h5 class="fw-semibold">{{ $usuario->nome }}</h5>
 
-                        <a href="{{ route('usuarios.show', $usuario->id) }}"
-                           class="btn btn-warning btn-sm mt-2 w-100">
-                            Ver Perfil
-                        </a>
+                        <div class="mt-2 w-100">
+
+                            {{-- Ver Perfil público --}}
+                            <a href="{{ route('usuarios.show', $usuario->id) }}"
+                               class="btn btn-outline-warning btn-sm w-100 mb-2">
+                                Ver Perfil
+                            </a>
+
+                            {{-- Adicionar Amigo --}}
+                            <form action="{{ route('amigos.enviar', $usuario->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-warning btn-sm w-100">
+                                    Adicionar Amigo
+                                </button>
+                            </form>
+
+                        </div>
                     </div>
                 </div>
             @endforeach
         </div>
+
     @else
         <p class="text-muted">Nenhum usuário encontrado.</p>
     @endif

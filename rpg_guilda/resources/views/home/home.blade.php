@@ -22,7 +22,7 @@
             <div class="row g-3 justify-content-center mb-4">
                 @php
                     $menuItems = [
-                        ['route' => 'campanhas.index', 'icon' => '🏕️', 'label' => 'Campanhas'],
+                        ['route' => 'campanhas.minhas', 'icon' => '🏕️', 'label' => 'Minhas Campanhas'],
                         ['route' => 'personagens.index', 'icon' => '🧝', 'label' => 'Personagens', 'roles' => ['mestre','administrador']],
                         ['route' => 'classes.index', 'icon' => '⚔️', 'label' => 'Classes', 'roles' => ['mestre','administrador']],
                         ['route' => 'missoes.index', 'icon' => '🗺️', 'label' => 'Missões', 'roles' => ['mestre','administrador']],
@@ -87,7 +87,7 @@
             <h3 class="fw-bold mb-0" style="color: var(--btn-bg); text-shadow: 0 0 6px rgba(0,0,0,0.8);">
                 🔥 Campanhas Disponíveis
             </h3>
-            <a href="{{ auth()->check() ? route('campanhas.index') : route('campanhas.todas') }}"
+            <a href="{{ route('campanhas.todas') }}"
                class="btn btn-outline-light btn-sm" style="border-color: var(--btn-bg); color: var(--btn-bg);">
                 Ver Todas
             </a>
@@ -106,13 +106,9 @@
                                                 <h5 class="card-title fw-bold mb-3" style="color: var(--btn-bg);">
                                                     {{ $campanha->nome }}
                                                 </h5>
-                                                <p class="mb-2" style="color: var(--bs-body-color);">
-                                                    <strong>Sistema:</strong> <span style="color: var(--btn-bg);">{{ $campanha->sistemaRPG }}</span>
-                                                </p>
-                                                <p class="mb-2" style="color: var(--bs-body-color);">
-                                                    <strong>Mestre:</strong> <span style="color: var(--btn-text);">{{ $campanha->criador->nome ?? 'Desconhecido' }}</span>
-                                                </p>
-                                                <p class="mb-3" style="color: var(--bs-body-color);">
+                                                <p class="mb-2"><strong>Sistema:</strong> <span style="color: var(--btn-bg);">{{ $campanha->sistemaRPG }}</span></p>
+                                                <p class="mb-2"><strong>Mestre:</strong> <span style="color: var(--btn-text);">{{ $campanha->criador->nome ?? 'Desconhecido' }}</span></p>
+                                                <p class="mb-3">
                                                     <strong>Status:</strong>
                                                     @if($campanha->status === 'ativa')
                                                         <span class="badge bg-success">Ativa</span>

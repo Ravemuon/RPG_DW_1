@@ -41,4 +41,5 @@ class Notificacao extends Model
         $this->lida = true;
         $this->save();
     }
+    
 }

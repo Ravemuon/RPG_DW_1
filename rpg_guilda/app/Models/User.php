@@ -89,7 +89,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Personagem::class, 'user_id');
     }
-    
+    public function getIsAdminAttribute()
+    {
+        return $this->papel === 'administrador';
+    }
+
+
     public function campanhas()
     {
         // Relação direta com as campanhas que o usuário participa

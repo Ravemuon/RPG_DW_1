@@ -4,77 +4,126 @@
 
 @section('content')
 <div class="container py-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
-        {{-- Título usando a variável de destaque do tema --}}
-        <h1 class="text-highlight fw-bold mb-3 mb-md-0">
-            <i class="bi bi-people-fill me-2"></i> Meus Amigos
-        </h1>
 
-        {{-- Botões de navegação para amigos e pendentes --}}
-        <div class="btn-group" role="group" aria-label="Navegação de Amigos">
-            {{-- Botão ativo (Amigos Adicionados) --}}
-            <a href="{{ route('usuarios.amigos') }}" class="btn btn-custom me-2">
-                Amigos Adicionados
-            </a>
-            {{-- Botão inativo (Pedidos Pendentes) --}}
-            <a href="{{ route('usuarios.pendentes') }}" class="btn btn-outline-custom">
+    {{-- Alertas de sucesso / erro --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+    @endif
+
+    @if(session('info'))
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i> {{ session('info') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+    @endif
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-warning fw-bold">Meus Amigos</h1>
+        <div>
+            <a href="{{ route('amizades.pendentes') }}" class="btn btn-outline-light">
                 Pedidos Pendentes
             </a>
         </div>
     </div>
 
-    @if($usuarios->count())
-        <div class="row g-4">
-            {{-- Itera sobre a lista de usuários (amigos) --}}
-            @foreach($usuarios as $usuario)
-                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                    {{-- Card usando as variáveis de tema --}}
-                    <div class="card text-center p-3 h-100">
-
+    {{-- Amigos atuais --}}
+    @if($amigos->count())
+        <div class="row g-3">
+            @foreach($amigos as $usuario)
+                <div class="col-md-3">
+                    <div class="card text-center p-3 bg-dark text-light border-0">
                         <img src="{{ $usuario->avatar_url ?? asset('imagens/default-avatar.png') }}"
-                             alt="{{ $usuario->nome }}"
-                             class="rounded-circle mx-auto mb-3"
-                             style="width: 80px; height: 80px; border: 3px solid var(--highlight-color);"
-                             onerror="this.onerror=null; this.src='{{ asset('imagens/default-avatar.png') }}';">
-
+                             class="rounded-circle mb-2 border border-warning"
+                             width="80" height="80">
                         <h5 class="fw-semibold">{{ $usuario->nome }}</h5>
-                        <p class="text-muted small">Mestre de {{$usuario->campanhas_mestradas_count ?? 0}} / Jogador em {{$usuario->campanhas_jogadas_count ?? 0}}</p>
 
-                        <div class="mt-auto">
-                            <a href="{{ route('usuarios.show', $usuario->id) }}"
-                               class="btn btn-outline-custom btn-sm mt-2 w-100">
-                                <i class="bi bi-person-lines-fill"></i> Ver Perfil
-                            </a>
+                        <a href="{{ route('usuarios.show', $usuario->id) }}"
+                           class="btn btn-outline-warning btn-sm w-100 mb-2">
+                            Ver Perfil
+                        </a>
 
-                            {{-- Ação para remover o amigo --}}
-                            <form method="POST" action="{{ route('amigos.remover', $usuario->id) }}" class="d-inline mt-2">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm w-100 mt-2">
-                                    <i class="bi bi-person-x-fill"></i> Desfazer Amizade
-                                </button>
-                            </form>
-                        </div>
+                        <form action="{{ route('amigos.remover', $usuario->id) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-danger btn-sm w-100">
+                                Desfazer Amizade
+                            </button>
+                        </form>
                     </div>
                 </div>
             @endforeach
         </div>
 
-        {{-- Exemplo de Paginação --}}
-        <div class="d-flex justify-content-center mt-5">
-             {{ $usuarios->links() }}
+        <div class="mt-4">
+            {{ $amigos->links() }}
+        </div>
+    @else
+        <p class="text-muted">Você ainda não tem amigos adicionados.</p>
+    @endif
+
+    <hr class="my-5 border-warning">
+
+    {{-- Seção para adicionar amigos --}}
+    <h2 class="text-warning fw-bold mb-3">Adicionar Amigos</h2>
+
+    @if($possiveisAmigos->count())
+        <div class="row g-3">
+            @foreach($possiveisAmigos as $usuario)
+                <div class="col-md-3">
+                    <div class="card text-center p-3 bg-dark text-light border-0">
+                        <img src="{{ $usuario->avatar_url ?? asset('imagens/default-avatar.png') }}"
+                             class="rounded-circle mb-2 border border-secondary"
+                             width="80" height="80">
+                        <h5 class="fw-semibold">{{ $usuario->nome }}</h5>
+
+                        @php
+                            $status = $usuario->amizade_status ?? null;
+                        @endphp
+
+                        @if($status === 'pendente_enviado')
+                            <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+                                🕓 Pendente
+                            </button>
+                        @elseif($status === 'pendente_recebido')
+                            <form action="{{ route('amizades.aceitar', $usuario->id) }}" method="POST">
+                                @csrf
+                                <button class="btn btn-outline-primary btn-sm w-100">
+                                    💬 Aceitar Amizade
+                                </button>
+                            </form>
+                        @elseif($status === 'aceito')
+                            <button class="btn btn-outline-success btn-sm w-100" disabled>
+                                ✅ Amigos
+                            </button>
+                        @else
+                            <form action="{{ route('amigos.adicionar', $usuario->id) }}" method="POST">
+                                @csrf
+                                <button class="btn btn-outline-success btn-sm w-100">
+                                    Adicionar Amigo
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
         </div>
 
-    @else
-        <div class="card p-5 text-center">
-            <h4 class="text-muted">Você ainda não adicionou nenhum amigo.</h4>
-            <p class="mt-3">
-                Que tal procurar novos companheiros de aventura?
-                <a href="{{ route('usuarios.procurar') }}" class="text-highlight fw-bold">
-                    Clique aqui para encontrar outros usuários.
-                </a>
-            </p>
+        <div class="mt-4">
+            {{ $possiveisAmigos->links() }}
         </div>
+    @else
+        <p class="text-muted">Nenhum usuário disponível para adicionar.</p>
     @endif
+
 </div>
 @endsection
