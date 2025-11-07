@@ -128,6 +128,8 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('sistemas')->name('sistemas.')->group(function () {
         // PDF primeiro, para não conflitar com {sistema}
         Route::get('/exportar-pdf', [SistemaController::class, 'exportarPdf'])->name('exportar-pdf');
+        Route::get('/{sistema}/exportar-pdf', [SistemaController::class, 'visualizarPdf'])->name('exportar-pdf-unico');
+
 
         // CRUD do sistema
         Route::get('/', [SistemaController::class, 'index'])->name('index');

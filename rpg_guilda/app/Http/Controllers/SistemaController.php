@@ -134,12 +134,20 @@ class SistemaController extends Controller
     {
         return redirect()->route('sistemas.pericias.index', $sistema->id);
     }
-    
+
     public function exportarPdf()
     {
         $sistemas = Sistema::all();
         $pdf = Pdf::loadView('sistemas.pdf', compact('sistemas'));
         return $pdf->download('sistemas.pdf');
+    }
+       public function visualizarPdf(Sistema $sistema)
+    {
+        $sistema->load(['classes', 'origens', 'racas', 'pericias']); // carregar relações
+        $pdf = Pdf::loadView('sistemas.pdf-unico', compact('sistema'));
+
+        // Exibe no navegador
+        return $pdf->stream("sistema_{$sistema->id}.pdf");
     }
 
 }
