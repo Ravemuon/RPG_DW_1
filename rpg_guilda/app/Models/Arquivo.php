@@ -2,21 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Arquivo extends Model
 {
-    protected $table = 'arquivos';
-    protected $primaryKey = 'id_arquivo';
+    use HasFactory;
+
     protected $fillable = [
         'usuario_id',
         'campanha_id',
         'nome_original',
         'caminho',
         'tipo',
-        'tamanho'
+        'tamanho',
     ];
 
+    // Relacionamentos
     public function usuario()
     {
         return $this->belongsTo(User::class, 'usuario_id');
@@ -27,15 +29,9 @@ class Arquivo extends Model
         return $this->belongsTo(Campanha::class, 'campanha_id');
     }
 
-    /**
-     * Retorna a URL do arquivo (local ou externa)
-     */
-    public function url()
+    // Helper para URL completa
+    public function getUrlAttribute()
     {
-        if ($this->tipo === 'url') {
-            return $this->caminho;
-        }
-
         return asset('storage/' . $this->caminho);
     }
 }

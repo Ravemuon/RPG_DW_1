@@ -1,0 +1,152 @@
+/* ===============================
+   app.css - Estilos Globais do Projeto
+   Integrado com theme.css e Bootstrap
+   =============================== */
+
+/* ===== Tipografia e corpo ===== */
+body {
+    font-family: var(--font-heading), serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+/* ===== Cabeçalhos ===== */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: var(--text-color);
+    text-shadow: 1px 1px 2px var(--shadow-color);
+}
+
+/* ===== Links ===== */
+a {
+    text-decoration: none;
+    color: var(--btn-bg);
+    transition: color 0.2s ease;
+}
+a:hover {
+    color: var(--btn-hover);
+}
+
+/* ===== Navbar ===== */
+.navbar {
+    background-color: var(--nav-bg);
+    border-bottom: 2px solid var(--nav-border);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+.navbar-brand {
+    font-family: var(--font-brand);
+    font-size: 1.8rem;
+    color: var(--text-color) !important;
+    font-weight: bold;
+}
+.nav-link {
+    color: var(--text-color) !important;
+    font-weight: 500;
+    transition: color 0.2s ease, border-bottom 0.2s ease;
+}
+.nav-link:hover {
+    color: var(--btn-hover) !important;
+    border-bottom: 2px solid var(--btn-hover);
+}
+.nav-link.active {
+    color: var(--btn-bg) !important;
+    border-bottom: 2px solid var(--btn-bg);
+}
+
+/* ===== Botões customizados ===== */
+.btn-custom {
+    background-color: var(--btn-bg);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.btn-custom:hover {
+    background-color: var(--btn-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.8);
+}
+
+/* ===== Cards ===== */
+.card {
+    background-color: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    transition: all 0.2s ease;
+}
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+}
+.card-header {
+    background: rgba(0,0,0,0.3) !important;
+    border-bottom: 1px solid var(--card-border);
+    font-family: var(--font-heading);
+    font-weight: bold;
+}
+
+/* ===== Formulários ===== */
+.form-control, .form-select {
+    background-color: rgba(0,0,0,0.4);
+    color: var(--text-color);
+    border: 1px solid var(--card-border);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-control:focus, .form-select:focus {
+    background-color: rgba(0,0,0,0.6);
+    color: var(--text-color);
+    border-color: var(--btn-bg);
+    box-shadow: 0 0 0 0.25rem rgba(0,0,0,0.2);
+}
+.form-control::placeholder {
+    color: rgba(255,255,255,0.5);
+    opacity: 1;
+}
+
+/* ===== Tabelas ===== */
+.table-dark { background-color: transparent; }
+.table-dark th {
+    background-color: rgba(0,0,0,0.4);
+    color: var(--text-color);
+    border-color: var(--card-border);
+    font-family: var(--font-heading);
+    text-shadow: 1px 1px 1px var(--shadow-color);
+}
+.table-dark td {
+    background-color: rgba(0,0,0,0.2);
+    color: var(--text-color);
+    border-color: var(--card-border);
+}
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(0,0,0,0.15);
+}
+
+/* ===== Footer ===== */
+footer {
+    background-color: var(--nav-bg);
+    color: var(--text-color);
+    text-align: center;
+    padding: 1.5rem 0;
+    border-top: 2px solid var(--nav-border);
+    margin-top: auto;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.5);
+}
+footer a {
+    color: var(--btn-hover);
+    text-decoration: none;
+}
+footer a:hover {
+    color: var(--btn-bg);
+    text-decoration: underline;
+}
+
+/* ===== Responsividade ===== */
+@media (max-width: 768px) {
+    .navbar-brand { font-size: 1.5rem; }
+    main.container { padding-left: 0.5rem; padding-right: 0.5rem; }
+}

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pericia;
 use Illuminate\Http\Request;
+use App\Models\Pericia;
 
 class PericiaController extends Controller
 {
@@ -23,8 +23,8 @@ class PericiaController extends Controller
         $request->validate([
             'nome' => 'required|string|max:100',
             'sistemaRPG' => 'required|string|max:50',
-            'automatica' => 'boolean',
-            'formula' => 'nullable|json',
+            'automatica' => 'nullable|boolean',
+            'formula' => 'nullable|array',
         ]);
 
         Pericia::create($request->all());
@@ -42,8 +42,8 @@ class PericiaController extends Controller
         $request->validate([
             'nome' => 'required|string|max:100',
             'sistemaRPG' => 'required|string|max:50',
-            'automatica' => 'boolean',
-            'formula' => 'nullable|json',
+            'automatica' => 'nullable|boolean',
+            'formula' => 'nullable|array',
         ]);
 
         $pericia->update($request->all());
@@ -54,6 +54,6 @@ class PericiaController extends Controller
     public function destroy(Pericia $pericia)
     {
         $pericia->delete();
-        return redirect()->route('pericias.index')->with('success', 'Perícia removida!');
+        return redirect()->route('pericias.index')->with('success', 'Perícia deletada com sucesso!');
     }
 }

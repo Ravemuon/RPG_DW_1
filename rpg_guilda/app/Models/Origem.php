@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Origem extends Model
 {
-    use HasFactory;
+    protected $table = 'origens';
 
     protected $fillable = [
         'nome',
@@ -17,11 +16,14 @@ class Origem extends Model
     ];
 
     protected $casts = [
-        'bônus' => 'array', // Pontos ou vantagens em JSON
+        'bônus' => 'array'
     ];
 
+    // Relação pivot com personagens
     public function personagens()
     {
-        return $this->belongsToMany(\App\Models\Personagem::class, 'personagem_origem');
+        return $this->belongsToMany(Personagem::class, 'personagem_origem')
+                    ->withTimestamps();
     }
 }
+    

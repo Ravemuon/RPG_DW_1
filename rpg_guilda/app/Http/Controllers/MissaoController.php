@@ -2,83 +2,112 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Missao;
 use Illuminate\Http\Request;
+use App\Models\Missao;
+use App\Models\Campanha;
 use Illuminate\Support\Facades\Auth;
 
 class MissaoController extends Controller
 {
-    // Lista todas as missões de uma campanha
-    public function index($campanha_id)
+    // ===================================================
+    // 🔹 Lista missões de uma campanha
+    // ===================================================
+    public function index(Campanha $campanha)
     {
-        $missoes = Missao::where('campanha_id', $campanha_id)
-            ->with('mestre')
-            ->get();
+        $this->authorize('view', $campanha);
 
-        return response()->json($missoes);
+        $missoes = $campanha->missoes()->get();
+
+        return view('missoes.index', compact('campanha', 'missoes'));
     }
 
-    // Mostra uma missão específica
-    public function show($id)
+    // ===================================================
+    // 🔹 Formulário para criar missão
+    // ===================================================
+    public function create(Campanha $campanha)
     {
-        $missao = Missao::with('mestre')->findOrFail($id);
-        return response()->json($missao);
+        $this->authorize('update', $campanha);
+
+        return view('missoes.create', compact('campanha'));
     }
 
-    // Cria uma nova missão
-    public function store(Request $request)
+    // ===================================================
+    // 🔹 Armazena nova missão
+    // ===================================================
+    public function store(Request $request, Campanha $campanha)
     {
+        $this->authorize('update', $campanha);
+
         $request->validate([
-            'campanha_id' => 'required|exists:campanhas,id',
             'titulo' => 'required|string|max:255',
             'descricao' => 'nullable|string',
-            'recompensa' => 'nullable|string|max:255',
-            'status' => 'nullable|in:pendente,em_andamento,concluida,cancelada',
+            'recompensa' => 'nullable|string',
+            'status' => 'nullable|in:pendente,em_andamento,concluida,cancelada'
         ]);
 
         $missao = Missao::create([
-            'campanha_id' => $request->campanha_id,
-            'user_id' => Auth::id(), // mestre logado
+            'campanha_id' => $campanha->id,
+            'user_id' => Auth::id(),
             'titulo' => $request->titulo,
             'descricao' => $request->descricao,
             'recompensa' => $request->recompensa,
             'status' => $request->status ?? 'pendente',
         ]);
 
-        return response()->json([
-            'message' => 'Missão criada com sucesso!',
-            'missao' => $missao
-        ]);
+        return redirect()->route('missoes.index', $campanha->id)
+                         ->with('success', 'Missão criada com sucesso!');
     }
 
-    // Atualiza uma missão
-    public function update(Request $request, $id)
+    // ===================================================
+    // 🔹 Exibe detalhes de uma missão
+    // ===================================================
+    public function show(Campanha $campanha, Missao $missao)
     {
-        $missao = Missao::findOrFail($id);
+        $this->authorize('view', $campanha);
+
+        return view('missoes.show', compact('campanha', 'missao'));
+    }
+
+    // ===================================================
+    // 🔹 Formulário de edição de missão
+    // ===================================================
+    public function edit(Campanha $campanha, Missao $missao)
+    {
+        $this->authorize('update', $campanha);
+
+        return view('missoes.edit', compact('campanha', 'missao'));
+    }
+
+    // ===================================================
+    // 🔹 Atualiza missão
+    // ===================================================
+    public function update(Request $request, Campanha $campanha, Missao $missao)
+    {
+        $this->authorize('update', $campanha);
 
         $request->validate([
-            'titulo' => 'nullable|string|max:255',
+            'titulo' => 'required|string|max:255',
             'descricao' => 'nullable|string',
-            'recompensa' => 'nullable|string|max:255',
-            'status' => 'nullable|in:pendente,em_andamento,concluida,cancelada',
+            'recompensa' => 'nullable|string',
+            'status' => 'nullable|in:pendente,em_andamento,concluida,cancelada'
         ]);
 
-        $missao->update($request->only(['titulo', 'descricao', 'recompensa', 'status']));
+        $missao->update($request->all());
 
-        return response()->json([
-            'message' => 'Missão atualizada com sucesso!',
-            'missao' => $missao
-        ]);
+        return redirect()->route('missoes.index', $campanha->id)
+                         ->with('success', 'Missão atualizada com sucesso!');
     }
 
-    // Deleta uma missão
-    public function destroy($id)
+    // ===================================================
+    // 🔹 Deleta missão
+    // ===================================================
+    public function destroy(Campanha $campanha, Missao $missao)
     {
-        $missao = Missao::findOrFail($id);
+        $this->authorize('update', $campanha);
+
         $missao->delete();
 
-        return response()->json([
-            'message' => 'Missão deletada com sucesso!'
-        ]);
+        return redirect()->route('missoes.index', $campanha->id)
+                         ->with('success', 'Missão deletada com sucesso!');
     }
 }

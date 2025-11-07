@@ -10,54 +10,106 @@ use Illuminate\Support\Facades\Storage;
 class ArquivoController extends Controller
 {
     /**
-     * Upload universal de arquivo ou URL
-     * Pode ser usado para usuário, chat ou campanha
+     * Lista arquivos de uma entidade específica
      *
-     * @param Request $request
-     * @param int|null $usuario_id
-     * @param int|null $campanha_id
-     * @param int|null $chat_id
-     * @return Arquivo
+     * @param string $entidade Tipo de entidade: usuario, campanha, chat, sessao
+     * @param int $id ID da entidade
      */
-    public static function upload(Request $request, $usuario_id = null, $campanha_id = null, $chat_id = null)
+    public function index(string $entidade, int $id)
+    {
+        $query = Arquivo::query();
+
+        switch ($entidade) {
+            case 'usuario':
+                $query->where('usuario_id', $id);
+                break;
+            case 'campanha':
+                $query->where('campanha_id', $id);
+                break;
+            // Pode adicionar chat_id, sessao_id futuramente se criar colunas
+            default:
+                abort(400, 'Entidade inválida.');
+        }
+
+        $arquivos = $query->orderBy('created_at', 'desc')->get();
+        return response()->json($arquivos);
+    }
+
+    /**
+     * Upload de arquivo para uma entidade
+     */
+    public function upload(Request $request, string $entidade, int $id)
     {
         $request->validate([
-            'arquivo' => 'nullable|file|max:10240', // até 10MB
-            'url' => 'nullable|url',
+            'arquivo' => 'required|file|max:10240', // 10MB máximo
+            'tipo'    => 'nullable|string'
         ]);
 
-        $caminho = null;
-        $nome_original = null;
-        $tamanho = null;
-        $tipo = null;
+        $tipo = $request->tipo ?? 'desconhecido';
 
-        if ($request->hasFile('arquivo')) {
-            $file = $request->file('arquivo');
-            $caminho = $file->store('uploads', 'public');
-            $nome_original = $file->getClientOriginalName();
-            $tamanho = $file->getSize();
-            $tipo = $file->getClientOriginalExtension();
-        } elseif ($request->url) {
-            $caminho = $request->url;
-            $nome_original = $request->url;
-            $tipo = 'url';
+        // Determinar o dono/entidade
+        $usuario_id = null;
+        $campanha_id = null;
+
+        switch ($entidade) {
+            case 'usuario':
+                if ($id != Auth::id()) {
+                    abort(403, 'Não autorizado.');
+                }
+                $usuario_id = $id;
+                break;
+            case 'campanha':
+                // Aqui pode-se validar se o usuário pertence à campanha
+                $campanha_id = $id;
+                $usuario_id = Auth::id();
+                break;
+            default:
+                abort(400, 'Entidade inválida.');
         }
 
-        // Se nenhum arquivo ou URL foi enviado
-        if (!$caminho) {
-            throw new \Exception('Nenhum arquivo ou URL válido fornecido.');
-        }
+        $arquivo = $request->file('arquivo');
+        $path = $arquivo->store($entidade, 'public');
 
-        $arquivo = Arquivo::create([
-            'usuario_id' => $usuario_id ?? Auth::id(),
-            'campanha_id' => $campanha_id,
-            'chat_id' => $chat_id,
-            'nome_original' => $nome_original,
-            'caminho' => $caminho,
-            'tipo' => $tipo,
-            'tamanho' => $tamanho
+        $novoArquivo = Arquivo::create([
+            'usuario_id'    => $usuario_id,
+            'campanha_id'   => $campanha_id,
+            'nome_original' => $arquivo->getClientOriginalName(),
+            'caminho'       => $path,
+            'tipo'          => $tipo,
+            'tamanho'       => $arquivo->getSize(),
         ]);
 
-        return $arquivo;
+        return response()->json([
+            'success' => true,
+            'arquivo' => $novoArquivo
+        ]);
+    }
+
+    /**
+     * Download de arquivo
+     */
+    public function download(Arquivo $arquivo)
+    {
+        // Pode validar permissão aqui
+        if ($arquivo->usuario_id !== Auth::id() && !Auth::user()->isAdmin()) {
+            abort(403, 'Não autorizado.');
+        }
+
+        return Storage::disk('public')->download($arquivo->caminho, $arquivo->nome_original);
+    }
+
+    /**
+     * Deleta um arquivo
+     */
+    public function destroy(Arquivo $arquivo)
+    {
+        if ($arquivo->usuario_id !== Auth::id() && !Auth::user()->isAdmin()) {
+            abort(403, 'Não autorizado.');
+        }
+
+        Storage::disk('public')->delete($arquivo->caminho);
+        $arquivo->delete();
+
+        return response()->json(['success' => true]);
     }
 }

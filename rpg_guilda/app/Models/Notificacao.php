@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Notificacao extends Model
 {
     use HasFactory;
+
+    protected $table = 'notificacoes';
 
     protected $fillable = [
         'usuario_id',
@@ -16,17 +18,27 @@ class Notificacao extends Model
         'mensagem',
         'lida',
     ];
-    protected $table = 'notificacoes';
 
-    // Relação com o usuário que recebe a notificação
+    protected $casts = [
+        'lida' => 'boolean',
+    ];
+
+    // Relação com o usuário destinatário
     public function usuario()
     {
-        return $this->belongsTo(Usuario::class, 'usuario_id');
+        return $this->belongsTo(User::class, 'usuario_id');
     }
 
-    // Relação com a sessão (opcional)
+    // Relação opcional com a sessão
     public function sessao()
     {
         return $this->belongsTo(Sessao::class, 'sessao_id');
+    }
+
+    // Marcar como lida
+    public function marcarComoLida()
+    {
+        $this->lida = true;
+        $this->save();
     }
 }

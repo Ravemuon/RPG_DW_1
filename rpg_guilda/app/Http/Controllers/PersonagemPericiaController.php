@@ -2,75 +2,72 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Personagem;
 use App\Models\Pericia;
-use Illuminate\Http\Request;
 
 class PersonagemPericiaController extends Controller
 {
-    public function index($personagem_id)
-    {
-        $personagem = Personagem::with('pericias')->findOrFail($personagem_id);
-        return view('personagem_pericias.index', compact('personagem'));
-    }
-
-    public function create($personagem_id)
-    {
-        $personagem = Personagem::findOrFail($personagem_id);
-        $pericias = Pericia::where('sistemaRPG', $personagem->sistemaRPG)->get();
-        return view('personagem_pericias.create', compact('personagem','pericias'));
-    }
-
-    public function store(Request $request, $personagem_id)
+    // Adicionar perícia a um personagem
+    public function adicionar(Request $request)
     {
         $request->validate([
+            'personagem_id' => 'required|exists:personagens,id',
             'pericia_id' => 'required|exists:pericias,id',
-            'valor' => 'nullable|integer|min:0',
-            'definida' => 'boolean',
+            'valor' => 'nullable|integer',
+            'definida' => 'nullable|boolean'
         ]);
 
-        $personagem = Personagem::findOrFail($personagem_id);
-        $personagem->pericias()->syncWithoutDetaching([
-            $request->pericia_id => [
-                'valor' => $request->valor ?? 0,
-                'definida' => $request->definida ?? true
-            ]
+        $personagem = Personagem::findOrFail($request->personagem_id);
+
+        // Verifica se já possui a perícia
+        if ($personagem->pericias()->where('pericia_id', $request->pericia_id)->exists()) {
+            return redirect()->back()->with('error', 'Perícia já atribuída ao personagem.');
+        }
+
+        $personagem->pericias()->attach($request->pericia_id, [
+            'valor' => $request->valor,
+            'definida' => $request->definida ?? false
         ]);
 
-        return redirect()->route('personagem_pericias.index', $personagem_id)
-                         ->with('success','Perícia adicionada ao personagem!');
+        return redirect()->back()->with('success', 'Perícia adicionada ao personagem com sucesso.');
     }
 
-    public function edit($personagem_id, $pericia_id)
-    {
-        $personagem = Personagem::with('pericias')->findOrFail($personagem_id);
-        $pericia = $personagem->pericias()->findOrFail($pericia_id);
-        return view('personagem_pericias.edit', compact('personagem','pericia'));
-    }
-
-    public function update(Request $request, $personagem_id, $pericia_id)
+    // Remover perícia de um personagem
+    public function remover(Request $request)
     {
         $request->validate([
-            'valor' => 'required|integer|min:0',
-            'definida' => 'boolean',
+            'personagem_id' => 'required|exists:personagens,id',
+            'pericia_id' => 'required|exists:pericias,id'
         ]);
 
-        $personagem = Personagem::findOrFail($personagem_id);
-        $personagem->pericias()->updateExistingPivot($pericia_id, [
-            'valor' => $request->valor,
-            'definida' => $request->definida ?? true,
-        ]);
+        $personagem = Personagem::findOrFail($request->personagem_id);
+        $personagem->pericias()->detach($request->pericia_id);
 
-        return redirect()->route('personagem_pericias.index', $personagem_id)
-                         ->with('success','Perícia atualizada!');
+        return redirect()->back()->with('success', 'Perícia removida com sucesso.');
     }
 
-    public function destroy($personagem_id, $pericia_id)
+    // Atualizar valor de uma perícia
+    public function atualizar(Request $request)
     {
-        $personagem = Personagem::findOrFail($personagem_id);
-        $personagem->pericias()->detach($pericia_id);
+        $request->validate([
+            'personagem_id' => 'required|exists:personagens,id',
+            'pericia_id' => 'required|exists:pericias,id',
+            'valor' => 'nullable|integer',
+            'definida' => 'nullable|boolean'
+        ]);
 
-        return redirect()->route('personagem_pericias.index', $personagem_id)
-                         ->with('success','Perícia removida do personagem!');
+        $personagem = Personagem::findOrFail($request->personagem_id);
+
+        if (!$personagem->pericias()->where('pericia_id', $request->pericia_id)->exists()) {
+            return redirect()->back()->with('error', 'Perícia não encontrada para este personagem.');
+        }
+
+        $personagem->pericias()->updateExistingPivot($request->pericia_id, [
+            'valor' => $request->valor,
+            'definida' => $request->definida ?? false
+        ]);
+
+        return redirect()->back()->with('success', 'Perícia atualizada com sucesso.');
     }
 }

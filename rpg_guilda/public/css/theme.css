@@ -1,0 +1,428 @@
+/*
+|--------------------------------------------------------------------------
+| CSS Temático Completo (Com H1-H6 e Itálicos Padronizados)
+|--------------------------------------------------------------------------
+*/
+
+/* =================== Variáveis globais (Tema Padrão - Escuro/Fantasia Sombria) =================== */
+:root {
+    --bs-body-bg: #1a1a2e; /* Fundo Escuro */
+    --bs-body-color: #e0e0e0; /* Texto Claro */
+
+    --btn-bg: #e94560;
+    --btn-text: #ffffff;
+    --btn-hover-bg: #d03953;
+    --btn-border: #e94560;
+
+    --highlight-color: var(--btn-bg); /* NOVO: Cor de destaque geral (mapeia para btn-bg) */
+
+    --card-bg: #2c2c4d;
+    --card-border: #4a4a75;
+    --container-bg: var(--bs-body-bg);
+    --input-bg: #16213e;
+    --input-border: #4a4a75;
+    --input-focus-border: #5e6feb;
+    --input-focus-border-rgb: 94, 111, 235;
+    /* VARIÁVEIS PARA NAVBAR E FOOTER (ISOLADOS) */
+    --navbar-bg: #1a1a2e;
+    --navbar-text: #e0e0e0;
+    --navbar-border: #4a4a75;
+    --footer-bg: #1a1a2e;
+    --footer-text: #b0b0b0;
+    --footer-border: #3d3d63;
+}
+
+/* =================== TEMAS ADICIONAIS (Com Contraste e Container Ajustados) =================== */
+
+/* 1. Sobrenatural (Gótico/Místico - Escuro) */
+[data-theme="sobrenatural"] {
+    --bs-body-bg: #0c0b1a;
+    --bs-body-color: #d8c3ff;
+    --btn-bg: #7f39fb;
+    --btn-text: #ffffff;
+    --btn-hover-bg: #6a2cd8;
+    --btn-border: #7f39fb;
+    --highlight-color: var(--btn-bg);
+    --card-bg: #1e1b33;
+    --card-border: #4d4677;
+    --container-bg: var(--bs-body-bg);
+    --input-bg: #1e1b33;
+    --input-border: #4d4677;
+    --input-focus-border: #bb86fc;
+    --input-focus-border-rgb: 187, 134, 252;
+    --navbar-bg: #0c0b1a;
+    --navbar-text: #d8c3ff;
+    --navbar-border: #4d4677;
+    --footer-bg: #0c0b1a;
+    --footer-text: #9a88c3;
+    --footer-border: #2e2a4f;
+}
+
+/* 2. Medieval (Papiro/Clássico - CLARO) */
+[data-theme="medieval"] {
+    --bs-body-bg: #f4efe1;
+    --bs-body-color: #000000;
+    --btn-bg: #964b00;
+    --btn-text: #ffffff;
+    --btn-hover-bg: #7c3e00;
+    --btn-border: #964b00;
+    --highlight-color: var(--btn-bg);
+    --card-bg: #fff8e7;
+    --card-border: #c4b69d;
+    --container-bg: var(--card-bg);
+    --input-bg: #fff8e7;
+    --input-border: #c4b69d;
+    --input-focus-border: #7c3e00;
+    --input-focus-border-rgb: 124, 62, 0;
+    --navbar-bg: #705c48;
+    --navbar-text: #ffffff;
+    --navbar-border: #7c3e00;
+    --footer-bg: #775839;
+    --footer-text: #ffffff;
+    --footer-border: #7c3e00;
+}
+
+/* 3. Fantasia (Céu e Magia - CLARO) */
+[data-theme="fantasia"] {
+    --bs-body-bg: #e0ebfd;
+    --bs-body-color: #000000;
+    --btn-bg: rgb(101, 145, 189);
+    --btn-text: #004a80;
+    --btn-hover-bg: #2c8be5;
+    --btn-border: #3399ff;
+    --highlight-color: #1a75ff; /* Destaque em azul brilhante */
+    --card-bg: #ffffff;
+    --card-border: #a9d2ff;
+    --container-bg: var(--card-bg);
+    --input-bg: #ffffff;
+    --input-border: #a9d2ff;
+    --input-focus-border: #1a75ff;
+    --input-focus-border-rgb: 26, 117, 255;
+    --navbar-bg: #004a80;
+    --navbar-text: #ffffff;
+    --navbar-border: #3399ff;
+    --footer-bg: #004a80;
+    --footer-text: #ffffff;
+    --footer-border: #3399ff;
+}
+
+/* 4. Steampunk (Cobre e Couro - Escuro) */
+[data-theme="steampunk"] {
+    --bs-body-bg: #2d1e18;
+    --bs-body-color: #f0e6da;
+    --btn-bg: #a0522d;
+    --btn-text: #ffffff;
+    --btn-hover-bg: #8b4513;
+    --btn-border: #a0522d;
+    --highlight-color: #d2b48c; /* Destaque em tom de Bronze */
+    --card-bg: #4b3832;
+    --card-border: #6d5d55;
+    --container-bg: var(--bs-body-bg);
+    --input-bg: #4b3832;
+    --input-border: #6d5d55;
+    --input-focus-border: #d2b48c;
+    --input-focus-border-rgb: 210, 180, 140;
+    --navbar-bg: #1c1411;
+    --navbar-text: #d2b48c;
+    --navbar-border: #4b3832;
+    --footer-bg: #1c1411;
+    --footer-text: #c4a787;
+    --footer-border: #4d3c33;
+}
+
+/* 5. Cyberpunk (Neon e Preto - Escuro) */
+[data-theme="cyberpunk"] {
+    --bs-body-bg: #0a0a0a;
+    --bs-body-color: #00ff99;
+    --btn-bg: #ff33cc;
+    --btn-text: #0a0a0a;
+    --btn-hover-bg: #d900ad;
+    --btn-border: #ff33cc;
+    --highlight-color: #00ffff; /* Destaque em ciano neon */
+    --card-bg: #1c1c1c;
+    --card-border: #00ff99;
+    --container-bg: var(--bs-body-bg);
+    --input-bg: #1c1c1c;
+    --input-border: #ff33cc;
+    --input-focus-border: #00ffff;
+    --input-focus-border-rgb: 0, 255, 255;
+    --navbar-bg: #0a0a0a;
+    --navbar-text: #00ff99;
+    --navbar-border: #00ff99;
+    --footer-bg: #0a0a0a;
+    --footer-text: #00cc80;
+    --footer-border: #333333;
+}
+
+/* 6. Apocalíptico (Ferrugem e Areia - Escuro) */
+[data-theme="apocaliptico"] {
+    --bs-body-bg: #332d29;
+    --bs-body-color: #e6d8b6;
+    --btn-bg: #a63d40;
+    --btn-text: #e6d8b6;
+    --btn-hover-bg: #8c3336;
+    --btn-border: #a63d40;
+    --highlight-color: #f07e40; /* Destaque em laranja queimado */
+    --card-bg: #4d433e;
+    --card-border: #6b635c;
+    --container-bg: var(--bs-body-bg);
+    --input-bg: #4d433e;
+    --input-border: #6b635c;
+    --input-focus-border: #f07e40;
+    --input-focus-border-rgb: 240, 126, 64;
+    --navbar-bg: #292422;
+    --navbar-text: #e6d8b6;
+    --navbar-border: #4d433e;
+    --footer-bg: #292422;
+    --footer-text: #cfa87a;
+    --footer-border: #423c39;
+}
+
+/* 7. Oceano (Mar Profundo - CLARO) */
+[data-theme="oceano"] {
+    --bs-body-bg: #e0f7fa;
+    --bs-body-color: #000000;
+    --btn-bg: #00bcd4;
+    --btn-text: #000000;
+    --btn-hover-bg: #00acc1;
+    --btn-border: #00bcd4;
+    --highlight-color: #00796b; /* Destaque em verde marinho escuro */
+    --card-bg: #ffffff;
+    --card-border: #80deea;
+    --container-bg: var(--card-bg);
+    --input-bg: #ffffff;
+    --input-border: #80deea;
+    --input-focus-border: #00796b;
+    --input-focus-border-rgb: 0, 121, 107;
+    --navbar-bg: #00796b;
+    --navbar-text: #ffffff;
+    --navbar-border: #00bcd4;
+    --footer-bg: #00796b;
+    --footer-text: #ffffff;
+    --footer-border: #00bcd4;
+}
+
+/* 8. Floresta (Verde Esmeralda - CLARO) */
+[data-theme="floresta"] {
+    --bs-body-bg: #f1f8e9;
+    --bs-body-color: #000000;
+    --btn-bg: #388e3c;
+    --btn-text: #ffffff;
+    --btn-hover-bg: #2e7d32;
+    --btn-border: #388e3c;
+    --highlight-color: #1b5e20; /* Destaque em verde musgo escuro */
+    --card-bg: #ffffff;
+    --card-border: #a5d6a7;
+    --container-bg: var(--card-bg);
+    --input-bg: #ffffff;
+    --input-border: #a5d6a7;
+    --input-focus-border: #1b5e20;
+    --input-focus-border-rgb: 27, 94, 32;
+    --navbar-bg: #1b5e20;
+    --navbar-text: #ffffff;
+    --navbar-border: #388e3c;
+    --footer-bg: #1b5e20;
+    --footer-text: #ffffff;
+    --footer-border: #388e3c;
+}
+
+/* 9. Deserto (Areia e Sol - CLARO) */
+[data-theme="deserto"] {
+    --bs-body-bg: #fff8e1;
+    --bs-body-color: #000000;
+    --btn-bg: #e69138;
+    --btn-text: #ffffff;
+    --btn-hover-bg: #cc7b2e;
+    --btn-border: #e69138;
+    --highlight-color: #a0522d; /* Destaque em marrom telha */
+    --card-bg: #fffcf2;
+    --card-border: #f0e6c9;
+    --container-bg: var(--card-bg);
+    --input-bg: #fffcf2;
+    --input-border: #f0e6c9;
+    --input-focus-border: #a0522d;
+    --input-focus-border-rgb: 160, 82, 45;
+    --navbar-bg: #a0522d;
+    --navbar-text: #fff8e1;
+    --navbar-border: #e69138;
+    --footer-bg: #a0522d;
+    --footer-text: #fff8e1;
+    --footer-border: #e69138;
+}
+
+/* 10. Futurista (Azul/Ciano - Escuro) - NOVO EXEMPLO */
+[data-theme="futurista"] {
+    --bs-body-bg: #000d1a;
+    --bs-body-color: #00ccff;
+    --btn-bg: #00ccff;
+    --btn-text: #000d1a;
+    --btn-hover-bg: #00aacc;
+    --btn-border: #00ccff;
+    --highlight-color: var(--btn-bg);
+    --card-bg: #00224d;
+    --card-border: #0055aa;
+    --container-bg: var(--bs-body-bg);
+    --input-bg: #00224d;
+    --input-border: #0055aa;
+    --input-focus-border: #00ccff;
+    --input-focus-border-rgb: 0, 204, 255;
+    --navbar-bg: #000d1a;
+    --navbar-text: #00ccff;
+    --navbar-border: #0055aa;
+    --footer-bg: #000d1a;
+    --footer-text: #0099cc;
+    --footer-border: #003366;
+}
+
+
+/* =================== APLICAÇÃO, CORREÇÕES E TIPOGRAFIA =================== */
+
+/* 1. Estilos Globais, Container e Tipografia */
+body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    transition: background-color 0.4s ease, color 0.4s ease;
+    min-height: 100vh;
+}
+.container-fluid, .container {
+    background-color: var(--container-bg) !important;
+}
+
+/* Regras para H1, H2, Itálicos, e Strong */
+h1, h2, h3, h4, h5, h6,
+strong, b, em, i {
+    color: var(--bs-body-color) !important;
+    transition: color 0.4s ease;
+}
+
+/* Classe customizada para textos que precisam herdar o corpo (ex: "Personagens") */
+.text-body-color {
+    color: var(--bs-body-color) !important;
+    transition: color 0.4s ease;
+}
+
+/* NOVO: Classes de Destaque para "Funções" e Conteúdo */
+.text-highlight {
+    color: var(--highlight-color) !important;
+}
+.bg-highlight {
+    background-color: var(--highlight-color) !important;
+    color: var(--btn-text) !important; /* Garante que o texto dentro seja legível */
+}
+
+
+/* 2. Navegação (Navbar) - SUPER-ISOLADO */
+.navbar {
+    background-color: var(--navbar-bg) !important;
+    border-bottom: 2px solid var(--navbar-border) !important;
+    transition: background-color 0.4s ease;
+}
+.navbar, .navbar a, .navbar-brand, .navbar-nav .nav-link, .navbar-text, .navbar .bi {
+    color: var(--navbar-text) !important;
+    transition: color 0.3s ease;
+}
+.navbar a:hover, .navbar-nav .nav-link:hover {
+    color: var(--highlight-color) !important; /* Usa cor de destaque para hover */
+}
+.navbar-toggler {
+    border-color: var(--navbar-border) !important;
+}
+.navbar-toggler-icon {
+    filter: brightness(0) invert(var(--navbar-text-filter, 1));
+}
+
+
+/* 3. Footer - ISOLADO */
+footer {
+    background-color: var(--footer-bg) !important;
+    color: var(--footer-text) !important;
+    border-top: 1px solid var(--footer-border) !important;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    transition: all 0.4s ease;
+}
+footer p, footer strong, footer a {
+    color: var(--footer-text) !important;
+    font-size: 0.95rem;
+    text-decoration: none;
+}
+footer a:hover {
+    color: var(--highlight-color) !important; /* Usa cor de destaque para hover */
+    opacity: 1;
+    text-decoration: underline;
+}
+
+/* 4. Links (Texto fora de nav/botões/footer) */
+a:not(.btn):not(.nav-link):not(footer a) {
+    color: var(--bs-body-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+a:not(.btn):not(.nav-link):not(footer a):hover {
+    color: var(--highlight-color); /* Usa cor de destaque para hover */
+    text-decoration: underline;
+}
+
+/* 5. Cartões e Conteúdo */
+.card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.3s ease;
+}
+.card-body, .card-text, .card-body p, .card-body h5, .card-body h6, .card-header {
+    color: var(--bs-body-color) !important;
+}
+.banner-header {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.3s ease;
+}
+.banner-header h1 {
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+/* 6. Botões e Formulários */
+.btn-custom, .btn:not([class*="btn-outline"]):not(.btn-close) {
+    background-color: var(--btn-bg) !important;
+    color: var(--btn-text) !important;
+    border: 1px solid var(--btn-border) !important;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.btn-custom:hover, .btn:not([class*="btn-outline"]):not(.btn-close):hover {
+    background-color: var(--btn-hover-bg) !important;
+    border-color: var(--btn-hover-bg) !important;
+    opacity: 0.9;
+}
+.btn-outline-warning {
+    border-color: var(--highlight-color) !important; /* Usa a cor de destaque */
+    color: var(--highlight-color) !important; /* Usa a cor de destaque */
+    background-color: transparent !important;
+}
+.btn-outline-warning:hover {
+    background-color: var(--highlight-color) !important; /* Usa a cor de destaque */
+    color: var(--btn-text) !important;
+}
+input, select, textarea {
+    background-color: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--bs-body-color) !important;
+    transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.3s ease;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: var(--input-focus-border) !important;
+    box-shadow: 0 0 0 0.25rem rgba(var(--input-focus-border-rgb), 0.25) !important;
+    outline: 0;
+}
+input::placeholder, textarea::placeholder {
+    color: var(--bs-body-color) !important;
+    opacity: 0.6;
+}
+.table th, .table td {
+    color: var(--bs-body-color) !important;
+    border-bottom-color: var(--card-border) !important;
+}
+.table thead tr {
+    background: rgba(var(--input-focus-border-rgb), 0.1) !important;
+}

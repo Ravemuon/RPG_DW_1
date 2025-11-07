@@ -1,178 +1,124 @@
 <?php
-
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 class Personagem extends Model
 {
-    use HasFactory;
-
     protected $table = 'personagens';
 
     protected $fillable = [
-        'user_id',
-        'campanha_id',
         'nome',
         'classe',
-        'sistemaRPG',
-        'npc',
-        'classe_npc',
-        'atributos_extra',
-        'forca','destreza','constituicao','inteligencia','sabedoria','carisma',
-        'agilidade','intelecto','presenca','vigor','nex','sanidade',
-        'forca_cth','destreza_cth','poder','constituição_cth','aparencia','educacao','tamanho','inteligencia_cth','sanidade_cth','pontos_vida',
-        'aspects','stunts','fate_points',
-        'atributos_custom','poderes','habilidades',
+        'sistema_rpg',
+        'user_id',
+        'campanha_id',
+        'raca_id',          // ✅ Adicionado
+        'atributos',
+        'descricao',
+        'ativo'
     ];
 
     protected $casts = [
-        'habilidades' => 'array',
-        'aspects' => 'array',
-        'stunts' => 'array',
-        'atributos_custom' => 'array',
-        'poderes' => 'array',
-        'atributos_extra' => 'array',
+        'atributos' => 'array'
     ];
 
-    public function jogador()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+    // ===============================
+    // 🔹 Relações
+    // ===============================
 
-    public function campanha()
-    {
-        return $this->belongsTo(Campanha::class, 'campanha_id');
-    }
-
-    // Retorna atributos relevantes dependendo do sistema
-    public function atributos()
-    {
-        $base = [];
-
-        switch ($this->sistemaRPG) {
-            case 'D&D':
-                $base = [
-                    'forca' => $this->forca,
-                    'destreza' => $this->destreza,
-                    'constituicao' => $this->constituicao,
-                    'inteligencia' => $this->inteligencia,
-                    'sabedoria' => $this->sabedoria,
-                    'carisma' => $this->carisma,
-                ];
-                break;
-
-            case 'Ordem Paranormal':
-                $base = [
-                    'agilidade' => $this->agilidade,
-                    'forca' => $this->forca,
-                    'intelecto' => $this->intelecto,
-                    'presenca' => $this->presenca,
-                    'vigor' => $this->vigor,
-                    'nex' => $this->nex,
-                    'sanidade' => $this->sanidade,
-                ];
-                break;
-
-            case 'Call of Cthulhu':
-                $base = [
-                    'forca' => $this->forca_cth,
-                    'destreza' => $this->destreza_cth,
-                    'poder' => $this->poder,
-                    'constituicao' => $this->constituição_cth,
-                    'aparencia' => $this->aparencia,
-                    'educacao' => $this->educacao,
-                    'tamanho' => $this->tamanho,
-                    'inteligencia' => $this->inteligencia_cth,
-                    'sanidade' => $this->sanidade_cth,
-                    'pontos_vida' => $this->pontos_vida,
-                ];
-                break;
-
-            case 'Fate Core':
-                $base = [
-                    'aspects' => $this->aspects,
-                    'stunts' => $this->stunts,
-                    'fate_points' => $this->fate_points,
-                ];
-                break;
-
-            case 'Cypher System':
-            case 'Apocalypse World':
-            case 'Cyberpunk 2093 - Arkana-RPG':
-                $base = [
-                    'atributos_custom' => $this->atributos_custom,
-                    'poderes' => $this->poderes,
-                ];
-                break;
-        }
-
-        // Se for NPC, adiciona atributos extras
-        if ($this->npc && $this->atributos_extra) {
-            $base = array_merge($base, $this->atributos_extra);
-        }
-
-        return $base;
-    }
-        public function user()
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function classe()
+    public function campanha()
     {
-        return $this->belongsTo(Classe::class);
+        return $this->belongsTo(Campanha::class);
+    }
+
+    public function classeObj()
+    {
+        return $this->belongsTo(Classe::class, 'classe', 'nome');
+    }
+
+    public function raca() // ✅ Nova relação
+    {
+        return $this->belongsTo(Raca::class);
     }
 
     public function origens()
     {
-        return $this->belongsToMany(Origem::class, 'personagem_origem');
+        return $this->belongsToMany(Origem::class, 'personagem_origem')
+                    ->withTimestamps();
     }
 
     public function pericias()
     {
-        return $this->belongsToMany(Pericia::class, 'personagem_pericia')
-                    ->withPivot('valor')
+        return $this->belongsToMany(Pericia::class, 'personagem_pericias')
+                    ->withPivot('valor', 'definida')
                     ->withTimestamps();
     }
 
-    public function sessoes()
+    // ===============================
+    // 🔹 Inicializa atributos do personagem
+    // ===============================
+    public function inicializarAtributos()
     {
-        return $this->belongsToMany(Sessao::class, 'sessoes_personagens')
-                    ->withPivot('presente', 'resultado')
-                    ->withTimestamps();
-    }
+        $atributos = [];
 
-    // Calcula perícias automáticas
-    public function calcularPericias()
-    {
-        $pericias = Pericia::where('sistemaRPG', $this->sistemaRPG)
-                        ->where('automatica', true)
-                        ->get();
+        // 1️⃣ Carrega atributos da classe
+        if ($this->classeObj) {
+            $classeAttrs = Arr::only($this->classeObj->toArray(), [
+                'forca', 'destreza', 'constituicao', 'inteligencia',
+                'sabedoria', 'carisma', 'agilidade', 'intelecto',
+                'presenca', 'vigor', 'nex', 'sanidade',
+                'forca_cth', 'destreza_cth', 'constituição_cth', 'inteligencia_cth',
+                'poder', 'sanidade_cth', 'aparencia', 'educacao', 'tamanho', 'pontos_vida'
+            ]);
 
-        foreach($pericias as $pericia){
-            $valor = 0;
-            if($pericia->formula){
-                foreach($pericia->formula as $atributo=>$peso){
-                    $valor += ($this->$atributo ?? 0) * $peso;
+            foreach ($classeAttrs as $key => $value) {
+                if (!is_null($value)) {
+                    $atributos[$key] = $value;
                 }
             }
-
-            $this->pericias()->updateOrCreate(
-                ['pericia_id'=>$pericia->id],
-                ['valor'=>$valor,'definida'=>false]
-            );
         }
+
+        // 2️⃣ Aplica bônus das origens
+        foreach ($this->origens as $origem) {
+            $bonus = $origem->bônus ?? [];
+            foreach ($bonus as $key => $value) {
+                if (isset($atributos[$key])) {
+                    $atributos[$key] += $value;
+                } else {
+                    $atributos[$key] = $value;
+                }
+            }
+        }
+
+        // 3️⃣ Aplica bônus da raça, se houver
+        if ($this->raca) {
+            $bonusRaca = $this->raca->bonus ?? [];
+            foreach ($bonusRaca as $key => $value) {
+                if (isset($atributos[$key])) {
+                    $atributos[$key] += $value;
+                } else {
+                    $atributos[$key] = $value;
+                }
+            }
+        }
+
+        $this->atributos = $atributos;
+        $this->save();
     }
 
-    public function perfil()
+    public function racas()
     {
-        $usuario = Auth::user();
-
-        $personagemCount = Personagem::where('user_id', $usuario->id)->count();
-
-        return view('usuarios.perfil', compact('usuario', 'personagemCount'));
+        return $this->belongsToMany(Raca::class, 'personagem_raca')
+                    ->using(PersonagemRaca::class) // usa o pivot customizado
+                    ->withPivot('nivel', 'descricao_personalizada')
+                    ->withTimestamps();
     }
 
 }

@@ -2,46 +2,59 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Notificacao;
 use Illuminate\Http\Request;
+use App\Models\Notificacao;
 use Illuminate\Support\Facades\Auth;
 
 class NotificacaoController extends Controller
 {
-    // Lista todas as notificações do usuário logado
+    // ===================================================
+    // Listar notificações do usuário logado
+    // ===================================================
     public function index()
     {
         $usuario = Auth::user();
-        $notificacoes = $usuario->notificacoes()->with('sessao')->orderBy('created_at', 'desc')->get();
+
+        $notificacoes = Notificacao::where('usuario_id', $usuario->id)
+                                   ->orderByDesc('created_at')
+                                   ->get();
+
         return view('notificacoes.index', compact('notificacoes'));
     }
 
-    // Marca notificação como lida
-    public function marcarComoLida($id)
+    // ===================================================
+    // Marcar uma notificação como lida
+    // ===================================================
+    public function marcarComoLida(Notificacao $notificacao)
     {
-        $notificacao = Notificacao::findOrFail($id);
-
-        // Verifica se a notificação pertence ao usuário
-        if ($notificacao->usuario_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $notificacao); // Segurança: só dono pode marcar como lida
 
         $notificacao->update(['lida' => true]);
 
-        return redirect()->back()->with('success', 'Notificação marcada como lida!');
+        return redirect()->back()->with('success', 'Notificação marcada como lida.');
     }
 
-    // Deleta uma notificação
-    public function destroy($id)
+    // ===================================================
+    // Marcar todas as notificações como lidas
+    // ===================================================
+    public function marcarTodasComoLidas()
     {
-        $notificacao = Notificacao::findOrFail($id);
+        Notificacao::where('usuario_id', Auth::id())
+                   ->where('lida', false)
+                   ->update(['lida' => true]);
 
-        if ($notificacao->usuario_id !== Auth::id()) {
-            abort(403);
-        }
+        return redirect()->back()->with('success', 'Todas as notificações marcadas como lidas.');
+    }
+
+    // ===================================================
+    // Deletar notificação
+    // ===================================================
+    public function destroy(Notificacao $notificacao)
+    {
+        $this->authorize('delete', $notificacao); // Segurança: só dono pode deletar
 
         $notificacao->delete();
 
-        return redirect()->back()->with('success', 'Notificação deletada com sucesso!');
+        return redirect()->back()->with('success', 'Notificação deletada com sucesso.');
     }
 }

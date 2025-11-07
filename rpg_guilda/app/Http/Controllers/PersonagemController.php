@@ -2,260 +2,131 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Personagem;
-use App\Models\Campanha;
 use App\Models\Classe;
 use App\Models\Origem;
 use App\Models\Pericia;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Campanha;
 
 class PersonagemController extends Controller
 {
-    // Lista todos os personagens de uma campanha
-    public function index($campanha_id)
+    // ===================================================
+    // 🔹 Lista personagens do usuário logado
+    // ===================================================
+    public function index()
     {
-        $personagens = Personagem::where('campanha_id', $campanha_id)
-            ->with(['classe', 'origens', 'pericias'])
-            ->get();
+        $user = Auth::user();
+        $personagens = Personagem::with(['classeObj', 'origens', 'pericias', 'campanha'])
+                                 ->where('user_id', $user->id)
+                                 ->get();
 
-        return response()->json($personagens);
+        return view('personagens.index', compact('personagens'));
     }
 
-    // Mostra um personagem específico
-    public function show($id)
-    {
-        $personagem = Personagem::with(['classe', 'origens', 'pericias'])->findOrFail($id);
-        return response()->json($personagem);
+    // ===================================================
+    // 🔹 Formulário de criação de personagem
+    // ===================================================
+public function create()
+{
+    $campanhas = Campanha::where('criador_id', Auth::id())
+                         ->orWhereHas('jogadores', fn($q) => $q->where('user_id', Auth::id()))
+                         ->get();
+
+    $classes = Classe::all();
+    $origens = Origem::all();
+    $racas   = Raca::all(); // ✅ Adicionado
+
+    return view('personagens.create', compact('campanhas', 'classes', 'origens', 'racas'));
+}
+
+public function store(Request $request)
+{
+    $request->validate([
+        'nome' => 'required|string|max:100',
+        'classe' => 'nullable|string|exists:classes,nome',
+        'campanha_id' => 'required|exists:campanhas,id',
+        'raca_id' => 'nullable|exists:racas,id', // ✅ validação
+        'origens' => 'nullable|array',
+        'origens.*' => 'exists:origens,id',
+        'descricao' => 'nullable|string',
+    ]);
+
+    $personagem = Personagem::create([
+        'nome' => $request->nome,
+        'classe' => $request->classe,
+        'campanha_id' => $request->campanha_id,
+        'user_id' => Auth::id(),
+        'raca_id' => $request->raca_id, // ✅ adicionado
+        'descricao' => $request->descricao,
+        'sistema_rpg' => $request->classe ? Classe::where('nome', $request->classe)->first()->sistemaRPG : null,
+        'ativo' => true
+    ]);
+
+    if ($request->origens) {
+        $personagem->origens()->attach($request->origens);
     }
 
-    // Cria um personagem (jogador ou NPC)
-    public function store(Request $request)
+    $personagem->inicializarAtributos();
+
+    if ($personagem->classeObj && $personagem->classeObj->pericias()->exists()) {
+        $pericias = $personagem->classeObj->pericias()->get();
+        foreach ($pericias as $pericia) {
+            $personagem->pericias()->attach($pericia->id, ['valor' => null, 'definida' => false]);
+        }
+    }
+
+    return redirect()->route('personagens.index')
+                     ->with('success', 'Personagem criado com sucesso!');
+    }
+
+    public function edit(Personagem $personagem)
     {
+        $this->authorize('update', $personagem);
+
+        $campanhas = Campanha::where('criador_id', Auth::id())
+                            ->orWhereHas('jogadores', fn($q) => $q->where('user_id', Auth::id()))
+                            ->get();
+
+        $classes = Classe::all();
+        $origens = Origem::all();
+        $racas   = Raca::all(); // ✅ adicionado
+
+        $personagem->load(['origens', 'pericias']);
+
+        return view('personagens.edit', compact('personagem', 'campanhas', 'classes', 'origens', 'racas'));
+    }
+
+    public function update(Request $request, Personagem $personagem)
+    {
+        $this->authorize('update', $personagem);
+
         $request->validate([
             'nome' => 'required|string|max:100',
+            'classe' => 'nullable|string|exists:classes,nome',
             'campanha_id' => 'required|exists:campanhas,id',
-            'sistemaRPG' => 'required|string',
-            'npc' => 'boolean',
-            'classe_id' => 'nullable|exists:classes,id',
-            'origem_ids' => 'nullable|array',
-            'atributos' => 'nullable|array',
+            'raca_id' => 'nullable|exists:racas,id', // ✅ validação
+            'origens' => 'nullable|array',
+            'origens.*' => 'exists:origens,id',
+            'descricao' => 'nullable|string',
+            'ativo' => 'nullable|boolean'
         ]);
 
-        $user_id = $request->npc ? $request->user_id ?? null : Auth::id();
-
-        $this->validaAtributosPorSistema($request);
-
-        $personagem = new Personagem();
         $personagem->nome = $request->nome;
+        $personagem->classe = $request->classe;
         $personagem->campanha_id = $request->campanha_id;
-        $personagem->sistemaRPG = $request->sistemaRPG;
-        $personagem->npc = $request->npc ?? false;
-        $personagem->user_id = $user_id;
-        $personagem->classe_id = $request->classe_id ?? null;
-
-        // Aplica atributos enviados
-        if ($request->atributos) {
-            foreach ($request->atributos as $atributo => $valor) {
-                if (isset($personagem->$atributo)) {
-                    $personagem->$atributo = $valor;
-                }
-            }
-        }
-
-        $personagem->save(); // salva primeiro para ter ID
-
-        // Vincula origens e aplica bônus
-        if ($request->origem_ids) {
-            foreach ($request->origem_ids as $origem_id) {
-                $origem = Origem::find($origem_id);
-                if ($origem) {
-                    $personagem->origens()->attach($origem->id);
-                    $this->aplicaBonus($personagem, $origem->bônus);
-                }
-            }
-        }
-
-        // Aplica bônus da classe
-        if ($personagem->classe) {
-            $this->aplicaBonus($personagem, $personagem->classe->bônus ?? []);
-        }
-
-        // Gera perícias automáticas
-        $this->gerarPericias($personagem);
+        $personagem->raca_id = $request->raca_id; // ✅ atualizado
+        $personagem->descricao = $request->descricao;
+        $personagem->ativo = $request->has('ativo');
+        $personagem->sistema_rpg = $request->classe ? Classe::where('nome', $request->classe)->first()->sistemaRPG : null;
 
         $personagem->save();
 
-        return response()->json([
-            'message' => 'Personagem criado com sucesso!',
-            'personagem' => $personagem->load(['classe', 'origens', 'pericias'])
-        ]);
-    }
+        $personagem->origens()->sync($request->origens ?? []);
+        $personagem->inicializarAtributos();
 
-    // Atualiza um personagem
-    public function update(Request $request, $id)
-    {
-        $personagem = Personagem::findOrFail($id);
-
-        $this->validaAtributosPorSistema($request, $personagem->sistemaRPG);
-
-        $personagem->update($request->only([
-            'nome', 'classe_id', 'npc', 'sistemaRPG', 'campanha_id'
-        ]));
-
-        // Atualiza atributos
-        if ($request->atributos) {
-            foreach ($request->atributos as $atributo => $valor) {
-                if (isset($personagem->$atributo)) {
-                    $personagem->$atributo = $valor;
-                }
-            }
-        }
-
-        // Atualiza origens
-        if ($request->origem_ids) {
-            $personagem->origens()->sync($request->origem_ids);
-
-            foreach ($personagem->origens as $origem) {
-                $this->aplicaBonus($personagem, $origem->bônus);
-            }
-        }
-
-        // Aplica bônus da classe
-        if ($personagem->classe) {
-            $this->aplicaBonus($personagem, $personagem->classe->bônus ?? []);
-        }
-
-        // Atualiza perícias de acordo com atributos novos
-        $personagem->pericias()->detach(); // remove perícias antigas
-        $this->gerarPericias($personagem);
-
-        $personagem->save();
-
-        return response()->json([
-            'message' => 'Personagem atualizado com sucesso!',
-            'personagem' => $personagem->load(['classe', 'origens', 'pericias'])
-        ]);
-    }
-
-    // Deleta um personagem
-    public function destroy($id)
-    {
-        $personagem = Personagem::findOrFail($id);
-        $personagem->delete();
-
-        return response()->json([
-            'message' => 'Personagem deletado com sucesso!'
-        ]);
-    }
-
-    // Cria NPC (somente mestre)
-    public function storeNPC(Request $request)
-    {
-        $request->merge(['npc' => true]);
-        return $this->store($request);
-    }
-
-    // Valida os atributos de acordo com o sistema
-    private function validaAtributosPorSistema(Request $request, $sistemaRPG = null)
-    {
-        $sistema = $sistemaRPG ?? $request->sistemaRPG;
-
-        switch ($sistema) {
-            case 'D&D':
-                $request->validate([
-                    'forca' => 'required|integer|min:1',
-                    'destreza' => 'required|integer|min:1',
-                    'constituicao' => 'required|integer|min:1',
-                    'inteligencia' => 'required|integer|min:1',
-                    'sabedoria' => 'required|integer|min:1',
-                    'carisma' => 'required|integer|min:1',
-                ]);
-                break;
-
-            case 'Ordem Paranormal':
-                $request->validate([
-                    'agilidade' => 'required|integer|min:1',
-                    'intelecto' => 'required|integer|min:1',
-                    'presenca' => 'required|integer|min:1',
-                    'vigor' => 'required|integer|min:1',
-                    'nex' => 'required|integer|min:0',
-                    'sanidade' => 'required|integer|min:0',
-                ]);
-                break;
-
-            case 'Call of Cthulhu':
-                $request->validate([
-                    'forca_cth' => 'required|integer|min:1',
-                    'destreza_cth' => 'required|integer|min:1',
-                    'poder' => 'required|integer|min:1',
-                    'constituição_cth' => 'required|integer|min:1',
-                    'aparencia' => 'required|integer|min:1',
-                    'educacao' => 'required|integer|min:1',
-                    'tamanho' => 'required|integer|min:1',
-                    'inteligencia_cth' => 'required|integer|min:1',
-                    'sanidade_cth' => 'required|integer|min:0',
-                    'pontos_vida' => 'required|integer|min:1',
-                ]);
-                break;
-
-            case 'Fate Core':
-                $request->validate([
-                    'aspects' => 'required|array|min:1',
-                    'stunts' => 'nullable|array',
-                    'fate_points' => 'required|integer|min:0',
-                ]);
-                break;
-
-            case 'Cypher System':
-            case 'Apocalypse World':
-            case 'Cyberpunk 2093 - Arkana-RPG':
-                $request->validate([
-                    'atributos_custom' => 'required|array|min:1',
-                    'poderes' => 'nullable|array',
-                ]);
-                break;
-
-            default:
-                throw new \Exception("Sistema RPG desconhecido: $sistema");
-        }
-    }
-
-    // Aplica bônus de origem ou classe
-    private function aplicaBonus(Personagem $personagem, $bonus)
-    {
-        if (!$bonus) return;
-
-        foreach ($bonus as $atributo => $valor) {
-            if (isset($personagem->$atributo)) {
-                $personagem->$atributo += $valor;
-            } elseif (is_array($personagem->atributos_custom) && isset($personagem->atributos_custom[$atributo])) {
-                $personagem->atributos_custom[$atributo] += $valor;
-            }
-        }
-    }
-
-    // Gera perícias automáticas
-    private function gerarPericias(Personagem $personagem)
-    {
-        $pericias = Pericia::where('sistemaRPG', $personagem->sistemaRPG)->get();
-
-        foreach ($pericias as $pericia) {
-            $valor = 0;
-
-            if ($pericia->automatica && $pericia->formula) {
-                $formula = json_decode($pericia->formula, true);
-
-                foreach ($formula as $atributo => $multiplicador) {
-                    if (isset($personagem->$atributo)) {
-                        $valor += $personagem->$atributo * $multiplicador;
-                    } elseif (is_array($personagem->atributos_custom) && isset($personagem->atributos_custom[$atributo])) {
-                        $valor += $personagem->atributos_custom[$atributo] * $multiplicador;
-                    }
-                }
-            }
-
-            $personagem->pericias()->attach($pericia->id, ['valor' => $valor]);
-        }
+        return redirect()->route('personagens.show', $personagem->id)
+                        ->with('success', 'Personagem atualizado com sucesso!');
     }
 }

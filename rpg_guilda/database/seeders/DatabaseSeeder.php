@@ -10,19 +10,11 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-        'nome' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => bcrypt('password'),
-            'tema' => 'medieval',
-            'tipo' => 'jogador',
+        $this->call([
+            RPGSeeder::class,
         ]);
     }
+
 }

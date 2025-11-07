@@ -2,70 +2,110 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Chat;
-use App\Models\Mensagem;
-use App\Models\Campanha;
 use Illuminate\Http\Request;
+use App\Models\Chat;
+use App\Models\ChatMensagem;
+use App\Models\Campanha;
 use Illuminate\Support\Facades\Auth;
-use App\Helpers\DadoRPG;
+use App\Notifications\NovaMensagemChat;
 
 class ChatController extends Controller
 {
-    // Lista todos os chats de uma campanha
-    public function index($campanha_id)
+    // ===================================================
+    // Lista o chat de uma campanha
+    // ===================================================
+    public function index(Campanha $campanha)
     {
-        $chats = Chat::where('campanha_id', $campanha_id)->get();
-        return response()->json($chats);
+        $user = Auth::user();
+
+        // Verifica acesso: mestre ou jogador da campanha
+        if (!$user || ($campanha->privada && $campanha->criador_id !== $user->id && !$campanha->jogadores->contains($user->id))) {
+            return redirect()->route('campanhas.index')->with('error', 'Acesso negado ao chat desta campanha.');
+        }
+
+        // Garante que exista um chat
+        $chat = $campanha->chat ?? Chat::create([
+            'campanha_id' => $campanha->id,
+            'nome' => "Chat da campanha {$campanha->nome}"
+        ]);
+
+        // Carrega mensagens com usuário, apenas campos essenciais
+        $mensagens = $chat->mensagens()
+                          ->with('user:id,nome') // evita recursão
+                          ->orderBy('created_at', 'asc')
+                          ->get();
+
+        return view('campanhas.chat', compact('campanha', 'chat', 'mensagens'));
     }
 
-    // Mostra mensagens de um chat
-    public function show($chat_id)
+    // ===================================================
+    // Envia uma nova mensagem
+    // ===================================================
+    public function enviarMensagem(Request $request, Campanha $campanha)
     {
-        $chat = Chat::with('mensagens.user')->findOrFail($chat_id);
-        return response()->json($chat);
-    }
+        $user = Auth::user();
 
-    // Envia uma mensagem no chat
-    public function enviarMensagem(Request $request, $chat_id)
-    {
+        if (!$user || ($campanha->privada && $campanha->criador_id !== $user->id && !$campanha->jogadores->contains($user->id))) {
+            return redirect()->route('campanhas.index')->with('error', 'Acesso negado ao chat desta campanha.');
+        }
+
         $request->validate([
-            'mensagem' => 'required|string|max:1000',
+            'mensagem' => 'required|string|max:1000'
         ]);
 
-        $mensagem = Mensagem::create([
-            'chat_id' => $chat_id,
-            'user_id' => Auth::id(),
-            'mensagem' => $request->mensagem,
+        $chat = $campanha->chat ?? Chat::create([
+            'campanha_id' => $campanha->id,
+            'nome' => "Chat da campanha {$campanha->nome}"
         ]);
 
-        return response()->json([
-            'message' => 'Mensagem enviada!',
-            'mensagem' => $mensagem
+        $mensagem = $chat->mensagens()->create([
+            'user_id' => $user->id,
+            'mensagem' => $request->mensagem
         ]);
+
+        // Notifica os jogadores da campanha (somente campos essenciais)
+        foreach ($campanha->jogadores as $usuario) {
+            if ($usuario->id !== $user->id) {
+                $usuario->notify(new NovaMensagemChat($mensagem));
+            }
+        }
+
+        return redirect()->route('campanhas.chat', $campanha->id)->with('success', 'Mensagem enviada!');
     }
 
-    // Rola dados de RPG no chat
-    public function rolarDado(Request $request, $chat_id)
+    // ===================================================
+    // Atualiza mensagem existente
+    // ===================================================
+    public function atualizarMensagem(Request $request, ChatMensagem $mensagem)
     {
+        $user = Auth::user();
+
+        if ($user->id !== $mensagem->user_id && $user->id !== $mensagem->chat->campanha->criador_id) {
+            return back()->with('error', 'Você não tem permissão para editar esta mensagem.');
+        }
+
         $request->validate([
-            'quantidade' => 'required|integer|min:1',
-            'valor' => 'required|integer|min:2',
+            'mensagem' => 'required|string|max:1000'
         ]);
 
-        $resultado = DadoRPG::rolar($request->quantidade, $request->valor);
+        $mensagem->update(['mensagem' => $request->mensagem]);
 
-        $mensagem = Mensagem::create([
-            'chat_id' => $chat_id,
-            'user_id' => Auth::id(),
-            'mensagem' => "Rolagem de {$request->quantidade}d{$request->valor}: "
-                           . implode(', ', $resultado['resultados'])
-                           . " (Total: {$resultado['total']})"
-        ]);
+        return back()->with('success', 'Mensagem atualizada!');
+    }
 
-        return response()->json([
-            'message' => 'Dado rolado!',
-            'resultado' => $resultado,
-            'mensagem' => $mensagem
-        ]);
+    // ===================================================
+    // Exclui mensagem (substitui pelo texto "Mensagem excluída")
+    // ===================================================
+    public function excluirMensagem(ChatMensagem $mensagem)
+    {
+        $user = Auth::user();
+
+        if ($user->id !== $mensagem->user_id && $user->id !== $mensagem->chat->campanha->criador_id) {
+            return back()->with('error', 'Você não tem permissão para excluir esta mensagem.');
+        }
+
+        $mensagem->update(['mensagem' => null]);
+
+        return back()->with('success', 'Mensagem excluída!');
     }
 }
