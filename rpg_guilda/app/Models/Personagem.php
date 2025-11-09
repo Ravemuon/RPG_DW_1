@@ -10,19 +10,12 @@ class Personagem extends Model
     protected $table = 'personagens';
 
     protected $fillable = [
-        'nome',
-        'classe',
-        'sistema_rpg',
-        'user_id',
-        'campanha_id',
-        'raca_id',
-        'atributos',
-        'descricao',
-        'ativo'
+        'nome', 'classe', 'sistema_rpg', 'user_id', 'campanha_id', 'raca_id',
+        'atributos', 'descricao', 'ativo'
     ];
 
     protected $casts = [
-        'atributos' => 'array'
+        'atributos' => 'array', 
     ];
 
     // ===============================
@@ -62,21 +55,18 @@ class Personagem extends Model
                     ->withTimestamps();
     }
 
-    // ===============================
-    // 🔹 Inicializa atributos do personagem
-    // ===============================
     public function inicializarAtributos()
     {
         $atributos = [];
 
-        // 1️⃣ Carrega atributos da classe
+        // Carrega atributos da classe
         if ($this->classeObj) {
             $classeAttrs = Arr::only($this->classeObj->toArray(), [
-                'forca', 'destreza', 'constituicao', 'inteligencia',
-                'sabedoria', 'carisma', 'agilidade', 'intelecto',
-                'presenca', 'vigor', 'nex', 'sanidade',
-                'forca_cth', 'destreza_cth', 'constituicao_cth', 'inteligencia_cth',
-                'poder', 'sanidade_cth', 'aparencia', 'educacao', 'tamanho', 'pontos_vida'
+                'forca', 'destreza', 'constituicao', 'inteligencia', 'sabedoria',
+                'carisma', 'agilidade', 'intelecto', 'presenca', 'vigor', 'nex',
+                'sanidade', 'forca_cth', 'destreza_cth', 'constituicao_cth',
+                'inteligencia_cth', 'poder', 'sanidade_cth', 'aparencia', 'educacao',
+                'tamanho', 'pontos_vida'
             ]);
 
             foreach ($classeAttrs as $key => $value) {
@@ -86,27 +76,19 @@ class Personagem extends Model
             }
         }
 
-        // 2️⃣ Aplica atributos base da Raça
+        // Aplica atributos base da Raça
         if ($this->raca) {
             $atributosRaca = $this->raca->atributosBase() ?? [];
             foreach ($atributosRaca as $key => $value) {
-                if (isset($atributos[$key])) {
-                    $atributos[$key] += $value;
-                } else {
-                    $atributos[$key] = $value;
-                }
+                $atributos[$key] = isset($atributos[$key]) ? $atributos[$key] + $value : $value;
             }
         }
 
-        // 3️⃣ Aplica bônus das origens
+        // Aplica bônus das origens
         foreach ($this->origens as $origem) {
             $bonus = $origem->bonus ?? [];
             foreach ($bonus as $key => $value) {
-                if (isset($atributos[$key])) {
-                    $atributos[$key] += $value;
-                } else {
-                    $atributos[$key] = $value;
-                }
+                $atributos[$key] = isset($atributos[$key]) ? $atributos[$key] + $value : $value;
             }
         }
 
@@ -114,13 +96,10 @@ class Personagem extends Model
         $this->save();
     }
 
-    // ===============================
-    // 🔹 Relação com Raças adicionais (opcional)
-    // ===============================
     public function racas()
     {
         return $this->belongsToMany(Raca::class, 'personagem_raca')
-                    ->using(PersonagemRaca::class) // Pivot customizado
+                    ->using(PersonagemRaca::class)
                     ->withPivot('nivel', 'descricao_personalizada')
                     ->withTimestamps();
     }

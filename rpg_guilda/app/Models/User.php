@@ -10,68 +10,28 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    // ------------------------------------------------------------
-    // 🔹 Lista oficial de temas válidos
-    // ------------------------------------------------------------
     public const TEMAS = [
-        'medieval',
-        'fantasia',
-        'sobrenatural',
-        'steampunk',
-        'cyberpunk',
-        'apocaliptico',
-        'oceano',
-        'floresta',
-        'deserto'
+        'medieval', 'fantasia', 'sobrenatural', 'steampunk', 'cyberpunk', 'apocaliptico', 'oceano', 'floresta', 'deserto'
     ];
 
-    // ------------------------------------------------------------
-    // 🔹 Lista de papéis válidos
-    // ------------------------------------------------------------
     public const PAPEIS = [
-        'jogador',
-        'mestre',
-        'administrador'
+        'jogador', 'mestre', 'administrador'
     ];
 
-    // ------------------------------------------------------------
-    // 🔹 Campos preenchíveis
-    // ------------------------------------------------------------
     protected $fillable = [
-        'nome',
-        'username',
-        'email',
-        'password',
-        'biografia',
-        'avatar',
-        'banner',
-        'tema',
-        'papel'
+        'nome', 'username', 'email', 'password', 'biografia', 'avatar', 'banner', 'tema', 'papel'
     ];
 
-    // ------------------------------------------------------------
-    // 🔹 Campos ocultos
-    // ------------------------------------------------------------
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password', 'remember_token'
     ];
 
-    // ------------------------------------------------------------
-    // 🔹 Casts
-    // ------------------------------------------------------------
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        'email_verified_at' => 'datetime'
     ];
 
-    // ------------------------------------------------------------
-    // 🔹 Atributos adicionais
-    // ------------------------------------------------------------
     protected $appends = ['avatar_url', 'banner_url'];
 
-    // ------------------------------------------------------------
-    // 🔹 Setters com validação
-    // ------------------------------------------------------------
     public function setTemaAttribute($value): void
     {
         $this->attributes['tema'] = in_array($value, self::TEMAS) ? $value : 'medieval';
@@ -82,24 +42,19 @@ class User extends Authenticatable
         $this->attributes['papel'] = in_array($value, self::PAPEIS) ? $value : 'jogador';
     }
 
-    // ------------------------------------------------------------
-    // 🔹 Relacionamentos
-    // ------------------------------------------------------------
     public function personagens()
     {
         return $this->hasMany(Personagem::class, 'user_id');
     }
+
     public function getIsAdminAttribute()
     {
         return $this->papel === 'administrador';
     }
 
-
     public function campanhas()
     {
-        // Relação direta com as campanhas que o usuário participa
-        return $this->belongsToMany(Campanha::class, 'campanha_usuario', 'user_id', 'campanha_id')
-                    ->withTimestamps(); // timestamps da pivot, se precisar
+        return $this->belongsToMany(Campanha::class, 'campanha_usuario', 'user_id', 'campanha_id')->withTimestamps();
     }
 
     public function notificacoes()
@@ -121,19 +76,15 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'amizades', 'user_id', 'friend_id')
                     ->wherePivot('status', 'aceita')
-                    ->withTimestamps();
-    }
-
-    public function amigosRecebidos()
-    {
-        return $this->belongsToMany(User::class, 'amizades', 'friend_id', 'user_id')
-                    ->wherePivot('status', 'aceita')
+                    ->withPivot('id')
                     ->withTimestamps();
     }
 
     public function todosAmigos()
     {
-        return $this->amigos->merge($this->amigosRecebidos);
+        return $this->belongsToMany(User::class, 'amizades', 'user_id', 'friend_id')
+                    ->wherePivot('status', 'aceita')
+                    ->withTimestamps();
     }
 
     public function arquivos()
@@ -141,22 +92,20 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\Arquivo::class, 'usuario_id');
     }
 
-    // ------------------------------------------------------------
-    // 🔹 Atributos dinâmicos
-    // ------------------------------------------------------------
-    public function getAvatarUrlAttribute(): string
+    public function getAvatarUrlAttribute()
     {
-        return $this->avatar ? asset($this->avatar) : asset('/imagens/default/avatar.png');
+        return $this->avatar && file_exists(storage_path('app/public/' . $this->avatar))
+            ? asset('storage/' . $this->avatar)
+            : asset('images/default-avatar.png');
     }
 
-    public function getBannerUrlAttribute(): string
+    public function getBannerUrlAttribute()
     {
-        return $this->banner ? asset($this->banner) : asset('/imagens/default/banner.png');
+        return $this->banner && file_exists(storage_path('app/public/' . $this->banner))
+            ? asset('storage/' . $this->banner)
+            : asset('images/default-banner.png');
     }
 
-    // ------------------------------------------------------------
-    // 🔹 Utilitários
-    // ------------------------------------------------------------
     public static function validThemes(): array
     {
         return self::TEMAS;
@@ -170,5 +119,16 @@ class User extends Authenticatable
     public function canEdit(User $user): bool
     {
         return $this->id === $user->id || $this->papel === 'administrador';
+    }
+
+    public function mostrar($id)
+    {
+        $user = User::findOrFail($id);
+        return view('chat.show', compact('user'));
+    }
+
+    public function chats()
+    {
+        return $this->belongsToMany(Chat::class, 'chat_user', 'user_id', 'chat_id')->withTimestamps();
     }
 }

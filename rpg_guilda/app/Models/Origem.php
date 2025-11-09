@@ -2,28 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Origem extends Model
 {
+    use HasFactory;
+
     protected $table = 'origens';
 
     protected $fillable = [
         'nome',
-        'sistemaRPG',
+        'sistema_id',
         'descricao',
-        'bônus'
+        'pagina',
     ];
 
-    protected $casts = [
-        'bônus' => 'array'
-    ];
-
-    // Relação pivot com personagens
-    public function personagens()
+    /**
+     * Relacionamento com o modelo Sistema
+     */
+    public function sistema()
     {
-        return $this->belongsToMany(Personagem::class, 'personagem_origem')
-                    ->withTimestamps();
+        return $this->belongsTo(Sistema::class);
     }
 }
-    

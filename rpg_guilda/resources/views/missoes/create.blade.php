@@ -1,25 +1,42 @@
+{{-- resources/views/missoes/create.blade.php --}}
+
 @extends('layouts.app')
-@section('title', 'Nova Missão')
+
+@section('title', 'Criar Missão')
 
 @section('content')
-<div class="card p-4">
-    <h2 class="mb-3">🗺️ Nova Missão</h2>
-    <form action="{{ route('missoes.store') }}" method="POST">
+<div class="container py-4">
+    <h2>📝 Criar Missão</h2>
+
+    <form method="POST" action="{{ route('missoes.store', $campanha->id) }}">
         @csrf
+
         <div class="mb-3">
-            <label>Título</label>
-            <input type="text" name="titulo" class="form-control" required>
+            <label for="titulo" class="form-label">Título da Missão</label>
+            <input type="text" class="form-control" id="titulo" name="titulo" required>
         </div>
+
         <div class="mb-3">
-            <label>Descrição</label>
-            <textarea name="descricao" class="form-control"></textarea>
+            <label for="descricao" class="form-label">Descrição</label>
+            <textarea class="form-control" id="descricao" name="descricao"></textarea>
         </div>
+
         <div class="mb-3">
-            <label>Recompensa</label>
-            <input type="text" name="recompensa" class="form-control">
+            <label for="recompensa" class="form-label">Recompensa</label>
+            <input type="text" class="form-control" id="recompensa" name="recompensa">
         </div>
-        <button class="btn btn-primary">Salvar</button>
-        <a href="{{ route('missoes.index') }}" class="btn btn-secondary">Voltar</a>
+
+        <div class="mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-control" id="status" name="status">
+                <option value="pendente">Pendente</option>
+                <option value="em_andamento">Em Andamento</option>
+                <option value="concluida">Concluída</option>
+                <option value="cancelada">Cancelada</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Criar Missão</button>
     </form>
 </div>
 @endsection

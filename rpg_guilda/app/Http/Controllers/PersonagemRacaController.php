@@ -3,50 +3,122 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Personagem;
 use App\Models\Raca;
+use App\Models\Sistema;
 
-class PersonagemRacaController extends Controller
+class RacaController extends Controller
 {
-    // Adicionar raça a um personagem
-    public function store(Request $request, Personagem $personagem)
+    /**
+     * Listar todas as raças de um sistema
+     */
+    public function index($sistemaId)
     {
-        $request->validate([
-            'raca_id' => 'required|exists:racas,id',
-            'nivel' => 'nullable|integer|min:1',
-            'descricao_personalizada' => 'nullable|string',
-        ]);
-
-        $personagem->racas()->syncWithoutDetaching([
-            $request->raca_id => [
-                'nivel' => $request->nivel ?? 1,
-                'descricao_personalizada' => $request->descricao_personalizada
-            ]
-        ]);
-
-        return redirect()->back()->with('success', 'Raça adicionada ao personagem com sucesso!');
+        $sistema = Sistema::with('racas')->findOrFail($sistemaId);
+        return view('sistemas.racas.index', compact('sistema'));
     }
 
-    // Atualizar dados da raça no personagem
-    public function update(Request $request, Personagem $personagem, Raca $raca)
+    /**
+     * Exibir formulário de criação de raça
+     */
+    public function create($sistemaId)
     {
-        $request->validate([
-            'nivel' => 'nullable|integer|min:1',
-            'descricao_personalizada' => 'nullable|string',
-        ]);
-
-        $personagem->racas()->updateExistingPivot($raca->id, [
-            'nivel' => $request->nivel ?? 1,
-            'descricao_personalizada' => $request->descricao_personalizada
-        ]);
-
-        return redirect()->back()->with('success', 'Raça do personagem atualizada!');
+        $sistema = Sistema::findOrFail($sistemaId);
+        return view('sistemas.racas.create', compact('sistema'));
     }
 
-    // Remover raça do personagem
-    public function destroy(Personagem $personagem, Raca $raca)
+    /**
+     * Armazenar nova raça
+     */
+    public function store(Request $request, $sistemaId)
     {
-        $personagem->racas()->detach($raca->id);
-        return redirect()->back()->with('success', 'Raça removida do personagem!');
+        $request->validate([
+            'nome' => 'required|unique:racas,nome,NULL,id,sistema_id,' . $sistemaId,
+            'descricao' => 'nullable|string',
+            'forca_bonus' => 'nullable|integer',
+            'destreza_bonus' => 'nullable|integer',
+            'constituicao_bonus' => 'nullable|integer',
+            'inteligencia_bonus' => 'nullable|integer',
+            'sabedoria_bonus' => 'nullable|integer',
+            'carisma_bonus' => 'nullable|integer',
+            'pagina' => 'nullable|string|max:50',
+        ]);
+
+        Raca::create([
+            'nome' => $request->nome,
+            'sistema_id' => $sistemaId,
+            'descricao' => $request->descricao,
+            'forca_bonus' => $request->forca_bonus ?? 0,
+            'destreza_bonus' => $request->destreza_bonus ?? 0,
+            'constituicao_bonus' => $request->constituicao_bonus ?? 0,
+            'inteligencia_bonus' => $request->inteligencia_bonus ?? 0,
+            'sabedoria_bonus' => $request->sabedoria_bonus ?? 0,
+            'carisma_bonus' => $request->carisma_bonus ?? 0,
+            'pagina' => $request->pagina,
+        ]);
+
+        return redirect()->route('sistemas.racas.index', $sistemaId)
+                         ->with('success', 'Raça criada com sucesso!');
+    }
+
+    /**
+     * Exibir detalhes de uma raça
+     */
+    public function show(Raca $raca)
+    {
+        return view('sistemas.racas.show', compact('raca'));
+    }
+
+    /**
+     * Exibir formulário de edição
+     */
+    public function edit(Raca $raca)
+    {
+        $sistema = $raca->sistema;
+        return view('sistemas.racas.edit', compact('raca', 'sistema'));
+    }
+
+    /**
+     * Atualizar raça existente
+     */
+    public function update(Request $request, Raca $raca)
+    {
+        $request->validate([
+            'nome' => 'required|unique:racas,nome,' . $raca->id . ',id,sistema_id,' . $raca->sistema_id,
+            'descricao' => 'nullable|string',
+            'forca_bonus' => 'nullable|integer',
+            'destreza_bonus' => 'nullable|integer',
+            'constituicao_bonus' => 'nullable|integer',
+            'inteligencia_bonus' => 'nullable|integer',
+            'sabedoria_bonus' => 'nullable|integer',
+            'carisma_bonus' => 'nullable|integer',
+            'pagina' => 'nullable|string|max:50',
+        ]);
+
+        $raca->update([
+            'nome' => $request->nome,
+            'descricao' => $request->descricao,
+            'forca_bonus' => $request->forca_bonus ?? 0,
+            'destreza_bonus' => $request->destreza_bonus ?? 0,
+            'constituicao_bonus' => $request->constituicao_bonus ?? 0,
+            'inteligencia_bonus' => $request->inteligencia_bonus ?? 0,
+            'sabedoria_bonus' => $request->sabedoria_bonus ?? 0,
+            'carisma_bonus' => $request->carisma_bonus ?? 0,
+            'pagina' => $request->pagina,
+        ]);
+
+        return redirect()->route('sistemas.racas.index', $raca->sistema_id)
+                         ->with('success', 'Raça atualizada com sucesso!');
+    }
+
+    /**
+     * Remover uma raça
+     */
+    public function destroy(Raca $raca)
+    {
+        $sistemaId = $raca->sistema_id;
+        $raca->delete();
+
+        return redirect()->route('sistemas.racas.index', $sistemaId)
+                         ->with('success', 'Raça removida com sucesso!');
     }
 }

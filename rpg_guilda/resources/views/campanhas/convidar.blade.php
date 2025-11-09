@@ -30,7 +30,6 @@
                 @if($isMestre || $user->tipo === 'administrador')
                     <a href="{{ route('campanhas.edit', $campanha->id) }}" class="btn btn-outline-success btn-sm">✏️ Editar</a>
                 @endif
-                <a href="{{ route('campanhas.chat', $campanha->id) }}" class="btn btn-warning btn-sm">💬 Chat</a>
                 @if($isMestre)
                     <a href="{{ route('campanhas.mestre', $campanha->id) }}" class="btn btn-danger btn-sm">⚙️ Área do Mestre</a>
                 @endif

@@ -29,9 +29,8 @@
                         <i class="bi bi-gear-fill me-2"></i> Sistemas
                     </a>
                 </li>
-                {{-- NOVO: Link de Amigos --}}
                 <li class="nav-item">
-                    <a href="{{ route('amigos.index') }}" class="nav-link d-flex align-items-center {{ request()->routeIs('amigos.index') ? 'active' : '' }}">
+                    <a href="{{ route('amizades.index') }}" class="nav-link d-flex align-items-center {{ request()->routeIs('amizades.*') ? 'active' : '' }}">
                         <i class="bi bi-people-fill me-2"></i> Amigos
                     </a>
                 </li>

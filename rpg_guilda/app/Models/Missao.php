@@ -6,39 +6,41 @@ use Illuminate\Database\Eloquent\Model;
 
 class Missao extends Model
 {
+    // Definindo o nome da tabela associada ao modelo
     protected $table = 'missoes';
 
+    // Atributos que podem ser atribuídos em massa
     protected $fillable = [
-        'campanha_id',
-        'user_id',
-        'titulo',
-        'descricao',
-        'recompensa',
-        'status',
+        'campanha_id',   // ID da campanha à qual a missão pertence
+        'user_id',       // ID do usuário (mestre) que criou a missão
+        'titulo',        // Título da missão
+        'descricao',     // Descrição detalhada da missão
+        'recompensa',    // Recompensa oferecida ao completar a missão
+        'status',        // Status da missão (pendente, em andamento, concluída)
     ];
 
-    // ===================================================
-    // 🔹 Relação com a campanha
-    // ===================================================
+    /**
+     * Define a relação de "Missao" com "Campanha".
+     * Uma missão pertence a uma campanha específica.
+     */
     public function campanha()
     {
         return $this->belongsTo(Campanha::class);
     }
 
-    // ===================================================
-    // 🔹 Relação com o usuário (mestre que criou a missão)
-    // ===================================================
+    /**
+     * Define a relação de "Missao" com o "User" (mestre).
+     * Uma missão é criada por um mestre (usuário).
+     */
     public function mestre()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // ===================================================
-    // 🔹 Escopos úteis
-    // ===================================================
 
     /**
-     * Escopo para missões concluídas
+     * Escopo para buscar missões concluídas.
+     * Filtra as missões que têm o status "concluida".
      */
     public function scopeConcluidas($query)
     {
@@ -46,7 +48,8 @@ class Missao extends Model
     }
 
     /**
-     * Escopo para missões em andamento
+     * Escopo para buscar missões em andamento.
+     * Filtra as missões que têm o status "em_andamento".
      */
     public function scopeEmAndamento($query)
     {
@@ -54,7 +57,8 @@ class Missao extends Model
     }
 
     /**
-     * Escopo para missões pendentes
+     * Escopo para buscar missões pendentes.
+     * Filtra as missões que têm o status "pendente".
      */
     public function scopePendentes($query)
     {

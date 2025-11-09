@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Sessao extends Model
 {
     protected $table = 'sessoes';
+    protected $dates = ['data'];
 
     protected $fillable = [
         'campanha_id',
@@ -22,35 +23,22 @@ class Sessao extends Model
         'resumo' => 'string',
     ];
 
-    // ===================================================
-    // 🔹 Relação com a campanha
-    // ===================================================
     public function campanha()
     {
         return $this->belongsTo(Campanha::class);
     }
 
-    // ===================================================
-    // 🔹 Relação com o criador da sessão (usuário)
-    // ===================================================
     public function criador()
     {
         return $this->belongsTo(User::class, 'criado_por');
     }
 
-    // ===================================================
-    // 🔹 Relação com personagens presentes na sessão
-    // ===================================================
     public function personagens()
     {
         return $this->belongsToMany(Personagem::class, 'sessoes_personagens')
                     ->withPivot('presente', 'resultado')
                     ->withTimestamps();
     }
-
-    // ===================================================
-    // 🔹 Escopos úteis
-    // ===================================================
 
     public function scopeAgendadas($query)
     {

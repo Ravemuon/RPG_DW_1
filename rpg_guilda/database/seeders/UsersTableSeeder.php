@@ -19,7 +19,7 @@ class UsersTableSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'bio' => 'Administrador do sistema',
                 'papel' => 'administrador',
-                'tema' => 'cyberpunk', // válido no enum
+                'tema' => 'cyberpunk', 
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -94,7 +94,7 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
 
-            // Investigadores Call of Cthulhu / memes
+            // Investigadores Call of Cthulhu
             [
                 'nome' => 'Sans',
                 'username' => 'sans06',

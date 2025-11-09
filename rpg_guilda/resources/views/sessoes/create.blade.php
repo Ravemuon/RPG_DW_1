@@ -1,74 +1,53 @@
 @extends('layouts.app')
 
-@section('title', "Nova Sessão - {$campanha->nome}")
+@section('title', 'Criar Sessão - ' . $campanha->titulo)
 
 @section('content')
-<div class="container py-5">
-    <div class="card bg-dark text-light border-warning shadow">
-        <div class="card-header bg-warning text-dark fw-bold">
-            Criar Nova Sessão - {{ $campanha->nome }}
+<div class="container py-4">
+    <div class="card bg-dark text-light border-secondary shadow-lg">
+        <div class="card-header">
+            <h4 class="mb-0 fw-bold">➕ Criar Sessão para: {{ $campanha->titulo }}</h4>
         </div>
 
         <div class="card-body">
-
-            {{-- Mensagem de erro geral --}}
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="mb-0">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            {{-- Formulário --}}
-            <form action="{{ route('sessoes.store', ['campanha' => $campanha->id]) }}" method="POST">
+            <form method="POST" action="{{ route('sessoes.store', $campanha->id) }}">
                 @csrf
 
                 {{-- Título --}}
                 <div class="mb-3">
-                    <label for="titulo" class="form-label text-warning">Título da Sessão</label>
-                    <input type="text" name="titulo" id="titulo"
-                        class="form-control bg-dark text-light border-warning @error('titulo') is-invalid @enderror"
-                        value="{{ old('titulo') }}" placeholder="Digite o título da sessão" required>
-                    @error('titulo')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <label for="titulo" class="form-label fw-semibold">Título da Sessão</label>
+                    <input type="text" name="titulo" id="titulo" class="form-control bg-dark text-light border-secondary"
+                           placeholder="Ex: O Cerco de Ravemuon" value="{{ old('titulo') }}" required>
+                    @error('titulo') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                 </div>
 
-                {{-- Data e Hora --}}
+                {{-- Data e hora --}}
                 <div class="mb-3">
-                    <label for="data_hora" class="form-label text-warning">Data e Hora</label>
+                    <label for="data_hora" class="form-label fw-semibold">Data e Hora</label>
                     <input type="datetime-local" name="data_hora" id="data_hora"
-                        class="form-control bg-dark text-light border-warning @error('data_hora') is-invalid @enderror"
-                        value="{{ old('data_hora') }}" required>
-                    @error('data_hora')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                           class="form-control bg-dark text-light border-secondary"
+                           value="{{ old('data_hora') }}" required>
+                    @error('data_hora') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                 </div>
 
                 {{-- Resumo --}}
                 <div class="mb-3">
-                    <label for="resumo" class="form-label text-warning">Resumo (opcional)</label>
+                    <label for="resumo" class="form-label fw-semibold">Resumo (opcional)</label>
                     <textarea name="resumo" id="resumo" rows="4"
-                        class="form-control bg-dark text-light border-warning @error('resumo') is-invalid @enderror"
-                        placeholder="Escreva um resumo breve da sessão">{{ old('resumo') }}</textarea>
-                    @error('resumo')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                              class="form-control bg-dark text-light border-secondary"
+                              placeholder="Breve descrição do que ocorrerá na sessão...">{{ old('resumo') }}</textarea>
+                    @error('resumo') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                 </div>
 
                 {{-- Botões --}}
-                <div class="d-flex justify-content-between">
-                    <a href="{{ route('sessoes.index', ['campanha' => $campanha->id]) }}" class="btn btn-outline-light">
-                        ⬅ Voltar
+                <div class="text-end mt-4">
+                    <a href="{{ route('sessoes.index', $campanha->id) }}" class="btn btn-secondary me-2">
+                        Cancelar
                     </a>
-                    <button type="submit" class="btn btn-warning fw-bold">
-                        ➕ Criar Sessão
+                    <button type="submit" class="btn btn-warning fw-semibold text-dark">
+                        Criar Sessão
                     </button>
                 </div>
-
             </form>
         </div>
     </div>

@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Gate;
 
 class CampanhaController extends Controller
 {
-    // 🔹 Mapear status do pivot para exibição
     private function mapStatus(string $statusPivot): string
     {
         return match ($statusPivot) {
@@ -24,7 +23,6 @@ class CampanhaController extends Controller
         };
     }
 
-    // 🔹 Lista campanhas do usuário
     public function index() { return redirect()->route('campanhas.minhas'); }
 
     public function minhas()
@@ -44,14 +42,12 @@ class CampanhaController extends Controller
     {
         $query = Campanha::with('criador', 'sistema');
 
-        // Filtrar por pesquisa, se existir
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where('nome', 'like', "%{$search}%")
                 ->orWhere('descricao', 'like', "%{$search}%");
         }
 
-        // Apenas campanhas públicas ou privadas onde o usuário é convidado
         if (auth()->check()) {
             $userId = auth()->id();
             $query->where(function($q) use ($userId) {
@@ -61,7 +57,6 @@ class CampanhaController extends Controller
                 });
             });
         } else {
-            // Usuários não logados só veem campanhas públicas
             $query->where('privada', false);
         }
 
@@ -70,7 +65,6 @@ class CampanhaController extends Controller
         return view('campanhas.todas', compact('todasCampanhas'));
     }
 
-    // 🔹 Formulário e criação
     public function create() { return view('campanhas.create', ['sistemas' => Sistema::all()]); }
 
     public function store(Request $request)
@@ -80,7 +74,7 @@ class CampanhaController extends Controller
             'sistema_id' => 'required|exists:sistemas,id',
             'descricao' => 'nullable|string',
             'privada' => 'nullable|boolean',
-            'status' => 'required|in:ativa,pausada,encerrada',
+            'status' => 'required|in:ativa,inativa',
             'codigo_convite' => 'nullable|string|max:10|unique:campanhas',
         ]);
 
@@ -105,7 +99,6 @@ class CampanhaController extends Controller
         return redirect()->route('campanhas.show', $campanha->id)->with('success', 'Campanha criada com sucesso!');
     }
 
-    // 🔹 Exibe detalhes da campanha (show)
     public function show(Campanha $campanha)
     {
         $user = Auth::user();
@@ -117,41 +110,56 @@ class CampanhaController extends Controller
             return redirect()->route($targetRoute)->with('error', 'Acesso negado. Esta é uma campanha privada.');
         }
 
-        $campanha->load(['jogadores.personagens' => fn($q) => $q->where('campanha_id', $campanha->id), 'sessoes', 'criador', 'sistema']);
+        $campanha->load([
+            'jogadores.personagens' => fn($q) => $q->where('campanha_id', $campanha->id),
+            'sessoes',
+            'criador',
+            'sistema'
+        ]);
 
-        // Amigos disponíveis para convite (apenas mestre)
+        $personagens = $campanha->jogadores->flatMap->personagens->where('campanha_id', $campanha->id);
+
         $amigos = collect();
         if ($user && $isMestre) {
-            $amigos = $user->amigos()->whereDoesntHave('campanhas', fn($q) => $q->where('campanha_id', $campanha->id))->get();
+            $amigos = $user->amigos()
+                ->whereDoesntHave('campanhas', fn($q) => $q->where('campanha_id', $campanha->id))
+                ->get();
         }
 
-        return view('campanhas.show', compact('campanha', 'isMestre', 'amigos', 'statusPivot'));
+        return view('campanhas.show', compact('campanha', 'isMestre', 'amigos', 'statusPivot', 'personagens'));
     }
 
-    // 🔹 Solicitar entrada em campanha
     public function solicitarEntrada(Campanha $campanha)
     {
         $user = Auth::user();
-        if (!$user) return redirect()->route('login')->with('error', 'Você precisa estar logado.');
-
-        if ($campanha->jogadores->contains($user->id)) {
-            return redirect()->route('campanhas.show', $campanha->id)->with('info', 'Você já participa desta campanha.');
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Você precisa estar logado.');
         }
 
-        $status = $campanha->privada ? 'pendente' : 'ativo';
-        $campanha->jogadores()->attach($user->id, ['status' => $status]);
+        if ($campanha->jogadores->contains($user->id)) {
+            return redirect()->route('campanhas.show', $campanha->id)
+                            ->with('info', 'Você já possui uma solicitação ou já participa desta campanha.');
+        }
+
+        $campanha->jogadores()->attach($user->id, ['status' => 'pendente']);
 
         Notificacao::create([
             'usuario_id' => $campanha->criador_id,
-            'mensagem' => "{$user->nome} solicitou entrar na campanha '{$campanha->nome}'.",
-            'lida' => false,
+            'tipo' => 'Campanha',
+            'mensagem' => "📩 O jogador **{$user->nome}** solicitou participar da campanha **{$campanha->nome}**.",
         ]);
 
-        return redirect()->route('campanhas.show', $campanha->id)
-                         ->with('success', $status === 'ativo' ? 'Você entrou na campanha!' : 'Solicitação enviada com sucesso!');
+        Notificacao::create([
+            'usuario_id' => $user->id,
+            'tipo' => 'Campanha',
+            'mensagem' => "⏳ Sua solicitação para entrar na campanha **{$campanha->nome}** foi enviada e aguarda aprovação do mestre.",
+        ]);
+
+        return redirect()
+            ->route('campanhas.show', $campanha->id)
+            ->with('success', 'Solicitação enviada! Aguarde a aprovação do mestre.');
     }
 
-    // 🔹 Gerenciar status de jogadores (aprovar, rejeitar, remover)
     public function gerenciarUsuarios(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
@@ -182,7 +190,6 @@ class CampanhaController extends Controller
         return redirect()->route('campanhas.mestre', $campanha->id)->with('success', $mensagem);
     }
 
-    // 🔹 Adicionar amigo à campanha (convite direto)
     public function adicionarAmigo(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
@@ -203,5 +210,105 @@ class CampanhaController extends Controller
         ]);
 
         return redirect()->route('campanhas.show', $campanha->id)->with('success', 'Amigo adicionado à campanha com sucesso!');
+    }
+
+    public function mestre(Campanha $campanha)
+    {
+        $this->authorize('view', $campanha);
+
+        $campanha->load(['sessoes', 'personagens', 'sistema']);
+
+        return view('campanhas.mestre', compact('campanha'));
+    }
+
+    public function gerenciarUsuario(Request $request, Campanha $campanha)
+    {
+        $this->authorize('update', $campanha);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'status' => 'required|string',
+        ]);
+
+        $userId = $validated['user_id'];
+        $status = $validated['status'];
+
+        if ($status === 'remover') {
+            $campanha->jogadores()->detach($userId);
+            return back()->with('success', 'Jogador removido da campanha.');
+        }
+
+        if (!in_array($status, ['ativo', 'pendente', 'rejeitado'])) {
+            return back()->with('error', 'Status inválido.');
+        }
+
+        $campanha->jogadores()->updateExistingPivot($userId, ['status' => $status]);
+
+        return back()->with('success', 'Status do jogador atualizado com sucesso!');
+    }
+
+    public function aprovarUsuario(Request $request, Campanha $campanha)
+    {
+        $mestre = Auth::user();
+
+        if ($mestre->id !== $campanha->criador_id) {
+            return redirect()->back()->with('error', 'Apenas o mestre pode gerenciar jogadores.');
+        }
+
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'status' => 'required|string|in:ativo,pendente,rejeitado,remover',
+        ]);
+
+        $jogador = \App\Models\User::findOrFail($request->user_id);
+        $status = $request->status;
+
+        if ($status === 'remover') {
+            $campanha->jogadores()->detach($jogador->id);
+
+            Notificacao::create([
+                'usuario_id' => $jogador->id,
+                'tipo' => 'Campanha',
+                'mensagem' => "🚪 Você foi removido da campanha **{$campanha->nome}** pelo mestre **{$mestre->nome}**.",
+            ]);
+
+            Notificacao::create([
+                'usuario_id' => $mestre->id,
+                'tipo' => 'Campanha',
+                'mensagem' => "Você removeu **{$jogador->nome}** da campanha **{$campanha->nome}**.",
+            ]);
+
+            return redirect()->back()->with('success', "Jogador removido da campanha com sucesso!");
+        }
+
+        $campanha->jogadores()->updateExistingPivot($jogador->id, ['status' => $status]);
+
+        $mensagemJogador = match ($status) {
+            'ativo' => "🎉 Sua solicitação foi aprovada! Agora você faz parte da campanha **{$campanha->nome}**.",
+            'rejeitado' => "🚫 Sua solicitação para participar da campanha **{$campanha->nome}** foi rejeitada pelo mestre.",
+            'pendente' => "⏳ Sua solicitação para participar da campanha **{$campanha->nome}** está pendente de aprovação.",
+            default => "Seu status na campanha **{$campanha->nome}** foi atualizado.",
+        };
+
+        Notificacao::create([
+            'usuario_id' => $jogador->id,
+            'tipo' => 'Campanha',
+            'mensagem' => $mensagemJogador,
+        ]);
+
+        $mensagemMestre = match ($status) {
+            'ativo' => "✅ Você aprovou {$jogador->nome} para participar da campanha {$campanha->nome}.",
+            'rejeitado' => "🚫 Você rejeitou a solicitação de {$jogador->nome} para a campanha **{$campanha->nome}.",
+            'pendente' => "⏳ Você deixou {$jogador->nome} com status pendente na campanha **{$campanha->nome}.",
+            default => "Status de {$jogador->nome} atualizado na campanha {$campanha->nome}.",
+        };
+
+        Notificacao::create([
+            'usuario_id' => $mestre->id,
+            'tipo' => 'Campanha',
+            'mensagem' => $mensagemMestre,
+        ]);
+
+        return redirect()->back()->with('success', 'Status do jogador atualizado com sucesso!');
     }
 }

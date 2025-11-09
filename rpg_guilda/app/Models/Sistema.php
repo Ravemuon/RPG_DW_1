@@ -28,59 +28,37 @@ class Sistema extends Model
         'regras_opcionais',
     ];
 
-    // ===============================
-    // Relações
-    // ===============================
-
-    /**
-     * Um Sistema tem muitas Classes.
-     */
-        public function classes()
+    public function classes()
     {
         return $this->hasMany(Classe::class, 'sistema_id');
     }
 
-    /**
-     * Um Sistema tem muitas Raças.
-     */
     public function racas()
     {
         return $this->hasMany(Raca::class);
     }
 
-    /**
-     * Um Sistema tem muitas Origens.
-     */
     public function origens()
     {
         return $this->hasMany(Origem::class);
     }
 
-    /**
-     * Um Sistema possui muitas Perícias (Many-to-Many via pivot 'sistema_pericias').
-     */
     public function pericias()
     {
         return $this->belongsToMany(Pericia::class, 'sistema_pericias')->withTimestamps();
     }
 
-    /**
-     * Um Sistema tem muitos Personagens.
-     */
     public function personagens()
     {
         return $this->hasMany(Personagem::class);
     }
 
-    // ===============================
-    // Métodos auxiliares
-    // ===============================
-
-    /**
-     * Retorna todos os atributos configurados no sistema
-     * Ex: ['Força', 'Destreza', 'Constituição', ...]
-     */
     public function atributos()
+    {
+        return $this->hasMany(Atributo::class);
+    }
+
+    public function getAtributos()
     {
         $atributos = [];
         for ($i = 1; $i <= $this->max_atributos; $i++) {
@@ -91,5 +69,4 @@ class Sistema extends Model
         }
         return $atributos;
     }
-
 }

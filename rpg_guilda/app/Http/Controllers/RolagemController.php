@@ -8,9 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class RolagemController extends Controller
 {
-    // ===================================================
-    // 🔹 Listar rolagens de uma campanha ou personagem
-    // ===================================================
+    // Lista as rolagens de uma campanha ou personagem
     public function index(Request $request)
     {
         $campanhaId = $request->campanha_id;
@@ -24,9 +22,7 @@ class RolagemController extends Controller
         return view('rolagens.index', compact('rolagens'));
     }
 
-    // ===================================================
-    // 🔹 Criar nova rolagem
-    // ===================================================
+    // Cria uma nova rolagem
     public function store(Request $request)
     {
         $request->validate([
@@ -59,17 +55,13 @@ class RolagemController extends Controller
         return redirect()->back()->with('success', "Rolagem realizada: {$rolagem->resultado}");
     }
 
-    // ===================================================
-    // 🔹 Visualizar detalhes de uma rolagem
-    // ===================================================
+    // Exibe os detalhes de uma rolagem
     public function show(Rolagem $rolagem)
     {
         return view('rolagens.show', compact('rolagem'));
     }
 
-    // ===================================================
-    // 🔹 Deletar rolagem
-    // ===================================================
+    // Deleta uma rolagem
     public function destroy(Rolagem $rolagem)
     {
         $rolagem->delete();

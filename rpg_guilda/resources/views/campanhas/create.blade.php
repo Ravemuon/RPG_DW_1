@@ -1,67 +1,103 @@
 @extends('layouts.app')
 
-@section('title', 'Criar Nova Campanha')
+@section('title', 'Criar Campanha')
 
 @section('content')
-<div class="container py-5 bg-dark text-light min-vh-100">
-    <h1 class="fw-bold text-warning mb-4">✨ Criar Nova Campanha de RPG</h1>
+<div class="card bg-dark text-light border-secondary shadow-lg">
+    <div class="card-header d-flex align-items-center gap-2">
+        {{-- Ícone SVG (sem dependências externas) --}}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+             stroke-width="1.5" stroke="currentColor" width="24" height="24" class="text-warning me-2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M14.5 17.5L7 10l-2 2-2-2 2-2L5.5 6.5 10 2l2 2-2 2 7.5 7.5 2-2 2 2-2 2 1.5 1.5a2.121 2.121 0 010 3L19 23l-2-2 1.5-1.5a.5.5 0 000-.7L17.5 18l-3 3-2-2 2-2z" />
+        </svg>
+        <h1 class="h4 mb-0 fw-bold">Criar Nova Campanha</h1>
+    </div>
 
-    <div class="card bg-secondary text-light shadow-lg">
-        <div class="card-body">
-            <form action="{{ route('campanhas.store') }}" method="POST">
-                @csrf
+    <div class="card-body">
+        <form method="POST" action="{{ route('campanhas.store') }}">
+            @csrf
 
-                {{-- Nome da Campanha --}}
-                <div class="mb-3">
-                    <label for="nome" class="form-label">Nome da Campanha <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control bg-dark text-light border-warning" id="nome" name="nome" required value="{{ old('nome') }}">
-                    @error('nome') <div class="text-danger small">{{ $message }}</div> @enderror
-                </div>
+            {{-- Nome da campanha --}}
+            <div class="mb-3">
+                <label for="nome" class="form-label fw-semibold">Nome da Campanha</label>
+                <input type="text" name="nome" id="nome" value="{{ old('nome') }}"
+                       class="form-control bg-dark text-light border-secondary"
+                       placeholder="Ex: Crônicas de Ravemuon" required>
+                @error('nome') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            </div>
 
-                {{-- Sistema --}}
-                <div class="mb-3">
-                    <label for="sistema_id" class="form-label">Sistema de RPG <span class="text-danger">*</span></label>
-                    <select class="form-select bg-dark text-light border-warning" id="sistema_id" name="sistema_id" required>
-                        <option value="">Selecione um Sistema</option>
-                        @foreach($sistemas as $sistema)
-                            <option value="{{ $sistema->id }}" {{ old('sistema_id') == $sistema->id ? 'selected' : '' }}>{{ $sistema->nome }}</option>
-                        @endforeach
-                    </select>
-                    @error('sistema_id') <div class="text-danger small">{{ $message }}</div> @enderror
-                </div>
+            {{-- Sistema --}}
+            <div class="mb-3">
+                <label for="sistema_id" class="form-label fw-semibold">Sistema</label>
+                <select name="sistema_id" id="sistema_id"
+                        class="form-select bg-dark text-light border-secondary" required>
+                    <option value="">Selecione um sistema...</option>
+                    @foreach ($sistemas as $sistema)
+                        <option value="{{ $sistema->id }}" {{ old('sistema_id') == $sistema->id ? 'selected' : '' }}>
+                            {{ $sistema->nome }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('sistema_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            </div>
 
-                {{-- Descrição --}}
-                <div class="mb-3">
-                    <label for="descricao" class="form-label">Descrição (Enredo, Tom, Regras)</label>
-                    <textarea class="form-control bg-dark text-light border-warning" id="descricao" name="descricao" rows="5">{{ old('descricao') }}</textarea>
-                    @error('descricao') <div class="text-danger small">{{ $message }}</div> @enderror
-                </div>
+            {{-- Descrição --}}
+            <div class="mb-3">
+                <label for="descricao" class="form-label fw-semibold">Descrição</label>
+                <textarea name="descricao" id="descricao" rows="4"
+                          class="form-control bg-dark text-light border-secondary"
+                          placeholder="Fale brevemente sobre a campanha...">{{ old('descricao') }}</textarea>
+                @error('descricao') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            </div>
 
-                {{-- Status --}}
-                <div class="mb-3">
-                    <label for="status" class="form-label">Status Inicial</label>
-                    <select class="form-select bg-dark text-light border-warning" id="status" name="status" required>
-                        <option value="ativa" {{ old('status') == 'ativa' ? 'selected' : '' }}>Ativa</option>
-                        <option value="pausada" {{ old('status') == 'pausada' ? 'selected' : '' }}>Pausada</option>
-                        <option value="encerrada" {{ old('status') == 'encerrada' ? 'selected' : '' }}>Encerrada</option>
-                    </select>
-                    @error('status') <div class="text-danger small">{{ $message }}</div> @enderror
-                </div>
+            {{-- Status --}}
+            <div class="mb-3">
+                <label for="status" class="form-label fw-semibold">Status</label>
+                <select name="status" id="status"
+                        class="form-select bg-dark text-light border-secondary" required>
+                    <option value="ativa" {{ old('status') === 'ativa' ? 'selected' : '' }}>Ativa</option>
+                    <option value="inativa" {{ old('status') === 'inativa' ? 'selected' : '' }}>Inativa</option>
+                </select>
+                @error('status') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            </div>
 
-                {{-- Campanha Privada --}}
-                <div class="form-check mb-4">
-                    <input class="form-check-input" type="checkbox" name="privada" id="privada" value="1" {{ old('privada') ? 'checked' : '' }}>
-                    <label class="form-check-label" for="privada">
-                        Tornar a campanha privada (somente amigos convidados poderão participar)
-                    </label>
-                </div>
+            {{-- Privada --}}
+            <div class="form-check form-switch bg-dark border rounded p-3 mb-3">
+                <input class="form-check-input" type="checkbox" name="privada" id="privada"
+                       value="1" {{ old('privada') ? 'checked' : '' }}>
+                <label class="form-check-label fw-semibold" for="privada">Campanha Privada?</label>
+                <div class="small text-secondary">Apenas convidados poderão participar.</div>
+            </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-warning fw-bold">Criar Campanha</button>
-                    <a href="{{ route('campanhas.todas') }}" class="btn btn-outline-light">Cancelar</a>
-                </div>
-            </form>
-        </div>
+            {{-- Código de convite (opcional) --}}
+            <div id="codigo-container" class="{{ old('privada') ? '' : 'd-none' }}">
+                <label for="codigo_convite" class="form-label fw-semibold">Código de Convite (opcional)</label>
+                <input type="text" name="codigo_convite" id="codigo_convite"
+                       value="{{ old('codigo_convite') }}"
+                       class="form-control bg-dark text-light border-secondary"
+                       maxlength="10" placeholder="Ex: AB12CD">
+                <div class="small text-secondary mt-1">Deixe em branco para gerar automaticamente.</div>
+                @error('codigo_convite') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            </div>
+
+            {{-- Botões --}}
+            <div class="text-end mt-4">
+                <a href="{{ route('campanhas.minhas') }}" class="btn btn-secondary me-2">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-warning fw-semibold text-dark">
+                    Criar Campanha
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+{{-- Script para mostrar/esconder o campo de convite --}}
+<script>
+document.getElementById('privada').addEventListener('change', function() {
+    document.getElementById('codigo-container').classList.toggle('d-none', !this.checked);
+});
+</script>
 @endsection

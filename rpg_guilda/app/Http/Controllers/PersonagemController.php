@@ -18,9 +18,7 @@ class PersonagemController extends Controller
         $this->middleware('auth');
     }
 
-    // ===================================================
-    // 🔹 Lista personagens do usuário logado
-    // ===================================================
+    // Lista todos os personagens do usuário autenticado
     public function index()
     {
         $user = Auth::user();
@@ -32,9 +30,7 @@ class PersonagemController extends Controller
         return view('personagens.index', compact('personagens'));
     }
 
-    // ===================================================
-    // 🔹 Formulário de criação de personagem
-    // ===================================================
+    // Exibe o formulário para criar um novo personagem
     public function create()
     {
         $campanhas = Campanha::where('criador_id', Auth::id())
@@ -48,6 +44,7 @@ class PersonagemController extends Controller
         return view('personagens.create', compact('campanhas', 'classes', 'origens', 'racas'));
     }
 
+    // Armazena um novo personagem
     public function store(Request $request)
     {
         $request->validate([
@@ -87,21 +84,20 @@ class PersonagemController extends Controller
             ->with('success', 'Personagem criado com sucesso!');
     }
 
-    // ===================================================
-    // 🔹 Mostrar personagem (dono ou mestre)
-    // ===================================================
+    // Exibe os detalhes de um personagem
     public function show(Personagem $personagem)
     {
         $user = Auth::user();
 
-        // Carregar relacionamentos importantes
+        // Carrega os relacionamentos essenciais do personagem
         $personagem->load(['campanha', 'classeObj', 'origens', 'pericias', 'raca']);
 
+        // Verifica se a campanha do personagem existe
         if (!$personagem->campanha) {
             abort(404, 'Campanha do personagem não encontrada.');
         }
 
-        // Apenas dono ou mestre da campanha podem acessar
+        // Verifica se o usuário tem permissão para visualizar o personagem
         if ($personagem->user_id !== $user->id && $user->id !== $personagem->campanha->criador_id) {
             abort(403, 'Acesso negado.');
         }
@@ -109,9 +105,7 @@ class PersonagemController extends Controller
         return view('personagens.show', compact('personagem'));
     }
 
-    // ===================================================
-    // 🔹 Formulário de edição
-    // ===================================================
+    // Exibe o formulário para editar um personagem
     public function edit(Personagem $personagem)
     {
         $this->authorize('update', $personagem);
@@ -129,9 +123,7 @@ class PersonagemController extends Controller
         return view('personagens.edit', compact('personagem', 'campanhas', 'classes', 'origens', 'racas'));
     }
 
-    // ===================================================
-    // 🔹 Atualizar personagem
-    // ===================================================
+    // Atualiza as informações de um personagem
     public function update(Request $request, Personagem $personagem)
     {
         $this->authorize('update', $personagem);
@@ -163,4 +155,23 @@ class PersonagemController extends Controller
         return redirect()->route('personagens.show', $personagem->id)
             ->with('success', 'Personagem atualizado com sucesso!');
     }
+
+    // Alterna a visibilidade do personagem
+    public function togglePublico(Personagem $personagem)
+    {
+        $user = auth()->user();
+
+        // Apenas o criador do personagem pode alterar a visibilidade
+        if ($personagem->user_id !== $user->id) {
+            return redirect()->back()->with('error', 'Apenas o criador pode alterar a visibilidade deste personagem.');
+        }
+
+        $personagem->publico = !$personagem->publico;
+        $personagem->save();
+
+        return redirect()->back()->with('success', $personagem->publico
+            ? 'O personagem agora é público.'
+            : 'O personagem foi tornado privado.');
+    }
+
 }

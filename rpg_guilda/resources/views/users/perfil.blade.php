@@ -7,13 +7,18 @@
 
     {{-- Banner --}}
     <div class="position-relative mb-5 rounded overflow-hidden shadow" style="height: 350px;">
-        <div class="w-100 h-100" style="background-image: url('{{ $user->banner_url }}'); background-size: cover; background-position: center; filter: brightness(0.65);"></div>
+        <div class="w-100 h-100"
+             style="background-image: url('{{ $user->banner_url }}'); background-size: cover; background-position: center; filter: brightness(0.65);">
+        </div>
 
         {{-- Upload banner --}}
-        <label for="bannerUpload" class="position-absolute top-0 end-0 m-3 btn btn-outline-light btn-sm shadow" style="cursor:pointer; z-index: 10;">
+        <label for="bannerUpload"
+               class="position-absolute top-0 end-0 m-3 btn btn-outline-light btn-sm shadow"
+               style="cursor:pointer; z-index: 10;">
             <i class="bi bi-camera-fill"></i>
         </label>
-        <form action="{{ route('usuarios.uploadImagem', 'banner') }}" method="POST" enctype="multipart/form-data" class="d-none">
+        <form action="{{ route('usuarios.uploadImagem', 'banner') }}"
+              method="POST" enctype="multipart/form-data" class="d-none">
             @csrf
             <input type="file" name="arquivo" id="bannerUpload" accept="image/*" onchange="this.form.submit()">
         </form>
@@ -22,13 +27,19 @@
     {{-- Avatar e informações --}}
     <div class="text-center mb-5 position-relative" style="margin-top: -90px;">
         <div class="position-relative d-inline-block">
-            <img src="{{ $user->avatar_url }}" alt="Avatar de {{ $user->nome }}" class="rounded-circle border shadow-lg" style="width: 160px; height: 160px; object-fit: cover; border-color: var(--btn-bg) !important; border-width: 3px !important;">
+            <img src="{{ $user->avatar_url }}"
+                 alt="Avatar de {{ $user->nome }}"
+                 class="rounded-circle border shadow-lg"
+                 style="width: 160px; height: 160px; object-fit: cover; border-color: var(--btn-bg) !important; border-width: 3px !important;">
 
             {{-- Upload avatar --}}
-            <label for="avatarUpload" class="position-absolute bottom-0 end-0 bg-light rounded-circle p-2 shadow" style="cursor:pointer;">
+            <label for="avatarUpload"
+                   class="position-absolute bottom-0 end-0 bg-light rounded-circle p-2 shadow"
+                   style="cursor:pointer;">
                 <i class="bi bi-camera-fill text-dark"></i>
             </label>
-            <form action="{{ route('usuarios.uploadImagem', 'avatar') }}" method="POST" enctype="multipart/form-data" class="d-none">
+            <form action="{{ route('usuarios.uploadImagem', 'avatar') }}"
+                  method="POST" enctype="multipart/form-data" class="d-none">
                 @csrf
                 <input type="file" name="arquivo" id="avatarUpload" accept="image/*" onchange="this.form.submit()">
             </form>
@@ -48,32 +59,6 @@
             </p>
         </div>
     </div>
-
-    {{-- Mensagens --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if ($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
 
     {{-- Biografia e Estatísticas --}}
     <div class="row g-4 mb-5">
@@ -143,11 +128,11 @@
                     <table class="table table-borderless align-middle mb-0">
                         <thead>
                             <tr style="background: rgba(0,0,0,0.4);">
-                                <th class="fw-bold py-3" style="color: var(--btn-bg); border-bottom: 2px solid var(--card-border);">Nome</th>
-                                <th class="fw-bold py-3" style="color: var(--btn-bg); border-bottom: 2px solid var(--card-border);">Sistema</th>
-                                <th class="fw-bold py-3" style="color: var(--btn-bg); border-bottom: 2px solid var(--card-border);">Status</th>
-                                <th class="fw-bold py-3" style="color: var(--btn-bg); border-bottom: 2px solid var(--card-border);">Mestre</th>
-                                <th class="fw-bold py-3" style="color: var(--btn-bg); border-bottom: 2px solid var(--card-border);">Players</th>
+                                <th class="fw-bold py-3" style="color: var(--btn-bg);">Nome</th>
+                                <th class="fw-bold py-3" style="color: var(--btn-bg);">Sistema</th>
+                                <th class="fw-bold py-3" style="color: var(--btn-bg);">Status</th>
+                                <th class="fw-bold py-3" style="color: var(--btn-bg);">Mestre</th>
+                                <th class="fw-bold py-3" style="color: var(--btn-bg);">Players</th>
                             </tr>
                         </thead>
                         <tbody>

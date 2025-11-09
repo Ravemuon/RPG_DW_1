@@ -1,89 +1,75 @@
 @extends('layouts.app')
 
-@section('title', 'Criar Novo Personagem')
+@section('title', 'Criar Personagem')
 
 @section('content')
 <div class="container py-5">
-    <div class="theme-card p-5 rounded shadow-lg">
-        <h1 class="text-warning fw-bold mb-4 border-bottom pb-2" style="text-shadow: 0 0 6px var(--btn-bg);">
-            🛡️ Construir Novo Personagem
-        </h1>
 
-        <form action="{{ route('personagens.store') }}" method="POST">
-            @csrf
+    <h2>🧝‍♂️ Criar Novo Personagem</h2>
 
-            {{-- Informações básicas --}}
-            <h2 class="text-warning fw-semibold mb-3">Informações Básicas</h2>
+    {{-- Formulário para criar o personagem --}}
+    <form action="{{ route('personagens.store', $campanha->id) }}" method="POST" class="mt-4">
+        @csrf
+        {{-- Nome --}}
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome do Personagem</label>
+            <input type="text" id="nome" name="nome" class="form-control" value="{{ old('nome') }}" required>
+        </div>
 
-            <div class="mb-3">
-                <label for="nome" class="form-label text-light">Nome Completo</label>
-                <input type="text" name="nome" id="nome" required
-                       class="form-control theme-input"
-                       value="{{ old('nome') }}" placeholder="Ex: Elara, A Ladina Silenciosa">
-                @error('nome') <p class="text-danger mt-1">{{ $message }}</p> @enderror
-            </div>
+        {{-- Raça --}}
+        <div class="mb-3">
+            <label for="raca" class="form-label">Raça</label>
+            <select id="raca" name="raca_id" class="form-select">
+                <option value="">Selecione a Raça</option>
+                @foreach($racas as $raca)
+                    <option value="{{ $raca->id }}" {{ old('raca_id') == $raca->id ? 'selected' : '' }}>{{ $raca->nome }}</option>
+                @endforeach
+            </select>
+        </div>
 
-            <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                    <label for="classe" class="form-label text-light">Classe</label>
-                    <select name="classe" id="classe" required class="form-select theme-input">
-                        <option value="">Selecione a Classe</option>
-                        @foreach ($classes as $classe)
-                            <option value="{{ $classe->nome }}" {{ old('classe') == $classe->nome ? 'selected' : '' }}>
-                                {{ $classe->nome }} ({{ $classe->sistemaRPG ?? 'Sistema Genérico' }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('classe') <p class="text-danger mt-1">{{ $message }}</p> @enderror
-                </div>
+        {{-- Classe --}}
+        <div class="mb-3">
+            <label for="classe" class="form-label">Classe</label>
+            <input type="text" id="classe" name="classe" class="form-control" value="{{ old('classe') }}">
+        </div>
 
-                <div class="col-md-6">
-                    <label for="campanha_id" class="form-label text-light">Campanha</label>
-                    <select name="campanha_id" id="campanha_id" required class="form-select theme-input">
-                        <option value="">Selecione a Campanha</option>
-                        @foreach ($campanhas as $campanha)
-                            <option value="{{ $campanha->id }}" {{ old('campanha_id') == $campanha->id ? 'selected' : '' }}>
-                                {{ $campanha->nome }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('campanha_id') <p class="text-danger mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
+        {{-- Origem --}}
+        <div class="mb-3">
+            <label for="origem" class="form-label">Origem</label>
+            <input type="text" id="origem" name="origem" class="form-control" value="{{ old('origem') }}">
+        </div>
 
-            {{-- Origens --}}
-            <div class="mb-3 theme-section p-3 rounded">
-                <label class="form-label text-light">Origens (Bônus de Atributos)</label>
-                <div class="d-flex flex-wrap gap-2 max-vh-50 overflow-auto">
-                    @foreach ($origens as $origem)
-                        <div class="form-check text-light">
-                            <input id="origem-{{ $origem->id }}" name="origens[]" type="checkbox" value="{{ $origem->id }}"
-                                   class="form-check-input theme-input"
-                                   {{ in_array($origem->id, (array)old('origens', [])) ? 'checked' : '' }}>
-                            <label for="origem-{{ $origem->id }}" class="form-check-label">
-                                {{ $origem->nome }}
-                            </label>
-                        </div>
-                    @endforeach
-                </div>
-                @error('origens') <p class="text-danger mt-1">{{ $message }}</p> @enderror
-            </div>
+        {{-- Sistema RPG --}}
+        <div class="mb-3">
+            <label for="sistema_rpg" class="form-label">Sistema RPG</label>
+            <input type="text" id="sistema_rpg" name="sistema_rpg" class="form-control" value="{{ old('sistema_rpg') }}">
+        </div>
 
-            {{-- Descrição --}}
-            <div class="mb-3">
-                <label for="descricao" class="form-label text-light">História de Fundo / Descrição</label>
-                <textarea name="descricao" id="descricao" rows="5"
-                          class="form-control theme-input"
-                          placeholder="Descreva a história e a aparência física do seu personagem.">{{ old('descricao') }}</textarea>
-                @error('descricao') <p class="text-danger mt-1">{{ $message }}</p> @enderror
-            </div>
+        {{-- Atributos --}}
+        <div class="mb-3">
+            <label for="atributos" class="form-label">Atributos (JSON)</label>
+            <textarea id="atributos" name="atributos" class="form-control" rows="4">{{ old('atributos') }}</textarea>
+            <small class="form-text text-muted">Exemplo: {"forca": 15, "destreza": 14, "inteligencia": 12}</small>
+        </div>
 
-            {{-- Botões --}}
-            <div class="d-flex justify-end gap-2 mt-4">
-                <a href="{{ route('personagens.index') }}" class="btn theme-btn-outline">Cancelar</a>
-                <button type="submit" class="btn theme-btn fw-bold">Criar Personagem</button>
-            </div>
-        </form>
-    </div>
+        {{-- Descrição --}}
+        <div class="mb-3">
+            <label for="descricao" class="form-label">Descrição</label>
+            <textarea id="descricao" name="descricao" class="form-control" rows="4">{{ old('descricao') }}</textarea>
+        </div>
+
+        {{-- Página --}}
+        <div class="mb-3">
+            <label for="pagina" class="form-label">Página (opcional)</label>
+            <input type="text" id="pagina" name="pagina" class="form-control" value="{{ old('pagina') }}">
+        </div>
+
+        {{-- Botões --}}
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Criar Personagem</button>
+            <a href="{{ route('campanhas.show', $campanha->id) }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+
 </div>
 @endsection

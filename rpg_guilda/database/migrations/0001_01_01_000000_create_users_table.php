@@ -9,10 +9,10 @@ return new class extends Migration {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('nome', 100);
-            $table->string('username', 50)->unique();
+            $table->string('username', 50)->unique();  // Username único
             $table->string('email')->unique();
             $table->string('password');
-            $table->text('bio')->nullable();
+            $table->text('bio')->nullable();  // Bio opcional
             $table->string('avatar')->nullable()->default('/imagens/default/avatar.png');
             $table->string('banner')->nullable()->default('/imagens/default/banner.png');
             $table->enum('tema', [
@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->string('pagina', 50)->nullable()->comment('Página do usuário ou referência');
             $table->rememberToken();
             $table->timestamps();
-            $table->index(['nome', 'username']);
+            $table->index(['nome', 'username']);  // Índice nas colunas nome e username
         });
     }
 

@@ -23,11 +23,8 @@
                 @php
                     $menuItems = [
                         ['route' => 'campanhas.minhas', 'icon' => '🏕️', 'label' => 'Minhas Campanhas'],
-                        ['route' => 'personagens.index', 'icon' => '🧝', 'label' => 'Personagens', 'roles' => ['mestre','administrador']],
-                        ['route' => 'classes.index', 'icon' => '⚔️', 'label' => 'Classes', 'roles' => ['mestre','administrador']],
-                        ['route' => 'missoes.index', 'icon' => '🗺️', 'label' => 'Missões', 'roles' => ['mestre','administrador']],
-                        ['route' => 'sistemas.index', 'icon' => '📜', 'label' => 'Sistemas'],
-                        ['route' => 'usuarios.index', 'icon' => '➕', 'label' => 'Amigos']
+                        ['route' => 'sistemas.index', 'icon' => '📜', 'label' => 'Ver Sistemas'],
+                        ['route' => 'amizades.amigos', 'icon' => '➕', 'label' => 'Meus Amigos']
                     ];
                 @endphp
 
@@ -35,8 +32,9 @@
                     @if(!isset($item['roles']) || in_array(Auth::user()->tipo, $item['roles']))
                         <div class="col-6 col-sm-4 col-md-3 col-lg-2">
                             <a href="{{ route($item['route']) }}"
-                               class="btn d-flex flex-column align-items-center justify-content-center p-3 shadow-lg h-100"
-                               style="background-color: var(--btn-bg); color: var(--btn-text);">
+                            class="btn d-flex flex-column align-items-center justify-content-center p-3 shadow-lg h-100
+                                    {{ request()->routeIs($item['route'] . '.*') ? 'active' : '' }}"
+                            style="background-color: var(--btn-bg); color: var(--btn-text);">
                                 <span class="fs-2 mb-2">{{ $item['icon'] }}</span>
                                 <span class="fw-bold small">{{ $item['label'] }}</span>
                             </a>
@@ -44,6 +42,7 @@
                     @endif
                 @endforeach
             </div>
+
 
             {{-- Criar campanha --}}
             @if(in_array(Auth::user()->tipo, ['mestre','administrador']))
@@ -124,13 +123,6 @@
                                                        style="border-color: var(--btn-bg); color: var(--btn-bg);">
                                                         🔍 Ver Detalhes
                                                     </a>
-                                                    @auth
-                                                        <a href="{{ route('chat.index', $campanha->id) }}"
-                                                           class="btn flex-fill"
-                                                           style="background-color: var(--btn-bg); color: var(--btn-text);">
-                                                            💬 Chat
-                                                        </a>
-                                                    @endauth
                                                 </div>
                                             </div>
                                         </div>

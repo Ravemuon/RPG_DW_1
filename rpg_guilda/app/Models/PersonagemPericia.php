@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Pericia extends Model
+class PersonagemPericia extends Model
 {
     protected $fillable = [
         'nome', 'sistemaRPG', 'automatica', 'formula'

@@ -1,49 +1,162 @@
 @extends('layouts.app')
 
-@section('title', 'Relatório de Sessão: ' . $sessao->titulo)
+@section('title', 'Sessão: ' . $sessao->titulo)
 
 @section('content')
+<div class="container py-4">
 
-<div class="container mx-auto p-4">
-<div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 shadow-2xl rounded-lg p-8">
+    {{-- Cabeçalho --}}
+    <div class="card border-primary shadow-lg mb-4">
+        <div class="card-header bg-primary bg-opacity-25 border-primary">
+            <h2 class="fw-bold text-primary mb-0">🎲 {{ $sessao->titulo }}</h2>
+        </div>
+        <div class="card-body">
+            <p class="mb-1">
+                <strong>Campanha:</strong>
+                <a href="{{ route('campanhas.show', $sessao->campanha->id) }}" class="text-decoration-none text-primary fw-semibold">
+                    {{ $sessao->campanha->nome }}
+                </a>
+            </p>
+            <p class="mb-1">
+                <strong>Data e Hora:</strong>
+                {{ \Carbon\Carbon::parse($sessao->data_hora)->format('d/m/Y H:i') }}
+            </p>
+            <p class="mb-0">
+                <strong>Status:</strong>
+                @php
+                    $cores = [
+                        'agendada' => 'primary',
+                        'em_andamento' => 'warning',
+                        'concluida' => 'success',
+                        'cancelada' => 'danger'
+                    ];
+                    $badgeCor = $cores[$sessao->status] ?? 'secondary';
+                @endphp
+                <span class="badge bg-{{ $badgeCor }}">
+                    {{ ucfirst(str_replace('_', ' ', $sessao->status)) }}
+                </span>
+            </p>
+        </div>
+    </div>
 
-    <header class="mb-8 border-b pb-4 border-gray-200 dark:border-gray-700">
-        <h1 class="text-4xl font-extrabold text-gray-900 dark:text-gray-100">{{ $sessao->titulo }}</h1>
-        <p class="text-lg text-indigo-600 dark:text-indigo-400 mt-2">
-            Campanha: <a href="{{ route('campanhas.show', $sessao->campanha) }}" class="hover:underline">{{ $sessao->campanha->nome }}</a>
-        </p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-            Sessão realizada em: {{ \Carbon\Carbon::parse($sessao->data_sessao)->format('d/m/Y') }}
-        </p>
-    </header>
+    {{-- Resumo --}}
+    <div class="card border-secondary shadow-sm mb-4">
+        <div class="card-header bg-secondary bg-opacity-25 border-secondary">
+            <h4 class="fw-bold mb-0">📜 Resumo da Aventura</h4>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">
+                {{ $sessao->resumo ?? 'Nenhum resumo detalhado foi fornecido para esta sessão.' }}
+            </p>
+        </div>
+    </div>
 
-    <section class="space-y-6 text-gray-700 dark:text-gray-300">
-        <div>
-            <h2 class="text-2xl font-semibold mb-2 text-gray-800 dark:text-gray-200">Resumo da Aventura</h2>
-            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md shadow-inner">
-                <p class="whitespace-pre-wrap">{{ $sessao->resumo ?? 'Nenhum resumo detalhado fornecido.' }}</p>
+    {{-- Personagens --}}
+    <div class="card border-info shadow-sm mb-4">
+        <div class="card-header bg-info bg-opacity-25 border-info d-flex justify-content-between align-items-center">
+            <h4 class="fw-bold mb-0">🧙 Personagens Envolvidos</h4>
+
+            {{-- Botão para jogador confirmar presença --}}
+            @if(auth()->check() && auth()->user()->personagens->where('campanha_id', $sessao->campanha_id)->isNotEmpty())
+                <form action="{{ route('sessoes.confirmar-personagem', $sessao->id) }}" method="POST" class="ms-3">
+                    @csrf
+                    <select name="personagem_id" class="form-select d-inline w-auto" required>
+                        <option value="">Selecionar personagem</option>
+                        @foreach(auth()->user()->personagens->where('campanha_id', $sessao->campanha_id) as $personagem)
+                            <option value="{{ $personagem->id }}">{{ $personagem->nome }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="btn btn-success btn-sm ms-1">
+                        ✅ Confirmar Presença
+                    </button>
+                </form>
+            @endif
+        </div>
+
+        <div class="card-body">
+            @if($sessao->personagens->isNotEmpty())
+                <ul class="list-group list-group-flush">
+                    @foreach($sessao->personagens as $personagem)
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>
+                                <strong>{{ $personagem->nome }}</strong>
+                                <small class="text-muted">
+                                    — Jogador: {{ $personagem->usuario->name ?? 'Desconhecido' }}
+                                </small>
+                            </span>
+                            @if(isset($personagem->pivot->presente))
+                                <span class="badge bg-{{ $personagem->pivot->presente ? 'success' : 'secondary' }}">
+                                    {{ $personagem->pivot->presente ? 'Presente' : 'Ausente' }}
+                                </span>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="text-muted mb-0">Nenhum personagem vinculado a esta sessão.</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- Recompensas --}}
+    <div class="card border-warning shadow-sm mb-4">
+        <div class="card-header bg-warning bg-opacity-25 border-warning">
+            <h4 class="fw-bold mb-0">💰 Recompensas Distribuídas</h4>
+        </div>
+        <div class="card-body">
+            @if($sessao->xp_ganho || $sessao->ouro_ganho)
+                <p class="mb-0">
+                    Cada personagem recebeu
+                    <strong class="text-primary">{{ $sessao->xp_ganho ?? 0 }} XP</strong>
+                    e
+                    <strong class="text-warning">{{ $sessao->ouro_ganho ?? 0 }} peças de ouro</strong>.
+                </p>
+            @else
+                <p class="text-muted mb-0">Nenhuma recompensa registrada nesta sessão.</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- Observações do Mestre --}}
+    @if(!empty($sessao->notas))
+        <div class="card border-light shadow-sm mb-4">
+            <div class="card-header bg-light bg-opacity-25 border-light">
+                <h4 class="fw-bold mb-0">🗒️ Observações do Mestre</h4>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ $sessao->notas }}</p>
             </div>
         </div>
+    @endif
+
+    {{-- Rodapé --}}
+    <div class="text-end mt-4 text-muted small">
+        <p class="mb-1">
+            Relatório criado pelo Mestre:
+            <strong>{{ $sessao->mestre->name ?? 'Desconhecido' }}</strong>
+        </p>
+        <p class="mb-0">
+            Criado em: {{ $sessao->created_at->format('d/m/Y H:i') }}
+        </p>
+    </div>
+
+    {{-- Botões --}}
+    <div class="d-flex justify-content-between mt-4">
+        <a href="{{ route('sessoes.index', ['campanha' => $sessao->campanha->id]) }}" class="btn btn-outline-secondary">
+            ⬅️ Voltar
+        </a>
 
         <div>
-            <h2 class="text-2xl font-semibold mb-2 text-gray-800 dark:text-gray-200">Personagens Envolvidos (Placeholder)</h2>
-            <ul class="list-disc list-inside ml-4">
-                <li>*... Personagem 1 ...*</li>
-                <li>*... Personagem 2 ...*</li>
-            </ul>
+            @if(auth()->check() && (auth()->user()->id === $sessao->campanha->criador_id || auth()->user()->tipo === 'administrador'))
+                <a href="{{ route('sessoes.edit', ['campanha' => $sessao->campanha->id, 'sessao' => $sessao->id]) }}"
+                   class="btn btn-outline-warning me-2">
+                    ✏️ Editar
+                </a>
+            @endif
+            <a href="{{ route('sessoes.exportar-pdf', $sessao->id) }}" class="btn btn-primary">
+                📄 Exportar PDF
+            </a>
         </div>
-
-        <div>
-            <h2 class="text-2xl font-semibold mb-2 text-gray-800 dark:text-gray-200">Recompensas Distribuídas (Placeholder)</h2>
-            <p>Cada jogador recebeu <strong>{{ $sessao->xp_ganho ?? '100' }} XP</strong> e <strong>{{ $sessao->ouro_ganho ?? '50' }} Ouro</strong>.</p>
-        </div>
-    </section>
-
-    <footer class="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700 text-right">
-        <p class="text-sm text-gray-500 dark:text-gray-400">Relatório criado pelo Mestre em {{ $sessao->created_at->format('d/m/Y H:i') }}</p>
-    </footer>
-</div>
-
-
+    </div>
 </div>
 @endsection
