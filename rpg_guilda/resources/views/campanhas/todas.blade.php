@@ -15,7 +15,6 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5">
         <form action="{{ route('campanhas.todas') }}" method="GET" class="d-flex gap-2 flex-wrap">
             <input type="text" name="search" value="{{ request('search') }}"
-                class="form-control bg-dark text-light border-0 rounded-pill px-3"
                 placeholder="🔍 Buscar campanhas...">
             <button type="submit" class="btn btn-outline-warning rounded-pill px-4 fw-bold">
                 Buscar
@@ -31,8 +30,7 @@
     <div class="row g-4">
         @forelse($todasCampanhas as $campanha)
             <div class="col-md-6">
-                <div class="card border-0 shadow-lg text-light h-100 campanha-card"
-                     style="background: linear-gradient(145deg, #1a1a1a, #222); border-radius: 18px;">
+                <div class="card border-0 shadow-lg text-light h-100 campanha-card">
 
                     <div class="card-body text-center d-flex flex-column">
                         {{-- Avatar do mestre --}}

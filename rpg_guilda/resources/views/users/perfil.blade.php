@@ -47,14 +47,12 @@
 
         <div class="mt-3">
             <h2 class="fw-bold mb-2" style="color: var(--btn-bg); text-shadow: 0 1px 3px rgba(0,0,0,0.8);">{{ $user->nome }}</h2>
-            <p class="mb-1 text-light opacity-90">ID: {{ $user->id }}</p>
-            <p class="mb-0 text-light opacity-90">
+            <p class="card-title mb-3 fw-bold">ID: {{ $user->id }}</p>
+            <p class="card-title mb-3 fw-bold">
                 @if($user->is_admin ?? false)
                     👑 Administrador
-                @elseif($user->papel === 'mestre')
-                    🧙 Mestre
                 @else
-                    🎮 Jogador
+                    🎮 Úsuario
                 @endif
             </p>
         </div>
@@ -83,11 +81,11 @@
 
                     <div class="d-flex justify-content-around flex-wrap gap-3 mb-4">
                         <div class="rounded p-3 shadow-sm flex-fill text-center border" style="background: rgba(255,255,255,0.05); border-color: var(--card-border) !important;">
-                            <strong class="d-block text-light mb-1">Personagens</strong>
+                            <strong class="btn btn-warning w-100 mb-3">Personagens</strong>
                             <span class="fw-bold fs-5" style="color: var(--btn-bg);">{{ $personagemCount }}</span>
                         </div>
                         <div class="rounded p-3 shadow-sm flex-fill text-center border" style="background: rgba(255,255,255,0.05); border-color: var(--card-border) !important;">
-                            <strong class="d-block text-light mb-1">Campanhas</strong>
+                            <strong class="btn btn-warning w-100 mb-3">Campanhas</strong>
                             <span class="fw-bold fs-5" style="color: var(--btn-bg);">{{ $campanhas->count() }}</span>
                         </div>
                     </div>

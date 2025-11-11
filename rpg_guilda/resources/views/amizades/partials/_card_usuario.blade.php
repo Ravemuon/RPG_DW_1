@@ -1,4 +1,3 @@
-{{-- resources/views/amizades/partials/_card_usuario.blade.php --}}
 <div class="card text-light shadow-lg border-0 h-100 overflow-hidden position-relative amigo-card"
      style="background: linear-gradient(145deg, #1a1a1a, #222); border-radius: 15px; transition: transform .2s ease, box-shadow .2s ease;">
 

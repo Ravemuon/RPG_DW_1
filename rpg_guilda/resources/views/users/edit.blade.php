@@ -1,110 +1,61 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Perfil')
+@section('title', 'Editar Usuário')
 
 @section('content')
-<div class="container py-5">
-
-    <h2 class="fw-bold text-warning mb-4">✏️ Editar Perfil</h2>
-
-    {{-- Formulário de edição --}}
-    <form action="{{ route('usuarios.update', $usuario->id) }}" method="POST">
-        @csrf
-        @method('PUT')
-
-        <!-- Nome -->
-        <div class="mb-3">
-            <label for="nome" class="form-label text-light">Nome</label>
-            <input type="text" class="form-control" id="nome" name="nome" value="{{ old('nome', $usuario->nome) }}" required>
+<div class="container py-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">✏️ Editar Usuário</h4>
+            <a href="{{ url()->previous() }}" class="btn btn-light btn-sm">⬅️ Voltar</a>
         </div>
 
-        <!-- E-mail -->
-        <div class="mb-3">
-            <label for="email" class="form-label text-light">E-mail</label>
-            <input type="email" class="form-control" id="email" name="email" value="{{ old('email', $usuario->email) }}" required>
-        </div>
+        <div class="card-body">
+            <form action="{{ route('usuarios.update') }}" method="POST">
+                @csrf
+                @method('PUT')
 
-        <!-- Biografia -->
-        <div class="mb-3">
-            <label for="biografia" class="form-label text-light">Biografia</label>
-            <textarea class="form-control" id="biografia" name="biografia" rows="4" placeholder="Escreva algo sobre você">{{ old('biografia', $usuario->biografia) }}</textarea>
-        </div>
-
-        <!-- Tema -->
-        <div class="mb-3">
-            <label for="tema" class="form-label text-light">Tema</label>
-            <select class="form-select" id="tema" name="tema" required>
-                <option value="medieval" {{ $usuario->tema === 'medieval' ? 'selected' : '' }}>Medieval</option>
-                <option value="sobrenatural" {{ $usuario->tema === 'sobrenatural' ? 'selected' : '' }}>Sobrenatural</option>
-                <option value="cyberpunk" {{ $usuario->tema === 'cyberpunk' ? 'selected' : '' }}>Cyberpunk</option>
-            </select>
-        </div>
-
-        <!-- Senha Atual -->
-        <div class="mb-3">
-            <label for="current_password" class="form-label text-light">Senha Atual <small class="text-danger">*</small></label>
-            <input type="password" class="form-control" id="current_password" name="current_password" placeholder="Digite sua senha atual" required>
-        </div>
-
-        <!-- Nova Senha -->
-        <div class="mb-3">
-            <label for="new_password" class="form-label text-light">Nova Senha</label>
-            <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Digite uma nova senha (opcional)">
-        </div>
-
-        <!-- Confirmar Nova Senha -->
-        <div class="mb-3">
-            <label for="new_password_confirmation" class="form-label text-light">Confirmar Nova Senha</label>
-            <input type="password" class="form-control" id="new_password_confirmation" name="new_password_confirmation" placeholder="Repita a nova senha">
-        </div>
-
-        <button type="submit" class="btn btn-warning mt-3">Salvar Alterações</button>
-        <a href="{{ route('usuarios.perfil') }}" class="btn btn-secondary mt-3">Cancelar</a>
-    </form>
-
-    {{-- Upload de Avatar e Banner --}}
-    <div class="mt-5">
-        <h4 class="text-warning mb-3">📸 Alterar Avatar e Banner</h4>
-        <div class="row g-4">
-            <div class="col-md-6 text-center">
-                {{-- Avatar --}}
-                <div class="position-relative d-inline-block">
-                    <img src="{{ $usuario->avatar_url }}" alt="Avatar de {{ $usuario->nome }}"
-                        class="rounded-circle border border-warning shadow"
-                        style="width: 150px; height: 150px; object-fit: cover;">
-
-                    <label for="avatarUpload" class="position-absolute bottom-0 end-0 bg-light rounded-circle p-2 shadow" style="cursor:pointer;">
-                        <i class="bi bi-camera-fill text-dark"></i>
-                    </label>
-
-                    <form action="{{ route('usuarios.uploadImagem', ['usuario' => $usuario->id, 'tipo' => 'avatar']) }}"
-                        method="POST" enctype="multipart/form-data" class="d-none">
-                        @csrf
-                        <input type="file" name="arquivo" id="avatarUpload" accept="image/*" onchange="this.form.submit()">
-                    </form>
+                <div class="mb-3">
+                    <label for="name" class="form-label fw-bold">Nome</label>
+                    <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        class="form-control"
+                        value="{{ old('name', $user->name ?? '') }}"
+                        required
+                    >
                 </div>
-            </div>
 
-            <div class="col-md-6 text-center">
-                {{-- Banner --}}
-                <div class="position-relative rounded overflow-hidden" style="height: 200px;">
-                    <div class="w-100 h-100" style="
-                        background-image: url('{{ $usuario->banner_url }}');
-                        background-size: cover;
-                        background-position: center;
-                    "></div>
-
-                    <label for="bannerUpload" class="position-absolute top-0 end-0 m-3 btn btn-outline-light btn-sm shadow" style="cursor:pointer;">
-                        <i class="bi bi-camera-fill"></i>
-                    </label>
-
-                    <form action="{{ route('usuarios.uploadImagem', ['usuario' => $usuario->id, 'tipo' => 'banner']) }}"
-                        method="POST" enctype="multipart/form-data" class="d-none">
-                        @csrf
-                        <input type="file" name="arquivo" id="bannerUpload" accept="image/*" onchange="this.form.submit()">
-                    </form>
+                <div class="mb-3">
+                    <label for="email" class="form-label fw-bold">E-mail</label>
+                    <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        class="form-control"
+                        value="{{ old('email', $user->email ?? '') }}"
+                        required
+                    >
                 </div>
-            </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label fw-bold">Senha (opcional)</label>
+                    <input
+                        type="password"
+                        name="password"
+                        id="password"
+                        class="form-control"
+                        placeholder="Deixe em branco para manter a senha atual"
+                    >
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-success">
+                        💾 Salvar Alterações
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

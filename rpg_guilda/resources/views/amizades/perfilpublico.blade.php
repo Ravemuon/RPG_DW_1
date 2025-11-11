@@ -17,7 +17,7 @@
         <div class="card-body text-center">
             <div class="d-flex justify-content-center gap-3 flex-wrap">
                 <a href="{{ route('amizades.index') }}" class="btn btn-outline-light btn-lg rounded-pill px-4">
-                    🏠 Resumo
+                    🏠 Resumo   
                 </a>
                 <a href="{{ route('amizades.amigos') }}" class="btn btn-outline-light btn-lg rounded-pill px-4">
                     👥 Meus Amigos

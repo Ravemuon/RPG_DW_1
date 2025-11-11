@@ -31,6 +31,7 @@ Route::post('/login', [UserController::class, 'login'])->name('login.perform');
 Route::get('/register', [UserController::class, 'registerForm'])->name('register');
 Route::post('/register', [UserController::class, 'register'])->name('register.perform');
 Route::post('/logout', [UserController::class, 'logout'])->name('logout');
+Route::get('/home/dicionario', [HomeController::class, 'dicionario'])->name('home.dicionario');
 
 // Rotas protegidas
 Route::middleware(['auth'])->group(function () {
@@ -42,7 +43,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('usuarios.index');
         Route::get('/perfil', [UserController::class, 'perfil'])->name('usuarios.perfil');
         Route::get('/editar', [UserController::class, 'edit'])->name('usuarios.edit');
-        Route::post('/update', [UserController::class, 'update'])->name('usuarios.update');
+        Route::put('/update', [UserController::class, 'update'])->name('usuarios.update');
         Route::put('/tema', [UserController::class, 'atualizarTema'])->name('usuarios.tema.update');
         Route::post('/upload/{tipo}', [UserController::class, 'uploadImagem'])->name('usuarios.uploadImagem');
 

@@ -11,9 +11,6 @@
                 <p class="text-light mb-0">
                     Crie sua conta no <strong>RPG Manager</strong> e comece a aventura.
                 </p>
-                <small class="text-muted">
-                    Já tem conta? <a href="{{ route('login') }}" class="text-warning fw-bold">Entrar</a>
-                </small>
             </div>
 
             <div class="card p-4 shadow-lg" style="background-color: var(--card-bg); border: 2px solid var(--card-border);">
@@ -83,6 +80,10 @@
 
                     <button type="submit" class="btn btn-warning w-100 mb-3">Registrar</button>
                 </form>
+
+                <p class="form-label text-light">
+                    Já tem conta? <a href="{{ route('login') }}" class="text-warning fw-bold">Entrar</a>
+                </p>
 
             </div>
         </div>

@@ -145,7 +145,7 @@ class UserController extends Controller
         $request->validate([
             'nome' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'biografia' => 'nullable|string|max:1000',
+            'bio' => 'nullable|string|max:1000',
             'tema' => 'required|in:' . implode(',', User::TEMAS),
             'current_password' => 'nullable|required_with:new_password',
             'new_password' => 'nullable|min:6|confirmed',
@@ -158,12 +158,12 @@ class UserController extends Controller
         $user->update([
             'nome' => $request->nome,
             'email' => $request->email,
-            'biografia' => $request->biografia,
+            'bio' => $request->biografia,
             'tema' => $request->tema,
             'password' => $request->filled('new_password') ? Hash::make($request->new_password) : $user->password,
         ]);
 
-        return redirect()->route('users.perfil')->with('success', 'Perfil atualizado com sucesso.');
+        return redirect()->route('usuarios.perfil')->with('success', 'Perfil atualizado com sucesso.');
     }
 
     // ===================================================
