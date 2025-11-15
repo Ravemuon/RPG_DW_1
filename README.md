@@ -5,25 +5,22 @@ Administrador: tem acesso aos sistemas cadastrados e a paginas especificas.
 - Email: admin@teste.com
 - Senha: password
 
-Usuário teste: tem acesso comu as paginas
+Usuário teste: tem acesso comum as paginas
 - Email: jogador@teste.com
 - Senha: password
 
-1. Instalar as dependências do projeto
-composer install
 
-2. copia e cola o .env.example e renomeia para .env
-cp .env.example .env
+---------------------------------------------
+Passo a passo, de esses comandos no terminal do visual
+1. composer install
 
-3. Criar as tabelas do banco de dados do projeto
-php artisan migrate
+2. cp .env.example .env
 
-Ou criar as tabelas e insere os registros no banco de dados do projeto
-php artisan migrate --seed
+3. php artisan migrate --seed
 
-4. Iniciar o sistema
-php artisan serve
+4. php artisan serve
 
-5. Acessar o sistema
-http://localhost:8000/
+5. Acessar o sistema na pagina: http://localhost:8000/
+
+Se der erro, coloque no terminal: php artisan key:generate
 
