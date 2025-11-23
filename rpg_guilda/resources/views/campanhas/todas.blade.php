@@ -11,28 +11,36 @@
         <p class="text-muted">Explore aventuras públicas ou entre em campanhas privadas com convite.</p>
     </div>
 
-    {{-- Barra de busca e ações --}}
+    {{-- Barra de busca e criar campanha --}}
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5">
         <form action="{{ route('campanhas.todas') }}" method="GET" class="d-flex gap-2 flex-wrap">
             <input type="text" name="search" value="{{ request('search') }}"
-                placeholder="🔍 Buscar campanhas...">
+                   placeholder="🔍 Buscar campanhas..."
+                   class="form-control rounded-pill">
             <button type="submit" class="btn btn-outline-warning rounded-pill px-4 fw-bold">
                 Buscar
             </button>
         </form>
 
-        <a href="{{ route('campanhas.create') }}" class="btn btn-success fw-bold rounded-pill px-4">
-            ➕ Criar Campanha
-        </a>
+        @auth
+            <a href="{{ route('campanhas.create') }}" class="btn btn-success fw-bold rounded-pill px-4">
+                ➕ Criar Campanha
+            </a>
+        @endauth
     </div>
 
     {{-- Lista de campanhas --}}
     <div class="row g-4">
         @forelse($todasCampanhas as $campanha)
-            <div class="col-md-6">
-                <div class="card border-0 shadow-lg text-light h-100 campanha-card">
+            @php
+                $user = auth()->user();
+                $participa = $user && ($user->id === $campanha->criador_id || $campanha->jogadores->pluck('id')->contains($user->id));
+            @endphp
 
-                    <div class="card-body text-center d-flex flex-column">
+            <div class="col-md-6 col-lg-4">
+                <div class="card campanha-card border-0 shadow-lg text-light h-100">
+                    <div class="card-body d-flex flex-column text-center">
+
                         {{-- Avatar do mestre --}}
                         <div class="mb-3">
                             <img src="{{ $campanha->criador->avatar_url ?? '/images/default-avatar.png' }}"
@@ -57,49 +65,54 @@
                                 {{ ucfirst($campanha->status) }}
                             </span>
                             <span class="badge rounded-pill bg-{{ $campanha->privada ? 'warning text-dark' : 'primary' }}">
-                                {{ $campanha->privada ? 'Privada' : 'Pública' }}
+                                {{ $campanha->privada ? 'Privada 🔒' : 'Pública 🌍' }}
                             </span>
                         </div>
 
                         {{-- Ações --}}
-                        <div class="mt-auto">
+                        <div class="mt-auto d-flex flex-column gap-2">
+
+                            {{-- Ver Detalhes --}}
                             <a href="{{ route('campanhas.show', $campanha->id) }}"
-                            class="btn btn-outline-warning btn-sm rounded-pill fw-bold w-100 mb-2">
+                               class="btn btn-outline-warning btn-sm rounded-pill fw-bold w-100">
                                 👁️ Ver Detalhes
                             </a>
 
                             @auth
-
-                                {{-- Entrar / Solicitar --}}
-                                @if(auth()->id() !== $campanha->criador_id && !$campanha->jogadores->pluck('id')->contains(auth()->id()))
-                                    <form action="{{ route('campanhas.solicitar', $campanha->id) }}" method="POST" class="d-inline">
+                                {{-- Solicitar entrada --}}
+                                @if(!$participa && auth()->id() !== $campanha->criador_id)
+                                    <form action="{{ route('campanhas.solicitar', $campanha->id) }}" method="POST" class="d-inline w-100">
                                         @csrf
-                                        <button type="submit" class="btn btn-success btn-sm rounded-pill fw-bold w-100 mb-2">
-                                            🤝 Pedir para Entrar
+                                        <button type="submit" class="btn btn-success btn-sm rounded-pill fw-bold w-100">
+                                            🤝 Solicitar Participação
                                         </button>
                                     </form>
+                                @elseif($participa && $campanha->jogadores->where('id', auth()->id())->first()->pivot->status === 'pendente')
+                                    <button class="btn btn-warning btn-sm rounded-pill fw-bold w-100" disabled>
+                                        ⏳ Solicitação Pendente
+                                    </button>
                                 @endif
 
                                 {{-- Editar / Excluir --}}
                                 @if(auth()->id() === $campanha->criador_id || auth()->user()->tipo === 'administrador')
-                                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <div class="d-flex justify-content-center gap-2 flex-wrap mt-2">
                                         <a href="{{ route('campanhas.edit', $campanha->id) }}"
-                                        class="btn btn-outline-info btn-sm rounded-pill fw-bold">
+                                           class="btn btn-outline-info btn-sm rounded-pill fw-bold flex-fill">
                                             ✏️ Editar
                                         </a>
-                                        <form action="{{ route('campanhas.destroy', $campanha->id) }}" method="POST" class="d-inline">
+                                        <form action="{{ route('campanhas.destroy', $campanha->id) }}" method="POST" class="d-inline flex-fill">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill fw-bold"
-                                                onclick="return confirm('Deseja realmente excluir esta campanha?')">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill fw-bold w-100"
+                                                    onclick="return confirm('Deseja realmente excluir esta campanha?')">
                                                 🗑️ Excluir
                                             </button>
                                         </form>
                                     </div>
                                 @endif
                             @endauth
-                        </div>
 
+                        </div>
                     </div>
                 </div>
             </div>
@@ -116,7 +129,6 @@
     </div>
 </div>
 
-{{-- Estilo adicional --}}
 <style>
 .campanha-card {
     transition: all .25s ease-in-out;

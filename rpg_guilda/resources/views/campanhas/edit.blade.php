@@ -1,81 +1,82 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Campanha: ' . $campanha->nome)
+@section('title', 'Editar Campanha')
 
 @section('content')
-<div class="container py-4">
-    <div class="card border-warning shadow-lg bg-body-tertiary">
-        <div class="card-header bg-warning bg-opacity-25 border-warning">
-            <h2 class="fw-bold text-warning mb-0">✏️ Editar Campanha</h2>
-        </div>
+<div class="container py-5 text-light">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold text-highlight">✏️ Editar Campanha</h1>
+        <p class="text-muted">Altere os dados da campanha conforme necessário.</p>
+    </div>
 
-        <div class="card-body">
-            <form action="{{ route('campanhas.update', $campanha->id) }}" method="POST">
-                @csrf
-                @method('PUT')
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card bg-dark border-0 shadow-lg p-4">
 
-                {{-- Nome da Campanha --}}
-                <div class="mb-3">
-                    <label for="nome" class="form-label fw-semibold">Nome da Campanha *</label>
-                    <input type="text" id="nome" name="nome"
-                        class="form-control"
-                        value="{{ old('nome', $campanha->nome) }}" required>
-                </div>
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>⚠️ {{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-                {{-- Sistema --}}
-                <div class="mb-3">
-                    <label for="sistema_id" class="form-label fw-semibold">Sistema de RPG *</label>
-                    <select id="sistema_id" name="sistema_id" class="form-select" required>
-                        @foreach($sistemas as $sistema)
-                            <option value="{{ $sistema->id }}" {{ old('sistema_id', $campanha->sistema_id) == $sistema->id ? 'selected' : '' }}>
-                                {{ $sistema->nome }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                <form action="{{ route('campanhas.update', $campanha->id) }}" method="POST">
+                    @csrf
+                    @method('PUT')
 
-                {{-- Descrição --}}
-                <div class="mb-3">
-                    <label for="descricao" class="form-label fw-semibold">Descrição</label>
-                    <textarea id="descricao" name="descricao" rows="4" class="form-control">{{ old('descricao', $campanha->descricao) }}</textarea>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nome da Campanha</label>
+                        <input type="text" name="nome" class="form-control" maxlength="100"
+                               value="{{ old('nome', $campanha->nome) }}" required>
+                    </div>
 
-                {{-- Privada --}}
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="privada" name="privada" value="1" {{ old('privada', $campanha->privada) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="privada">Campanha Privada</label>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sistema RPG</label>
+                        <select name="sistema_id" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            @foreach($sistemas as $sistema)
+                                <option value="{{ $sistema->id }}" {{ old('sistema_id', $campanha->sistema_id) == $sistema->id ? 'selected' : '' }}>
+                                    {{ $sistema->nome }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                {{-- Status --}}
-                <div class="mb-3">
-                    <label for="status" class="form-label fw-semibold">Status *</label>
-                    <select id="status" name="status" class="form-select" required>
-                        <option value="ativa" {{ old('status', $campanha->status) === 'ativa' ? 'selected' : '' }}>Ativa</option>
-                        <option value="pausada" {{ old('status', $campanha->status) === 'pausada' ? 'selected' : '' }}>Pausada</option>
-                        <option value="encerrada" {{ old('status', $campanha->status) === 'encerrada' ? 'selected' : '' }}>Encerrada</option>
-                    </select>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea name="descricao" class="form-control" rows="4">{{ old('descricao', $campanha->descricao) }}</textarea>
+                    </div>
 
-                {{-- Código de Convite --}}
-                <div class="mb-4">
-                    <label for="codigo_convite" class="form-label fw-semibold">Código de Convite</label>
-                    <input type="text" id="codigo_convite" name="codigo_convite"
-                        class="form-control"
-                        value="{{ old('codigo_convite', $campanha->codigo_convite) }}" maxlength="10">
-                    <small class="text-muted">Use este código para convidar jogadores. Deixe vazio para manter o atual.</small>
-                </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input type="checkbox" name="privada" class="form-check-input" id="privada"
+                               {{ old('privada', $campanha->privada) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="privada">Campanha Privada</label>
+                    </div>
 
-                {{-- Botões --}}
-                <div class="d-flex justify-content-between align-items-center">
-                    <a href="{{ route('campanhas.show', $campanha->id) }}" class="btn btn-outline-secondary">
-                        ⬅️ Voltar
-                    </a>
-                    <button type="submit" class="btn btn-warning fw-bold shadow-sm">
-                        💾 Salvar Alterações
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select" required>
+                            <option value="ativa" {{ old('status', $campanha->status) == 'ativa' ? 'selected' : '' }}>Ativa</option>
+                            <option value="inativa" {{ old('status', $campanha->status) == 'inativa' ? 'selected' : '' }}>Inativa</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-info fw-bold rounded-pill px-4">
+                        Atualizar Campanha
                     </button>
-                </div>
-            </form>
+                </form>
+
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+.text-highlight {
+    color: var(--btn-bg, #ffc107);
+}
+</style>
 @endsection

@@ -6,13 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\Missao;
 use App\Models\Campanha;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MissaoController extends Controller
 {
     public function index(Campanha $campanha)
     {
         $this->authorize('view', $campanha);
-        $missoes = $campanha->missoes()->get();
+        $missoes = $campanha->missoes()->latest()->get();
 
         return view('missoes.index', compact('campanha', 'missoes'));
     }
@@ -31,15 +32,16 @@ class MissaoController extends Controller
             'titulo' => 'required|string|max:255',
             'descricao' => 'nullable|string',
             'recompensa' => 'nullable|string',
+            'prioridade' => 'nullable|in:baixa,media,alta',
             'status' => 'nullable|in:pendente,em_andamento,concluida,cancelada'
         ]);
 
-        $missao = Missao::create([
-            'campanha_id' => $campanha->id,
+        $campanha->missoes()->create([
             'user_id' => Auth::id(),
             'titulo' => $request->titulo,
             'descricao' => $request->descricao,
             'recompensa' => $request->recompensa,
+            'prioridade' => $request->prioridade ?? 'media',
             'status' => $request->status ?? 'pendente',
         ]);
 
@@ -67,12 +69,13 @@ class MissaoController extends Controller
             'titulo' => 'required|string|max:255',
             'descricao' => 'nullable|string',
             'recompensa' => 'nullable|string',
+            'prioridade' => 'nullable|in:baixa,media,alta',
             'status' => 'nullable|in:pendente,em_andamento,concluida,cancelada'
         ]);
 
-        $missao->update($request->all());
+        $missao->update($request->only('titulo', 'descricao', 'recompensa', 'prioridade', 'status'));
 
-        return redirect()->route('missoes.index', $campanha->id)
+        return redirect()->route('missoes.show', [$campanha->id, $missao->id])
                          ->with('success', 'Missão atualizada com sucesso!');
     }
 
@@ -83,5 +86,15 @@ class MissaoController extends Controller
 
         return redirect()->route('missoes.index', $campanha->id)
                          ->with('success', 'Missão deletada com sucesso!');
+    }
+
+    public function exportarPdf(Campanha $campanha, Missao $missao)
+    {
+        $this->authorize('view', $campanha);
+
+        $pdf = Pdf::loadView('missoes.relatorio', compact('campanha', 'missao'))
+                  ->setPaper('a4', 'portrait');
+
+        return $pdf->download("missao_{$missao->id}.pdf");
     }
 }

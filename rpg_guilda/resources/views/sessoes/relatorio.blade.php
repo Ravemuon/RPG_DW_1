@@ -1,97 +1,110 @@
+<!-- resources/views/sessoes/relatorio.blade.php -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Relatório da Sessão - {{ $sessao->titulo }}</title>
+    <title>Relatório da Sessão {{ $sessao->titulo }}</title>
     <style>
         body {
-            font-family: DejaVu Sans, sans-serif;
-            margin: 40px;
-            color: #222;
-            line-height: 1.6;
-            background-color: #fff;
-        }
-        h1, h2 {
+            font-family: Arial, sans-serif;
+            line-height: 1.4;
             color: #333;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 4px;
+            margin: 20px;
         }
+
+        h1, h2, h3 {
+            color: #222;
+        }
+
         h1 {
             text-align: center;
             margin-bottom: 30px;
         }
-        .section { margin-bottom: 25px; }
-        .info {
-            font-size: 0.9em;
-            color: #555;
-            margin-bottom: 15px;
+
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
         }
-        ul {
-            list-style: none;
-            padding-left: 0;
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
         }
-        li {
-            margin-bottom: 5px;
+
+        table th, table td {
+            border: 1px solid #999;
+            padding: 8px;
+            text-align: left;
         }
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            font-size: 0.85em;
-            color: #777;
+
+        table th {
+            background-color: #f2f2f2;
         }
-        .highlight { color: #444; font-weight: bold; }
+
+        .status {
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .resumo {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #333;
+        }
     </style>
 </head>
 <body>
+    <h1>Relatório da Sessão</h1>
 
-    <h1>🎲 {{ $sessao->titulo }}</h1>
+    <h2>Informações da Sessão</h2>
+    <p><strong>Título:</strong> {{ $sessao->titulo }}</p>
+    <p><strong>Campanha:</strong> {{ $sessao->campanha->nome }}</p>
+    <p><strong>Data/Hora:</strong> {{ \Carbon\Carbon::parse($sessao->data_hora)->format('d/m/Y H:i') }}</p>
+    <p><strong>Status:</strong> <span class="status">{{ $sessao->status }}</span></p>
 
-    <p class="info">
-        <strong>Campanha:</strong> {{ $sessao->campanha->nome ?? 'Desconhecida' }}<br>
-        <strong>Data:</strong> {{ \Carbon\Carbon::parse($sessao->data_hora)->format('d/m/Y H:i') }}<br>
-        <strong>Mestre:</strong> {{ $sessao->campanha->mestre->name ?? 'Desconhecido' }}
-    </p>
-
-    <div class="section">
-        <h2>📜 Resumo da Aventura</h2>
-        <p>{{ $sessao->resumo ?? 'Nenhum resumo foi registrado.' }}</p>
-    </div>
-
-    <div class="section">
-        <h2>🧙 Personagens Envolvidos</h2>
-        @if($personagens->isNotEmpty())
-            <ul>
-                @foreach($personagens as $personagem)
-                    <li>
-                        {{ $personagem->nome }}
-                        <span class="highlight">—</span>
-                        jogador: {{ $personagem->usuario->name ?? 'Desconhecido' }}
-                    </li>
-                @endforeach
-            </ul>
-        @else
-            <p><em>Nenhum personagem vinculado a esta sessão.</em></p>
-        @endif
-    </div>
-
-    <div class="section">
-        <h2>💰 Recompensas</h2>
-        <p>
-            XP: <strong>{{ $sessao->xp_ganho ?? '0' }}</strong><br>
-            Ouro: <strong>{{ $sessao->ouro_ganho ?? '0' }}</strong>
-        </p>
-    </div>
-
-    @if(!empty($sessao->notas))
-        <div class="section">
-            <h2>🗒️ Observações do Mestre</h2>
-            <p>{{ $sessao->notas }}</p>
+    @if($sessao->resumo)
+        <div class="resumo">
+            <h3>Resumo da Sessão</h3>
+            <p>{{ $sessao->resumo }}</p>
         </div>
     @endif
 
-    <div class="footer">
-        Relatório gerado automaticamente pelo Portal do Aventureiro em {{ now()->format('d/m/Y H:i') }}.
-    </div>
+    <h2>Personagens</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Jogador</th>
+                <th>Presença</th>
+                <th>Resultado / Observações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($sessao->personagens as $personagem)
+                <tr>
+                    <td>{{ $personagem->nome }}</td>
+                    <td>{{ $personagem->user->name ?? 'N/A' }}</td>
+                    <td>{{ $personagem->pivot->presente ? '✔ Presente' : '✖ Ausente' }}</td>
+                    <td>
+                        @if($personagem->pivot->resultado)
+                            @foreach($personagem->pivot->resultado as $key => $value)
+                                <strong>{{ ucfirst($key) }}:</strong> {{ $value }}<br>
+                            @endforeach
+                        @else
+                            -
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 
+    <p style="margin-top: 40px; text-align: center; font-size: 12px; color: #666;">
+        Relatório gerado automaticamente pelo sistema RPG.
+    </p>
 </body>
 </html>

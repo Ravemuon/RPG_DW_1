@@ -1,75 +1,104 @@
 @extends('layouts.app')
 
-@section('title', 'Criar Personagem')
+@section('title', 'Novo Personagem')
 
 @section('content')
-<div class="container py-5">
+<div class="container py-4">
+    <h1 class="mb-4">🧙 Criar Personagem</h1>
 
-    <h2>🧝‍♂️ Criar Novo Personagem</h2>
+    @if(session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
 
-    {{-- Formulário para criar o personagem --}}
-    <form action="{{ route('personagens.store', $campanha->id) }}" method="POST" class="mt-4">
+    <form action="{{ route('personagens.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
-        {{-- Nome --}}
-        <div class="mb-3">
-            <label for="nome" class="form-label">Nome do Personagem</label>
-            <input type="text" id="nome" name="nome" class="form-control" value="{{ old('nome') }}" required>
-        </div>
+        <input type="hidden" name="campanha_id" value="{{ $campanha->id }}">
 
-        {{-- Raça --}}
+        {{-- Etapa 1: Raça e Classe --}}
         <div class="mb-3">
-            <label for="raca" class="form-label">Raça</label>
-            <select id="raca" name="raca_id" class="form-select">
-                <option value="">Selecione a Raça</option>
-                @foreach($racas as $raca)
-                    <option value="{{ $raca->id }}" {{ old('raca_id') == $raca->id ? 'selected' : '' }}>{{ $raca->nome }}</option>
+            <label class="form-label">Raça</label>
+            <select name="raca_id" class="form-select" required>
+                <option value="">Selecione</option>
+                @foreach($racas as $r)
+                    <option value="{{ $r->id }}" {{ old('raca_id') == $r->id ? 'selected' : '' }}>
+                        {{ $r->nome }}
+                    </option>
                 @endforeach
             </select>
         </div>
 
-        {{-- Classe --}}
         <div class="mb-3">
-            <label for="classe" class="form-label">Classe</label>
-            <input type="text" id="classe" name="classe" class="form-control" value="{{ old('classe') }}">
+            <label class="form-label">Classe</label>
+            <select name="classe_id" class="form-select" required>
+                <option value="">Selecione</option>
+                @foreach($classes as $c)
+                    <option value="{{ $c->id }}" {{ old('classe_id') == $c->id ? 'selected' : '' }}>
+                        {{ $c->nome }}
+                    </option>
+                @endforeach
+            </select>
         </div>
 
-        {{-- Origem --}}
+        {{-- Exibição de bônus de atributos (somente leitura) --}}
+        @if(old('raca_id') || old('classe_id'))
+            <div class="mb-3">
+                <label class="form-label">Bônus de Atributos (somente leitura)</label>
+                <ul class="list-group">
+                    @foreach($racas->firstWhere('id', old('raca_id'))->atributos_bonus ?? [] as $attr => $valor)
+                        <li class="list-group-item">{{ ucfirst($attr) }}: +{{ $valor }}</li>
+                    @endforeach
+                    @foreach($classes->firstWhere('id', old('classe_id'))->atributos_bonus ?? [] as $attr => $valor)
+                        <li class="list-group-item">{{ ucfirst($attr) }}: +{{ $valor }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- Etapa 2: Origem --}}
         <div class="mb-3">
-            <label for="origem" class="form-label">Origem</label>
-            <input type="text" id="origem" name="origem" class="form-control" value="{{ old('origem') }}">
+            <label class="form-label">Origem</label>
+            <select name="origem_id" class="form-select">
+                <option value="">Selecione</option>
+                @foreach($origens as $o)
+                    <option value="{{ $o->id }}" {{ old('origem_id') == $o->id ? 'selected' : '' }}>
+                        {{ $o->nome }}
+                    </option>
+                @endforeach
+            </select>
         </div>
 
-        {{-- Sistema RPG --}}
+        {{-- Etapa 3: Personalizações opcionais --}}
+        <hr>
+        <h5>Personalizações (opcional)</h5>
+
         <div class="mb-3">
-            <label for="sistema_rpg" class="form-label">Sistema RPG</label>
-            <input type="text" id="sistema_rpg" name="sistema_rpg" class="form-control" value="{{ old('sistema_rpg') }}">
+            <label class="form-label">Nome do Personagem</label>
+            <input type="text" name="nome" class="form-control" value="{{ old('nome') }}">
         </div>
 
-        {{-- Atributos --}}
         <div class="mb-3">
-            <label for="atributos" class="form-label">Atributos (JSON)</label>
-            <textarea id="atributos" name="atributos" class="form-control" rows="4">{{ old('atributos') }}</textarea>
-            <small class="form-text text-muted">Exemplo: {"forca": 15, "destreza": 14, "inteligencia": 12}</small>
+            <label class="form-label">Imagem / Aparência</label>
+            <input type="file" name="imagem" class="form-control">
         </div>
 
-        {{-- Descrição --}}
         <div class="mb-3">
-            <label for="descricao" class="form-label">Descrição</label>
-            <textarea id="descricao" name="descricao" class="form-control" rows="4">{{ old('descricao') }}</textarea>
+            <label class="form-label">História</label>
+            <textarea name="historia" class="form-control" rows="3">{{ old('historia') }}</textarea>
         </div>
 
-        {{-- Página --}}
         <div class="mb-3">
-            <label for="pagina" class="form-label">Página (opcional)</label>
-            <input type="text" id="pagina" name="pagina" class="form-control" value="{{ old('pagina') }}">
+            <label class="form-label">Descrição / Personalidade</label>
+            <textarea name="descricao" class="form-control" rows="3">{{ old('descricao') }}</textarea>
         </div>
 
-        {{-- Botões --}}
         <div class="mb-3">
-            <button type="submit" class="btn btn-primary">Criar Personagem</button>
-            <a href="{{ route('campanhas.show', $campanha->id) }}" class="btn btn-secondary">Cancelar</a>
+            <label class="form-label">Inventário</label>
+            <textarea name="inventario" class="form-control" rows="3">{{ old('inventario') }}</textarea>
         </div>
+
+        <button type="submit" class="btn btn-primary">Criar Personagem</button>
+        <a href="{{ route('campanhas.show', $campanha->id) }}" class="btn btn-secondary">Cancelar</a>
     </form>
-
 </div>
 @endsection
+    

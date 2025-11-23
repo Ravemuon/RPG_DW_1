@@ -10,146 +10,164 @@ class UsersTableSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('users')->insert([
-            // Usuários iniciais
+        $usuarios = [
+
+            // =====================
+            // ADMINISTRADOR
+            // =====================
             [
-                'nome' => 'Admin Exemplo',
+                'nome' => 'Administrador Geral',
                 'username' => 'admin',
                 'email' => 'admin@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Administrador do sistema',
                 'papel' => 'administrador',
-                'tema' => 'cyberpunk', 
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tema' => 'cyberpunk',
+                'bio' => 'Responsável pela Guilda.',
+                'password' => Hash::make('admin123'),
             ],
             [
-                'nome' => 'Jogador Exemplo',
-                'username' => 'jogador1',
+                'nome' => 'Joador Teste',
+                'username' => 'User',
                 'email' => 'jogador@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Jogador teste',
                 'papel' => 'jogador',
-                'tema' => 'sobrenatural',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tema' => 'medieval',
+                'bio' => 'Responsável pela Guilda.',
+                'password' => Hash::make('jogador'),
             ],
 
-            // Mestres da Ordem Paranormal
+            // =====================
+            // MESTRES
+            // =====================
             [
-                'nome' => 'Kaiser',
-                'username' => 'kaiser01',
-                'email' => 'kaiser@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Mestre da Ordem Paranormal',
-                'papel' => 'mestre',
-                'tema' => 'sobrenatural',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'nome' => 'Joui',
-                'username' => 'joui02',
-                'email' => 'joui@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Mestre da Ordem Paranormal',
+                'nome' => 'Marcus Steelblade',
+                'username' => 'mestre_marcus',
+                'email' => 'marcus@example.com',
                 'papel' => 'mestre',
                 'tema' => 'fantasia',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'bio' => 'Narrador experiente de mundos fantásticos.',
+                'password' => Hash::make('senha123'),
+            ],
+            [
+                'nome' => 'Evelyn Ravenspell',
+                'username' => 'mestre_evelyn',
+                'email' => 'evelyn@example.com',
+                'papel' => 'mestre',
+                'tema' => 'sobrenatural',
+                'bio' => 'Exploradora de histórias sombrias e ocultistas.',
+                'password' => Hash::make('senha123'),
+            ],
+            [
+                'nome' => 'Dorian Gearsmith',
+                'username' => 'mestre_dorian',
+                'email' => 'dorian@example.com',
+                'papel' => 'mestre',
+                'tema' => 'steampunk',
+                'bio' => 'Inventor e narrador do caos mecânico.',
+                'password' => Hash::make('senha123'),
             ],
 
-            // Jogadores de D&D
+            // =====================
+            // JOGADORES
+            // =====================
             [
-                'nome' => 'Filhian',
-                'username' => 'filhian03',
-                'email' => 'filhian@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Jogador D&D',
+                'nome' => 'Luna Fairwind',
+                'username' => 'luna_fw',
+                'email' => 'luna@example.com',
                 'papel' => 'jogador',
                 'tema' => 'fantasia',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'bio' => 'Aventureira apaixonada por magia.',
+                'password' => Hash::make('senha123'),
             ],
             [
-                'nome' => 'Mordomo Menta',
-                'username' => 'mordomo04',
-                'email' => 'mordomo@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Jogador D&D',
+                'nome' => 'Rafael Hawthorne',
+                'username' => 'rafael_h',
+                'email' => 'rafael@example.com',
                 'papel' => 'jogador',
-                'tema' => 'fantasia',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tema' => 'sobrenatural',
+                'bio' => 'Caçador de criaturas desconhecidas.',
+                'password' => Hash::make('senha123'),
             ],
             [
-                'nome' => 'Shrek',
-                'username' => 'shrek05',
-                'email' => 'shrek@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Jogador D&D',
+                'nome' => 'Ayla Stormborn',
+                'username' => 'ayla_storm',
+                'email' => 'ayla@example.com',
                 'papel' => 'jogador',
-                'tema' => 'fantasia',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tema' => 'medieval',
+                'bio' => 'Espadachim em busca de glória.',
+                'password' => Hash::make('senha123'),
             ],
-
-            // Investigadores Call of Cthulhu
             [
-                'nome' => 'Sans',
-                'username' => 'sans06',
-                'email' => 'sans@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Investigador Call of Cthulhu',
+                'nome' => 'Theo Redcliff',
+                'username' => 'theo_r',
+                'email' => 'theo@example.com',
+                'papel' => 'jogador',
+                'tema' => 'apocaliptico',
+                'bio' => 'Sobrevivente nato do caos.',
+                'password' => Hash::make('senha123'),
+            ],
+            [
+                'nome' => 'Nina Greymoon',
+                'username' => 'nina_gm',
+                'email' => 'nina@example.com',
                 'papel' => 'jogador',
                 'tema' => 'oceano',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'bio' => 'Exploradora dos mares profundos.',
+                'password' => Hash::make('senha123'),
             ],
             [
-                'nome' => 'Máskara',
-                'username' => 'maskara07',
-                'email' => 'maskara@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Investigador Call of Cthulhu',
+                'nome' => 'Oliver Brightshield',
+                'username' => 'oliver_bs',
+                'email' => 'oliver@example.com',
                 'papel' => 'jogador',
-                'tema' => 'sobrenatural',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tema' => 'medieval',
+                'bio' => 'Escudeiro determinado a se provar.',
+                'password' => Hash::make('senha123'),
             ],
             [
-                'nome' => 'Homem Aranha',
-                'username' => 'spiderman08',
-                'email' => 'spiderman@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Investigador Call of Cthulhu',
+                'nome' => 'Maya Emberfall',
+                'username' => 'maya_ember',
+                'email' => 'maya@example.com',
                 'papel' => 'jogador',
-                'tema' => 'sobrenatural',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tema' => 'fantasia',
+                'bio' => 'Feiticeira aprendiz com grande potencial.',
+                'password' => Hash::make('senha123'),
             ],
             [
-                'nome' => 'Deadpool',
-                'username' => 'deadpool09',
-                'email' => 'deadpool@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Investigador Call of Cthulhu',
+                'nome' => 'Damian Crowscar',
+                'username' => 'damian_cs',
+                'email' => 'damian@example.com',
                 'papel' => 'jogador',
                 'tema' => 'sobrenatural',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'bio' => 'Detective de fenômenos incomuns.',
+                'password' => Hash::make('senha123'),
             ],
             [
-                'nome' => 'Lobo',
-                'username' => 'lobo10',
-                'email' => 'lobo@teste.com',
-                'password' => Hash::make('password'),
-                'bio' => 'Investigador Call of Cthulhu',
+                'nome' => 'Seraphine Vale',
+                'username' => 'sera_vale',
+                'email' => 'seraphine@example.com',
                 'papel' => 'jogador',
-                'tema' => 'sobrenatural',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tema' => 'floresta',
+                'bio' => 'Arqueira protetora da natureza.',
+                'password' => Hash::make('senha123'),
             ],
-        ]);
+            [
+                'nome' => 'Kai Ironshade',
+                'username' => 'kai_iron',
+                'email' => 'kai@example.com',
+                'papel' => 'jogador',
+                'tema' => 'steampunk',
+                'bio' => 'Aventureiro urbano amante de máquinas.',
+                'password' => Hash::make('senha123'),
+            ],
+        ];
+
+        // =====================
+        // INSERIR OU ATUALIZAR
+        // =====================
+        foreach ($usuarios as $user) {
+            DB::table('users')->updateOrInsert(
+                ['username' => $user['username']],
+                $user
+            );
+        }
     }
 }

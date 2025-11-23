@@ -4,46 +4,104 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Raca;
-use App\Models\Sistema;
 
 class RacasTableSeeder extends Seeder
 {
     public function run(): void
     {
-        $sistemas = Sistema::all();
+        $sistemaId = 1;
+        $racas = [
+            [
+                'nome' => 'Humano',
+                'descricao' => 'Versáteis e adaptáveis, humanos recebem bônus equilibrados.',
+                'forca_bonus' => 1,
+                'destreza_bonus' => 1,
+                'constituicao_bonus' => 1,
+                'inteligencia_bonus' => 1,
+                'sabedoria_bonus' => 1,
+                'carisma_bonus' => 1,
+                'tipo_bonus' => 'flat',
+                'bonus_livre' => 0,
+                'pagina' => 'PHB 29',
+                'sistema_id' => $sistemaId,
+            ],
+            [
+                'nome' => 'Elfo',
+                'descricao' => 'Conhecidos por sua graça, agilidade e forte conexão mística.',
+                'forca_bonus' => 0,
+                'destreza_bonus' => 2,
+                'constituicao_bonus' => 0,
+                'inteligencia_bonus' => 1,
+                'sabedoria_bonus' => 0,
+                'carisma_bonus' => 0,
+                'tipo_bonus' => 'flat',
+                'bonus_livre' => 0,
+                'pagina' => 'PHB 21',
+                'sistema_id' => $sistemaId,
+            ],
+            [
+                'nome' => 'Anão',
+                'descricao' => 'Robustos, resistentes e com uma longa tradição guerreira.',
+                'forca_bonus' => 0,
+                'destreza_bonus' => 0,
+                'constituicao_bonus' => 2,
+                'inteligencia_bonus' => 0,
+                'sabedoria_bonus' => 1,
+                'carisma_bonus' => 0,
+                'tipo_bonus' => 'flat',
+                'bonus_livre' => 0,
+                'pagina' => 'PHB 17',
+                'sistema_id' => $sistemaId,
+            ],
+            [
+                'nome' => 'Tiefling',
+                'descricao' => 'Descendentes de linhagens infernais, dotados de carisma e magia.',
+                'forca_bonus' => 0,
+                'destreza_bonus' => 0,
+                'constituicao_bonus' => 0,
+                'inteligencia_bonus' => 1,
+                'sabedoria_bonus' => 0,
+                'carisma_bonus' => 2,
+                'tipo_bonus' => 'flat',
+                'bonus_livre' => 0,
+                'pagina' => 'PHB 42',
+                'sistema_id' => $sistemaId,
+            ],
+            [
+                'nome' => 'Meio-Orc',
+                'descricao' => 'Fortes, intimidadoras e incríveis em combate corpo a corpo.',
+                'forca_bonus' => 2,
+                'destreza_bonus' => 0,
+                'constituicao_bonus' => 1,
+                'inteligencia_bonus' => 0,
+                'sabedoria_bonus' => 0,
+                'carisma_bonus' => 0,
+                'tipo_bonus' => 'flat',
+                'bonus_livre' => 0,
+                'pagina' => 'PHB 41',
+                'sistema_id' => $sistemaId,
+            ],
+            [
+                'nome' => 'Personalizada',
+                'descricao' => 'Raça customizada para sistemas que permitem escolhas livres.',
+                'forca_bonus' => 0,
+                'destreza_bonus' => 0,
+                'constituicao_bonus' => 0,
+                'inteligencia_bonus' => 0,
+                'sabedoria_bonus' => 0,
+                'carisma_bonus' => 0,
+                'tipo_bonus' => 'escolha',
+                'bonus_livre' => 2,
+                'pagina' => null,
+                'sistema_id' => $sistemaId,
+            ],
+        ];
 
-        foreach ($sistemas as $sistema) {
-            // Raças comuns para todos os sistemas
-            $racas = [
-                ['nome' => 'Humano', 'descricao' => 'Pessoa comum, versátil.'],
-                ['nome' => 'Monstro', 'descricao' => 'Criatura poderosa ou sobrenatural.'],
-            ];
-
-            // Raças específicas para D&D
-            if ($sistema->nome === 'D&D 5e') {
-                $racas[] = ['nome' => 'Elfo', 'descricao' => 'Seres mágicos com grande destreza.'];
-                $racas[] = ['nome' => 'Anão', 'descricao' => 'Robustos e resistentes.'];
-            }
-
-            // Raças específicas para Call of Cthulhu
-            if ($sistema->nome === 'Call of Cthulhu') {
-                $racas[] = ['nome' => 'Investigador', 'descricao' => 'Pessoa comum em busca de mistérios.'];
-            }
-
-            foreach ($racas as $raca) {
-                Raca::firstOrCreate(
-                    ['nome' => $raca['nome'], 'sistema_id' => $sistema->id],
-                    [
-                        'descricao' => $raca['descricao'],
-                        'forca_bonus' => 0,
-                        'destreza_bonus' => 0,
-                        'constituicao_bonus' => 0,
-                        'inteligencia_bonus' => 0,
-                        'sabedoria_bonus' => 0,
-                        'carisma_bonus' => 0,
-                    ]
-                );
-            }
+        foreach ($racas as $raca) {
+            Raca::updateOrCreate(
+                ['nome' => $raca['nome'], 'sistema_id' => $sistemaId],
+                $raca
+            );
         }
     }
 }

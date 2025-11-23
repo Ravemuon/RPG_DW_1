@@ -3,111 +3,134 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Sistema;
 
 class SistemasTableSeeder extends Seeder
 {
     public function run(): void
     {
         $sistemas = [
+
             [
                 'nome' => 'D&D 5e',
-                'descricao' => 'Sistema de RPG de fantasia medieval com foco em narrativa e combate tático.',
+                'descricao' => 'Sistema de RPG de fantasia medieval.',
                 'foco' => 'Fantasia / Aventura',
-                'mecanica_principal' => 'd20 + modificador',
+                'mecanica_principal' => 'd20',
                 'complexidade' => 'Média',
-                'regras_opcionais' => json_encode(['Multi-classes', 'Feitiços opcionais', 'Regra de morte opcional']),
-                'max_atributos' => 6,
-                'atributo1_nome' => 'Força',
-                'atributo2_nome' => 'Destreza',
-                'atributo3_nome' => 'Constituição',
-                'atributo4_nome' => 'Inteligência',
-                'atributo5_nome' => 'Sabedoria',
-                'atributo6_nome' => 'Carisma',
-                'pagina' => 'PHB'
+
+                'atributos' => [
+                    'forca' => 'Força',
+                    'destreza' => 'Destreza',
+                    'constituicao' => 'Constituição',
+                    'inteligencia' => 'Inteligência',
+                    'sabedoria' => 'Sabedoria',
+                    'carisma' => 'Carisma',
+                ],
+
+                'usa_sanidade' => false,
+                'formula_pontos_vida' => 'dado_da_classe + modificador_constituicao',
+
+                'recursos' => [
+                    ['nome' => 'Inspiração', 'max' => 1]
+                ],
+
+                'regras_opcionais' => ['Multi-classes', 'Regra de morte opcional'],
             ],
-            [
-                'nome' => 'Pathfinder 2e',
-                'descricao' => 'Sistema de RPG de fantasia inspirado em D&D, com regras detalhadas para combate e progressão.',
-                'foco' => 'Fantasia / Estratégia',
-                'mecanica_principal' => 'd20 + modificador',
-                'complexidade' => 'Alta',
-                'regras_opcionais' => json_encode(['Regras de herança', 'Aprimoramentos opcionais']),
-                'max_atributos' => 6,
-                'atributo1_nome' => 'Força',
-                'atributo2_nome' => 'Destreza',
-                'atributo3_nome' => 'Constituição',
-                'atributo4_nome' => 'Inteligência',
-                'atributo5_nome' => 'Sabedoria',
-                'atributo6_nome' => 'Carisma',
-                'pagina' => 'Core Rulebook'
-            ],
-            [
-                'nome' => 'Savage Worlds',
-                'descricao' => 'Sistema genérico de RPG rápido, focado em ação e narrativa cinematográfica.',
-                'foco' => 'Aventura / Ação',
-                'mecanica_principal' => 'Dados de múltiplos tipos (d4-d12)',
-                'complexidade' => 'Baixa',
-                'regras_opcionais' => json_encode(['Cartas de ação', 'Bennies']),
-                'max_atributos' => 6,
-                'atributo1_nome' => 'Agilidade',
-                'atributo2_nome' => 'Astúcia',
-                'atributo3_nome' => 'Força',
-                'atributo4_nome' => 'Espírito',
-                'atributo5_nome' => 'Vigor',
-                'atributo6_nome' => 'Percepção',
-                'pagina' => 'Manual Básico'
-            ],
-            [
-                'nome' => 'GURPS',
-                'descricao' => 'Sistema universal de RPG, adaptável a qualquer cenário e gênero.',
-                'foco' => 'Universal / Estratégia',
-                'mecanica_principal' => '3d6 + modificadores',
-                'complexidade' => 'Alta',
-                'regras_opcionais' => json_encode(['Pontos de personagem', 'Perícias detalhadas']),
-                'max_atributos' => 6,
-                'atributo1_nome' => 'Força',
-                'atributo2_nome' => 'Destreza',
-                'atributo3_nome' => 'Inteligência',
-                'atributo4_nome' => 'Saúde',
-                'atributo5_nome' => 'Carisma',
-                'atributo6_nome' => 'Vontade',
-                'pagina' => 'Core Rules'
-            ],
-            [
-                'nome' => 'Call of Cthulhu',
-                'descricao' => 'Sistema de horror investigativo, com foco em sanidade e investigação.',
-                'foco' => 'Horror / Investigação',
-                'mecanica_principal' => 'd100 / porcentagem',
-                'complexidade' => 'Média',
-                'regras_opcionais' => json_encode(['Sanidade opcional', 'Magia de Mythos']),
-                'max_atributos' => 6,
-                'atributo1_nome' => 'Força',
-                'atributo2_nome' => 'Destreza',
-                'atributo3_nome' => 'Constituição',
-                'atributo4_nome' => 'Inteligência',
-                'atributo5_nome' => 'Poder',
-                'atributo6_nome' => 'Carisma',
-                'pagina' => 'Manual Básico'
-            ],
+
             [
                 'nome' => 'Ordem Paranormal',
-                'descricao' => 'Sistema de RPG brasileiro de investigação sobrenatural com foco em narrativa.',
+                'descricao' => 'Sistema brasileiro de investigação sobrenatural.',
                 'foco' => 'Investigação / Sobrenatural',
-                'mecanica_principal' => 'd6 + modificadores',
+                'mecanica_principal' => 'd6',
                 'complexidade' => 'Baixa',
-                'regras_opcionais' => json_encode(['Místicos', 'Itens sobrenaturais']),
-                'max_atributos' => 6,
-                'atributo1_nome' => 'Força',
-                'atributo2_nome' => 'Agilidade',
-                'atributo3_nome' => 'Intelecto',
-                'atributo4_nome' => 'Percepção',
-                'atributo5_nome' => 'Vontade',
-                'atributo6_nome' => 'Carisma',
-                'pagina' => 'Manual Básico'
-            ]
+
+                'atributos' => [
+                    'forca' => 'Força',
+                    'agilidade' => 'Agilidade',
+                    'intelecto' => 'Intelecto',
+                    'percepcao' => 'Percepção',
+                    'vontade' => 'Vontade',
+                    'carisma' => 'Carisma',
+                ],
+
+                'usa_sanidade' => true,
+                'formula_pontos_vida' => 'vida_por_classe + modificador_vontade',
+
+                'recursos' => [
+                    [
+                        'nome' => 'NEX',
+                        'escala' => '0-99',
+                        'bonus_por_faixa' => true,
+                    ]
+                ],
+
+                'regras_opcionais' => ['Itens sobrenaturais', 'Místicos'],
+            ],
+
+            [
+                'nome' => 'Call of Cthulhu',
+                'descricao' => 'Sistema investigativo de horror cósmico.',
+                'foco' => 'Horror / Investigação',
+                'mecanica_principal' => 'd100',
+                'complexidade' => 'Média',
+
+                'atributos' => [
+                    'forca' => 'Força',
+                    'destreza' => 'Destreza',
+                    'constituicao' => 'Constituição',
+                    'inteligencia' => 'Inteligência',
+                    'poder' => 'Poder',
+                    'carisma' => 'Carisma',
+                ],
+
+                'usa_sanidade' => true,
+                'formula_pontos_vida' => '(constituicao + tamanho) / 10',
+
+                'recursos' => [
+                    ['nome' => 'Sorte', 'formula' => '3d6 * 5']
+                ],
+
+                'regras_opcionais' => ['Magia de Mythos'],
+            ],
+
+            [
+                'nome' => 'Savage Worlds',
+                'descricao' => 'Rápido, furioso e divertido.',
+                'foco' => 'Ação / Aventura',
+                'mecanica_principal' => 'd4-d12',
+                'complexidade' => 'Baixa',
+
+                'atributos' => [
+                    'agilidade' => 'Agilidade',
+                    'astucia' => 'Astúcia',
+                    'espirito' => 'Espírito',
+                    'forca' => 'Força',
+                    'vigor' => 'Vigor',
+                ],
+
+                'usa_sanidade' => false,
+                'formula_pontos_vida' => 'vigor + modificadores',
+
+                'recursos' => [
+                    ['nome' => 'Bennies', 'max' => 3]
+                ],
+
+                'regras_opcionais' => ['Cartas de ação'],
+            ],
+
         ];
 
-        DB::table('sistemas')->insert($sistemas);
+        foreach ($sistemas as $data) {
+
+            // 🔥 Conversão obrigatória para JSON
+            $data['atributos'] = json_encode($data['atributos']);
+            $data['recursos'] = json_encode($data['recursos']);
+            $data['regras_opcionais'] = json_encode($data['regras_opcionais']);
+
+            Sistema::updateOrCreate(
+                ['nome' => $data['nome']],
+                $data
+            );
+        }
     }
 }

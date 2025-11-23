@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Campanha extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'campanhas';
 
     protected $fillable = [
@@ -16,7 +19,8 @@ class Campanha extends Model
         'status',
         'privada',
         'codigo_convite',
-        'criador_id'
+        'criador_id',
+        'pagina',
     ];
 
     protected $casts = [
@@ -40,14 +44,22 @@ class Campanha extends Model
     {
         return $this->belongsTo(User::class, 'criador_id');
     }
-    
+
     public function jogadores()
     {
         return $this->belongsToMany(User::class, 'campanha_usuario')
-                    ->withPivot('status') // necessário para pivot_status
+                    ->withPivot('status')
                     ->withTimestamps();
     }
 
+    public function solicitacoes()
+    {
+        // Relação para controlar solicitações pendentes
+        return $this->belongsToMany(User::class, 'campanha_usuario')
+                    ->withPivot('status')
+                    ->wherePivot('status', 'pendente')
+                    ->withTimestamps();
+    }
 
     public function personagens()
     {
@@ -64,9 +76,6 @@ class Campanha extends Model
         return $this->hasMany(Arquivo::class, 'campanha_id');
     }
 
-    // ===================================================
-    // Relação com o chat da campanha
-    // ===================================================
     public function chat()
     {
         return $this->hasOne(Chat::class, 'campanha_id');
@@ -74,13 +83,9 @@ class Campanha extends Model
 
     public function mensagens()
     {
-        // Acesso direto às mensagens do chat
         return $this->hasOne(Chat::class, 'campanha_id')->with('mensagens');
     }
 
-    // ===================================================
-    // Gera código de convite se a campanha for privada
-    // ===================================================
     protected static function booted()
     {
         static::creating(function ($campanha) {
@@ -90,9 +95,6 @@ class Campanha extends Model
         });
     }
 
-    // ===================================================
-    // Atributos auxiliares
-    // ===================================================
     public function getSistemaRPGAttribute()
     {
         return $this->sistema->nome ?? 'Sistema Desconhecido';

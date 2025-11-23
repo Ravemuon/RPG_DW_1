@@ -66,99 +66,64 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    /*------------------------------------
-    | Campanhas
-    ------------------------------------*/
-    Route::prefix('campanhas')->group(function () {
+    /*-------------------------------
+    | Campanhas e Missões
+    -------------------------------*/
 
-        // CRUD básico
+    Route::prefix('campanhas')->group(function () {
         Route::get('/', [CampanhaController::class, 'index'])->name('campanhas.index');
         Route::get('/todas', [CampanhaController::class, 'todas'])->name('campanhas.todas');
         Route::get('/minhas', [CampanhaController::class, 'minhas'])->name('campanhas.minhas');
         Route::get('/create', [CampanhaController::class, 'create'])->name('campanhas.create');
         Route::post('/', [CampanhaController::class, 'store'])->name('campanhas.store');
+
+        // Rotas específicas com {campanha} devem vir primeiro
+        Route::post('/{campanha}/solicitar', [CampanhaController::class, 'solicitarEntrada'])->name('campanhas.solicitar');
         Route::get('/{campanha}/edit', [CampanhaController::class, 'edit'])->name('campanhas.edit');
         Route::put('/{campanha}', [CampanhaController::class, 'update'])->name('campanhas.update');
         Route::delete('/{campanha}', [CampanhaController::class, 'destroy'])->name('campanhas.destroy');
+
         Route::get('/{campanha}', [CampanhaController::class, 'show'])->name('campanhas.show');
 
         // Área do mestre
         Route::get('/{campanha}/mestre', [CampanhaController::class, 'mestre'])->name('campanhas.mestre');
         Route::post('/{campanha}/usuarios/gerenciar', [CampanhaController::class, 'gerenciarUsuario'])->name('campanhas.usuarios.gerenciar');
         Route::post('/{campanha}/usuarios/aprovar', [CampanhaController::class, 'aprovarUsuario'])->name('campanhas.usuarios.aprovar');
-        Route::patch('/personagens/{personagem}/toggle-publico', [PersonagemController::class, 'togglePublico'])->name('personagens.togglePublico')->middleware('auth');
+        Route::post('/{campanha}/usuarios/adicionar', [CampanhaController::class, 'adicionarAmigo'])->name('campanhas.usuarios.adicionar');
 
-        // Gerenciamento de usuários e amigos
-        Route::middleware(['auth'])->group(function () {
-            Route::post('/{campanha}/usuarios/adicionar-ajax', [CampanhaUsuarioController::class, 'adicionarAjax'])->name('campanhas.usuarios.adicionar.ajax');
-            Route::post('/{campanha}/entrar', [CampanhaController::class, 'solicitarEntrada'])->name('campanhas.solicitar');
-            Route::post('/{campanha}/gerenciar', [CampanhaController::class, 'gerenciarUsuarios'])->name('campanhas.usuarios.gerenciar');
-            Route::post('/{campanha}/usuarios/adicionar', [CampanhaController::class, 'adicionarAmigo'])->name('campanhas.usuarios.adicionar');
-
-            // Convidar amigos
-            Route::get('/{campanha}/convidar', [CampanhaController::class, 'convidar'])->name('campanhas.convidar');
-            Route::post('/{campanha}/convidar', [CampanhaController::class, 'enviarConvites'])->name('campanhas.convidar.enviar');
-        });
-        // Rota para mostrar o formulário de criação de missão
-        Route::get('/campanha/{campanha}/missoes/create', [MissaoController::class, 'create'])->name('missoes.create');
-
-        // Rota para armazenar a missão
-        Route::post('/campanha/{campanha}/missoes', [MissaoController::class, 'store'])->name('missoes.store');
-
-        // Rota para exibir a lista de missões
-        Route::get('/campanha/{campanha}/missoes', [MissaoController::class, 'index'])->name('missoes.index');
-
-        // Rota para mostrar detalhes da missão
-        Route::get('/campanha/{campanha}/missoes/{missao}', [MissaoController::class, 'show'])->name('missoes.show');
-
-        // Rota para editar a missão
-        Route::get('/campanha/{campanha}/missoes/{missao}/edit', [MissaoController::class, 'edit'])->name('missoes.edit');
-
-        // Rota para atualizar a missão
-        Route::put('/campanha/{campanha}/missoes/{missao}', [MissaoController::class, 'update'])->name('missoes.update');
-
-        // Rota para deletar a missão
-        Route::delete('/campanha/{campanha}/missoes/{missao}', [MissaoController::class, 'destroy'])->name('missoes.destroy');
-
-        // Sessões
-        Route::get('/{campanha}/sessoes', [SessaoController::class, 'index'])->name('sessoes.index');
-        Route::get('/{campanha}/sessoes/criar', [SessaoController::class, 'create'])->name('sessoes.create');
-        Route::post('/{campanha}/sessoes', [SessaoController::class, 'store'])->name('sessoes.store');
-        Route::get('/sessoes/{sessao}', [SessaoController::class, 'show'])->name('sessoes.show');
-        Route::get('/sessoes/{sessao}/editar', [SessaoController::class, 'edit'])->name('sessoes.edit');
-        Route::put('/sessoes/{sessao}', [SessaoController::class, 'update'])->name('sessoes.update');
-        Route::delete('/{campanha}/sessoes/{sessao}', [SessaoController::class, 'destroy'])->name('sessoes.destroy');
-        Route::post('/sessoes/{sessao}/adicionar-personagem', [SessaoController::class, 'adicionarPersonagem'])->name('sessoes.adicionar-personagem');
-        Route::post('/sessoes/{sessao}/confirmar-personagem', [SessaoController::class, 'confirmarPersonagem'])->name('sessoes.confirmar-personagem')->middleware('auth');
-        Route::put('/sessoes/{sessao}/personagem/{personagem}', [SessaoController::class, 'atualizarPersonagem'])->name('sessoes.atualizar-personagem');
-        Route::get('/sessoes/{sessao}/exportar-pdf', [SessaoController::class, 'exportarPdf'])->name('sessoes.exportar-pdf');
-        Route::post('/sessoes/{sessao}/confirmar-presenca', [SessaoController::class, 'adicionarPersonagem'])->middleware('auth')->name('sessoes.confirmar-presenca');
-
-                // Missões
+        // Missões
         Route::prefix('{campanha}/missoes')->name('missoes.')->group(function () {
-            // Lista todas as missões de uma campanha
             Route::get('/', [MissaoController::class, 'index'])->name('index');
-
-            // Formulário para criar uma nova missão
             Route::get('/create', [MissaoController::class, 'create'])->name('create');
-
-            // Armazena uma nova missão
             Route::post('/', [MissaoController::class, 'store'])->name('store');
-
-            // Exibe detalhes de uma missão específica
             Route::get('{missao}', [MissaoController::class, 'show'])->name('show');
-
-            // Formulário para editar uma missão
             Route::get('{missao}/edit', [MissaoController::class, 'edit'])->name('edit');
-
-            // Atualiza uma missão
             Route::put('{missao}', [MissaoController::class, 'update'])->name('update');
-
-            // Deleta uma missão
             Route::delete('{missao}', [MissaoController::class, 'destroy'])->name('destroy');
+
+            Route::get('{missao}/pdf', [MissaoController::class, 'exportarPdf'])->name('exportarPdf');
         });
+
+        Route::prefix('{campanha}/sessoes')->name('sessoes.')->group(function () {
+            Route::get('/', [SessaoController::class, 'index'])->name('index');
+            Route::get('/criar', [SessaoController::class, 'create'])->name('create');
+            Route::post('/', [SessaoController::class, 'store'])->name('store');
+
+            Route::get('/{sessao}', [SessaoController::class, 'show'])->name('show');
+            Route::get('/{sessao}/editar', [SessaoController::class, 'edit'])->name('edit');
+            Route::put('/{sessao}', [SessaoController::class, 'update'])->name('update');
+            Route::delete('/{sessao}', [SessaoController::class, 'destroy'])->name('destroy');
+
+            Route::post('/{sessao}/adicionar-personagem', [SessaoController::class, 'adicionarPersonagem'])->name('adicionar-personagem');
+            Route::post('/{sessao}/confirmar-personagem', [SessaoController::class, 'confirmarPersonagem'])->name('confirmar-personagem');
+            Route::put('/{sessao}/personagem/{personagem}', [SessaoController::class, 'atualizarPersonagem'])->name('atualizar-personagem');
+            Route::get('/{sessao}/exportar-pdf', [SessaoController::class, 'exportarPdf'])->name('exportar-pdf');
+            Route::post('/{sessao}/confirmar-presenca', [SessaoController::class, 'adicionarPersonagem'])->name('confirmar-presenca');
+        });
+
 
     });
+
 
     /*------------------------------------
     | Personagens

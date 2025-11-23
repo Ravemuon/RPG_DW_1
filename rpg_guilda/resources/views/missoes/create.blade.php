@@ -1,42 +1,44 @@
-{{-- resources/views/missoes/create.blade.php --}}
-
 @extends('layouts.app')
 
-@section('title', 'Criar Missão')
+@section('title', "Nova Missão - {$campanha->nome}")
 
 @section('content')
 <div class="container py-4">
-    <h2>📝 Criar Missão</h2>
+    <h2 class="fw-bold text-primary mb-4">➕ Criar Nova Missão</h2>
 
-    <form method="POST" action="{{ route('missoes.store', $campanha->id) }}">
+    <form action="{{ route('missoes.store', $campanha->id) }}" method="POST">
         @csrf
-
         <div class="mb-3">
-            <label for="titulo" class="form-label">Título da Missão</label>
-            <input type="text" class="form-control" id="titulo" name="titulo" required>
+            <label class="form-label">Título</label>
+            <input type="text" name="titulo" class="form-control" value="{{ old('titulo') }}" required>
         </div>
-
         <div class="mb-3">
-            <label for="descricao" class="form-label">Descrição</label>
-            <textarea class="form-control" id="descricao" name="descricao"></textarea>
+            <label class="form-label">Descrição</label>
+            <textarea name="descricao" class="form-control" rows="4">{{ old('descricao') }}</textarea>
         </div>
-
         <div class="mb-3">
-            <label for="recompensa" class="form-label">Recompensa</label>
-            <input type="text" class="form-control" id="recompensa" name="recompensa">
+            <label class="form-label">Recompensa</label>
+            <input type="text" name="recompensa" class="form-control" value="{{ old('recompensa') }}">
         </div>
-
         <div class="mb-3">
-            <label for="status" class="form-label">Status</label>
-            <select class="form-control" id="status" name="status">
-                <option value="pendente">Pendente</option>
-                <option value="em_andamento">Em Andamento</option>
+            <label class="form-label">Prioridade</label>
+            <select name="prioridade" class="form-select">
+                <option value="baixa" {{ old('prioridade')=='baixa' ? 'selected' : '' }}>Baixa</option>
+                <option value="media" {{ old('prioridade')=='media' ? 'selected' : '' }}>Média</option>
+                <option value="alta" {{ old('prioridade')=='alta' ? 'selected' : '' }}>Alta</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+                <option value="pendente" selected>Pendente</option>
+                <option value="em_andamento">Em andamento</option>
                 <option value="concluida">Concluída</option>
                 <option value="cancelada">Cancelada</option>
             </select>
         </div>
-
-        <button type="submit" class="btn btn-primary">Criar Missão</button>
+        <button type="submit" class="btn btn-success rounded-pill">Salvar Missão</button>
+        <a href="{{ route('missoes.index', $campanha->id) }}" class="btn btn-secondary rounded-pill">Cancelar</a>
     </form>
 </div>
 @endsection

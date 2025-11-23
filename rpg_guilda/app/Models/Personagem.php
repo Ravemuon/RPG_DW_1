@@ -2,105 +2,57 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 
 class Personagem extends Model
 {
+    use HasFactory;
+
     protected $table = 'personagens';
 
     protected $fillable = [
-        'nome', 'classe', 'sistema_rpg', 'user_id', 'campanha_id', 'raca_id',
-        'atributos', 'descricao', 'ativo'
+        'nome',
+        'user_id',
+        'campanha_id',
+        'raca_id',
+        'classe',
+        'origem',
+        'sistema_rpg',
+        'atributos',
+        'descricao',
+        'ativo',
+        'pagina',
+        'imagem',
+        'historia',
+        'personalidade',
+        'inventario',
     ];
 
     protected $casts = [
-        'atributos' => 'array', 
+        'atributos' => 'array',
+        'ativo' => 'boolean',
     ];
 
-    // ===============================
-    //  Relações
-    // ===============================
-
-    public function user()
-    {
+    // Relação com usuário
+    public function user() {
         return $this->belongsTo(User::class);
     }
 
-    public function campanha()
-    {
+    // Relação com campanha
+    public function campanha() {
         return $this->belongsTo(Campanha::class);
     }
 
-    public function classeObj()
-    {
-        return $this->belongsTo(Classe::class, 'classe', 'nome');
-    }
-
-    public function raca()
-    {
+    // Relação com raça
+    public function raca() {
         return $this->belongsTo(Raca::class);
     }
 
-    public function origens()
-    {
-        return $this->belongsToMany(Origem::class, 'personagem_origem')
-                    ->withTimestamps();
-    }
-
-    public function pericias()
-    {
-        return $this->belongsToMany(Pericia::class, 'personagem_pericias')
-                    ->withPivot('valor', 'definida')
-                    ->withTimestamps();
-    }
-
-    public function inicializarAtributos()
-    {
-        $atributos = [];
-
-        // Carrega atributos da classe
-        if ($this->classeObj) {
-            $classeAttrs = Arr::only($this->classeObj->toArray(), [
-                'forca', 'destreza', 'constituicao', 'inteligencia', 'sabedoria',
-                'carisma', 'agilidade', 'intelecto', 'presenca', 'vigor', 'nex',
-                'sanidade', 'forca_cth', 'destreza_cth', 'constituicao_cth',
-                'inteligencia_cth', 'poder', 'sanidade_cth', 'aparencia', 'educacao',
-                'tamanho', 'pontos_vida'
-            ]);
-
-            foreach ($classeAttrs as $key => $value) {
-                if (!is_null($value)) {
-                    $atributos[$key] = $value;
-                }
-            }
-        }
-
-        // Aplica atributos base da Raça
-        if ($this->raca) {
-            $atributosRaca = $this->raca->atributosBase() ?? [];
-            foreach ($atributosRaca as $key => $value) {
-                $atributos[$key] = isset($atributos[$key]) ? $atributos[$key] + $value : $value;
-            }
-        }
-
-        // Aplica bônus das origens
-        foreach ($this->origens as $origem) {
-            $bonus = $origem->bonus ?? [];
-            foreach ($bonus as $key => $value) {
-                $atributos[$key] = isset($atributos[$key]) ? $atributos[$key] + $value : $value;
-            }
-        }
-
-        $this->atributos = $atributos;
-        $this->save();
-    }
-
-    public function racas()
-    {
-        return $this->belongsToMany(Raca::class, 'personagem_raca')
-                    ->using(PersonagemRaca::class)
-                    ->withPivot('nivel', 'descricao_personalizada')
+    // Relação com perícias
+    public function pericias() {
+        return $this->belongsToMany(Pericia::class, 'personagem_pericia')
+                    ->withPivot('nivel', 'proficiente')
                     ->withTimestamps();
     }
 }

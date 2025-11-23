@@ -8,11 +8,17 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('origens', function (Blueprint $table) {
             $table->id();
-            $table->string('nome')->unique();
-            $table->foreignId('sistema_id')->constrained('sistemas')->onDelete('cascade');
+
+            $table->string('nome');
+            $table->foreignId('sistema_id')
+                  ->constrained('sistemas')
+                  ->onDelete('cascade');
+
             $table->text('descricao')->nullable();
             $table->string('pagina', 50)->nullable();
+
             $table->timestamps();
+            $table->unique(['nome', 'sistema_id']);
         });
     }
 

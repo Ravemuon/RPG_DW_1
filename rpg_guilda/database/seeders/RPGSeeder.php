@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-
-// Importa todos os seeders usados
 use Database\Seeders\UsersTableSeeder;
 use Database\Seeders\SistemasTableSeeder;
 use Database\Seeders\ClassesTableSeeder;

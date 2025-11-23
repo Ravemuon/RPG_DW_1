@@ -11,25 +11,20 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class SessaoController extends Controller
 {
-    // Lista todas as sessões de uma campanha
     public function index(Campanha $campanha)
     {
         $this->authorize('view', $campanha);
-
         $sessoes = $campanha->sessoes()->with('personagens')->get();
 
         return view('sessoes.index', compact('campanha', 'sessoes'));
     }
 
-    // Exibe o formulário para criar uma nova sessão
     public function create(Campanha $campanha)
     {
         $this->authorize('update', $campanha);
-
         return view('sessoes.create', compact('campanha'));
     }
 
-    // Armazena uma nova sessão
     public function store(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
@@ -47,34 +42,27 @@ class SessaoController extends Controller
             'resumo' => $request->resumo
         ]);
 
-        return redirect()->route('sessoes.index', $campanha)
+        return redirect()->route('sessoes.index', $campanha->id)
                          ->with('success', 'Sessão criada com sucesso!');
     }
 
-    // Exibe os detalhes de uma sessão
-    public function show(Sessao $sessao)
+    public function show(Campanha $campanha, Sessao $sessao)
     {
-        $this->authorize('view', $sessao->campanha);
-
+        $this->authorize('view', $campanha);
         $sessao->load('personagens', 'campanha');
 
-        return view('sessoes.show', compact('sessao'));
+        return view('sessoes.show', compact('campanha', 'sessao'));
     }
 
-    // Exibe o formulário de edição de uma sessão
-    public function edit(Sessao $sessao)
+    public function edit(Campanha $campanha, Sessao $sessao)
     {
-        $this->authorize('update', $sessao->campanha);
-
-        $sessao->load('personagens', 'campanha');
-
-        return view('sessoes.edit', compact('sessao'));
+        $this->authorize('update', $campanha);
+        return view('sessoes.edit', compact('campanha', 'sessao'));
     }
 
-    // Atualiza os dados de uma sessão
-    public function update(Request $request, Sessao $sessao)
+    public function update(Request $request, Campanha $campanha, Sessao $sessao)
     {
-        $this->authorize('update', $sessao->campanha);
+        $this->authorize('update', $campanha);
 
         $request->validate([
             'titulo' => 'required|string|max:150',
@@ -85,128 +73,58 @@ class SessaoController extends Controller
 
         $sessao->update($request->only('titulo', 'data_hora', 'resumo', 'status'));
 
-        // Se a sessão for concluída, exporta o PDF
         if ($request->status === 'concluida') {
-            return $this->exportarPdf($sessao);
+            return $this->exportarPdf($campanha, $sessao);
         }
 
-        return redirect()->route('sessoes.show', $sessao)
+        return redirect()->route('sessoes.show', [$campanha->id, $sessao->id])
                          ->with('success', 'Sessão atualizada com sucesso!');
     }
 
-    // Remove uma sessão
     public function destroy(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('delete', $campanha);
-
         $sessao->delete();
 
-        return redirect()->route('sessoes.index', $campanha)
+        return redirect()->route('sessoes.index', $campanha->id)
                          ->with('success', 'Sessão deletada com sucesso!');
     }
 
-    // Adiciona um personagem à sessão
-    public function adicionarPersonagem(Request $request, Sessao $sessao)
+    public function confirmarPersonagem(Request $request, Campanha $campanha, Sessao $sessao)
     {
-        $request->validate([
-            'personagem_id' => 'required|exists:personagens,id',
-        ]);
+        $request->validate(['personagem_id' => 'required|exists:personagens,id']);
+        $personagem = $request->user()->personagens()
+            ->where('id', $request->personagem_id)
+            ->where('campanha_id', $campanha->id)
+            ->firstOrFail();
 
-        $personagem = \App\Models\Personagem::findOrFail($request->personagem_id);
-
-        // Verifica se o personagem pertence à campanha e ao jogador logado
-        if ($personagem->usuario_id !== auth()->id() || $personagem->campanha_id !== $sessao->campanha_id) {
-            abort(403, 'Você não pode adicionar este personagem a esta sessão.');
-        }
-
-        // Adiciona o personagem à sessão como presente
-        $sessao->personagens()->syncWithoutDetaching([
-            $personagem->id => ['presente' => true],
-        ]);
-
-        return redirect()->back()->with('success', 'Presença confirmada com sucesso!');
+        $sessao->personagens()->syncWithoutDetaching([$personagem->id => ['presente' => true]]);
+        return back()->with('success', "Presença confirmada para '{$personagem->nome}'!");
     }
 
-    // Remove a presença de um personagem na sessão
-    public function removerPersonagem(Sessao $sessao, Personagem $personagem)
+    public function atualizarPersonagem(Request $request, Campanha $campanha, Sessao $sessao, Personagem $personagem)
     {
-        // Verifica se o personagem pertence ao usuário logado
-        if ($personagem->usuario_id !== auth()->id()) {
-            abort(403, 'Você não pode cancelar a presença deste personagem.');
-        }
+        $this->authorize('update', $campanha);
 
-        // Remove o personagem da sessão
-        $sessao->personagens()->detach($personagem->id);
-
-        return redirect()->back()->with('success', 'Sua presença foi cancelada com sucesso.');
-    }
-
-    // Permite ao mestre/admin alterar a presença de um personagem manualmente
-    public function atualizarPresenca(Request $request, Sessao $sessao, Personagem $personagem)
-    {
-        $this->authorize('update', $sessao->campanha);
-
-        $request->validate([
-            'presente' => 'required|boolean',
-        ]);
-
-        $sessao->personagens()->updateExistingPivot($personagem->id, [
-            'presente' => $request->boolean('presente'),
-        ]);
-
-        return redirect()->back()->with('success', 'Presença do personagem atualizada!');
-    }
-
-    // Atualiza a presença ou o resultado de um personagem na sessão
-    public function atualizarPersonagem(Request $request, Sessao $sessao, Personagem $personagem)
-    {
-        $this->authorize('update', $sessao->campanha);
-
-        $request->validate([
-            'presente' => 'nullable|boolean',
-            'resultado' => 'nullable|array'
-        ]);
+        $request->validate(['presente' => 'nullable|boolean', 'resultado' => 'nullable|array']);
 
         $sessao->personagens()->updateExistingPivot($personagem->id, [
             'presente' => $request->boolean('presente'),
             'resultado' => $request->resultado
         ]);
 
-        return redirect()->back()->with('success', 'Status do personagem atualizado!');
+        return back()->with('success', 'Status do personagem atualizado!');
     }
 
-    // Exporta os detalhes da sessão para um PDF
-    public function exportarPdf(Sessao $sessao)
+    public function exportarPdf(Campanha $campanha, Sessao $sessao)
     {
-        $this->authorize('view', $sessao->campanha);
+        $this->authorize('view', $campanha);
 
-        $sessao->load(['campanha', 'personagens']);
+        $sessao->load(['personagens', 'campanha']);
 
-        $pdf = Pdf::loadView('sessoes.relatorio', [
-            'sessao' => $sessao,
-            'personagens' => $sessao->personagens
-        ])->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView('sessoes.relatorio', compact('sessao'))
+                  ->setPaper('a4', 'portrait');
 
-        return $pdf->download('sessao_' . $sessao->id . '.pdf');
-    }
-
-    // Confirma a presença de um personagem na sessão
-    public function confirmarPersonagem(Request $request, Sessao $sessao)
-    {
-        $request->validate([
-            'personagem_id' => 'required|exists:personagens,id',
-        ]);
-
-        $personagem = $request->user()->personagens()
-            ->where('id', $request->personagem_id)
-            ->where('campanha_id', $sessao->campanha_id)
-            ->firstOrFail();
-
-        // Adiciona o personagem à sessão (presente)
-        $sessao->personagens()->syncWithoutDetaching([
-            $personagem->id => ['presente' => true],
-        ]);
-
-        return back()->with('success', 'Presença confirmada para o personagem "' . $personagem->nome . '"!');
+        return $pdf->download("sessao_{$sessao->id}.pdf");
     }
 }

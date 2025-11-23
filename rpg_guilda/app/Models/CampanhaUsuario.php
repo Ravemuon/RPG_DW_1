@@ -13,5 +13,4 @@ class CampanhaUsuario extends Pivot
         'campanha_id',
         'status',
     ];
-
 }

@@ -11,13 +11,21 @@ return new class extends Migration {
             $table->string('nome');
             $table->foreignId('sistema_id')->constrained('sistemas')->onDelete('cascade');
             $table->text('descricao')->nullable();
+
             $table->integer('forca_bonus')->default(0);
             $table->integer('destreza_bonus')->default(0);
             $table->integer('constituicao_bonus')->default(0);
             $table->integer('inteligencia_bonus')->default(0);
             $table->integer('sabedoria_bonus')->default(0);
             $table->integer('carisma_bonus')->default(0);
+            $table->enum('tipo_bonus', ['flat', 'multiplicador', 'escolha'])->default('flat');
+
+            // Bônus extra genérico (caso o sistema peça)
+            $table->integer('bonus_livre')->default(0);
+
+            // Página / referência
             $table->string('pagina', 50)->nullable();
+
             $table->timestamps();
 
             $table->unique(['nome', 'sistema_id']);
