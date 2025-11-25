@@ -8,6 +8,21 @@
     $isMestre = $user && $user->id === $campanha->criador_id;
     $podeMarcarPresenca = $user && !$isMestre && !$jaMarqueiPresenca &&
                           $sessao->status !== 'concluida' && $sessao->status !== 'cancelada';
+
+    // Lista de IDs dos jogadores que confirmaram presença nesta sessão
+    $idsConfirmadosSessao = $sessao->presencas->pluck('id')->toArray();
+
+    // IDs de todos os jogadores ativos na campanha (exceto o Mestre)
+    $jogadoresAtivosIds = $campanha->jogadores
+        ->where('pivot.status', 'ativo')
+        ->pluck('id')
+        ->filter(fn($id) => $id !== optional($campanha->criador)->id)
+        ->toArray();
+
+    // Outros jogadores ativos da campanha que AINDA NÃO confirmaram presença na sessão
+    $outrosJogadores = $campanha->jogadores
+        ->filter(fn($jogador) => $jogador->pivot->status === 'ativo' && !in_array($jogador->id, $idsConfirmadosSessao))
+        ->sortBy('name'); // Ordena pelo nome para organização
 @endphp
 
 {{-- Toasts --}}
@@ -48,14 +63,18 @@
                     <h3 class="h5 text-info mb-3"><i class="fas fa-info-circle me-2"></i> Detalhes Principais</h3>
                     <div class="bg-secondary-subtle p-3 rounded mb-4">
                         <dl class="row mb-0 small">
+
+                            {{-- NOVO: Nome do Sistema --}}
+                            <dt class="col-sm-4 text-warning">Sistema de Regras:</dt>
+                            <dd class="col-sm-8 text-light fw-bold">
+                                {{ $campanha->sistema->nome ?? 'Sistema Desconhecido' }}
+                            </dd>
+
                             <dt class="col-sm-4 text-warning">Status Atual:</dt>
                             <dd class="col-sm-8 text-light fw-bold">{{ ucfirst(str_replace('_', ' ', $sessao->status ?? 'Não definido')) }}</dd>
 
                             <dt class="col-sm-4 text-warning">Agendada para:</dt>
                             <dd class="col-sm-8 text-light">{{ optional($sessao->data_hora)->format('d/m/Y H:i') ?? 'Data não agendada' }}</dd>
-
-                            <dt class="col-sm-4 text-warning">Mestre (GM):</dt>
-                            <dd class="col-sm-8 text-light">{{ $campanha->criador->name ?? 'Desconhecido' }}</dd>
 
                             <dt class="col-sm-4 text-warning">Resumo:</dt>
                             <dd class="col-sm-8 text-secondary fst-italic">{{ $sessao->resumo ?? 'Nenhum resumo inicial.' }}</dd>
@@ -65,12 +84,13 @@
                     <hr class="border-secondary my-4">
 
                     {{-- Jogadores Confirmados --}}
-                    <h3 class="h5 text-info mb-3"><i class="fas fa-users me-2"></i> Jogadores Confirmados</h3>
+                    <h3 class="h5 text-success mb-3"><i class="fas fa-user-check me-2"></i> Jogadores Confirmados na Sessão ({{ count($idsConfirmadosSessao) + ($campanha->criador ? 1 : 0) }})</h3>
                     @php
                         $confirmados = [];
                         if(isset($campanha->criador)) {
                             $confirmados[] = ['name' => $campanha->criador->name . ' (Mestre)', 'isMestre' => true];
                         }
+                        // Inclui jogadores que confirmaram presença (excluindo o Mestre, já adicionado)
                         foreach($sessao->presencas as $jogador){
                             if($jogador->id !== optional($campanha->criador)->id){
                                 $confirmados[] = ['name' => $jogador->name, 'isMestre' => false];
@@ -84,6 +104,21 @@
                             </span>
                         @empty
                             <p class="text-warning mb-0">Nenhum jogador confirmou presença ainda.</p>
+                        @endforelse
+                    </div>
+
+                    <hr class="border-secondary my-4">
+
+                    {{-- NOVO BLOCO: Outros Jogadores da Campanha --}}
+                    <h3 class="h5 text-warning mb-3"><i class="fas fa-users me-2"></i> Outros Jogadores Ativos da Campanha ({{ $outrosJogadores->count() }})</h3>
+                    <p class="text-muted small">Jogadores da campanha que **ainda não** confirmaram presença nesta sessão.</p>
+                    <div class="mb-4 p-3 border border-warning rounded d-flex flex-wrap gap-2">
+                        @forelse($outrosJogadores as $jogador)
+                            <span class="badge bg-secondary p-2 fw-bold shadow-sm">
+                                <i class="fas fa-user me-1"></i> {{ $jogador->name }}
+                            </span>
+                        @empty
+                            <p class="text-info mb-0">Todos os jogadores ativos já confirmaram presença nesta sessão.</p>
                         @endforelse
                     </div>
 

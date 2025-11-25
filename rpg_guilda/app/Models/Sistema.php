@@ -28,6 +28,15 @@ class Sistema extends Model
         'regras_opcionais',
     ];
 
+    protected $casts = [
+        'atributos' => 'array',
+    ];
+
+    public function pericias()
+    {
+        return $this->hasMany(Pericia::class, 'sistema_id');
+    }
+
     public function classes()
     {
         return $this->hasMany(Classe::class, 'sistema_id');
@@ -43,30 +52,15 @@ class Sistema extends Model
         return $this->hasMany(Origem::class);
     }
 
-    public function pericias()
-    {
-        return $this->belongsToMany(Pericia::class, 'sistema_pericias')->withTimestamps();
-    }
-
     public function personagens()
     {
         return $this->hasMany(Personagem::class);
     }
 
-    public function atributos()
+
+    public function atributosRelacionados()
     {
         return $this->hasMany(Atributo::class);
     }
 
-    public function getAtributos()
-    {
-        $atributos = [];
-        for ($i = 1; $i <= $this->max_atributos; $i++) {
-            $nome = $this->{"atributo{$i}_nome"};
-            if ($nome) {
-                $atributos[] = $nome;
-            }
-        }
-        return $atributos;
-    }
 }

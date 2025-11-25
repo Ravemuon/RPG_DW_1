@@ -33,7 +33,6 @@
     </div>
 
     {{-- PAINEL: Código de Convite (Apenas se for privada e tiver um código) --}}
-    {{-- A segurança aqui é reforçada pela checagem de Mestre no topo do arquivo. --}}
     @if($campanha->privada && $campanha->codigo_convite)
     <div class="card bg-dark border-info mb-4 shadow-lg">
         <div class="card-header fw-bold text-info">🔗 Código de Convite Privado</div>
@@ -63,6 +62,80 @@
             </p>
         </div>
     </div>
+
+    {{--- NOVO BLOCO: INFORMAÇÕES DO SISTEMA E PERÍCIAS ---}}
+    @if($campanha->sistema)
+    <div class="card bg-dark mb-4 shadow-lg border-primary">
+        <div class="card-header fw-bold text-primary">📚 Sistema de Regras: {{ $campanha->sistema->nome ?? 'Sistema Desconhecido' }}</div>
+        <div class="card-body">
+            <div class="row">
+                {{-- Coluna 1: Regras do Sistema e Atributos --}}
+                <div class="col-md-6 mb-4 mb-md-0 border-end border-secondary">
+                    <h5 class="text-info fw-bold mb-3">🛠️ Atributos e Regras do Sistema</h5>
+                    <p class="text-muted small">
+                        Regras Gerais: {{ $campanha->sistema->regras_gerais ?? 'Nenhuma regra geral detalhada para o Mestre.' }}
+                    </p>
+
+                    {{-- Exibição de Atributos --}}
+                    @php
+                        // CHAVE CRÍTICA: Acessa o atributo 'atributos', que é castado como array no modelo.
+                        $atributos = $campanha->sistema->atributos ?? [];
+                    @endphp
+
+                    @if(!empty($atributos) && is_array($atributos))
+                        <p class="text-light fw-bold mt-3 mb-1">Atributos Primários:</p>
+                        <ul class="list-group list-group-flush">
+                            {{-- $sigla será a chave (ex: 'forca') e $nome o valor (ex: 'Força') --}}
+                            @foreach($atributos as $sigla => $nome)
+                                <li class="list-group-item bg-secondary text-light d-flex justify-content-between py-1">
+                                    <span class="fw-bold">{{ $nome }}</span>
+                                    {{-- Exibe a sigla em caixa alta --}}
+                                    <span class="badge bg-primary">{{ strtoupper($sigla) }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="text-secondary fst-italic mt-3 mb-0">Nenhum atributo definido para este sistema.</p>
+                    @endif
+                </div>
+
+                {{-- Coluna 2: Perícias --}}
+                <div class="col-md-6">
+                    <h5 class="text-success fw-bold mb-3">🗡️ Perícias do Sistema (Últimas 5)</h5>
+                    {{-- Acessando a relação hasMany 'pericias' --}}
+                    @if(isset($campanha->sistema->pericias) && $campanha->sistema->pericias->count())
+                        <ul class="list-group list-group-flush">
+                            {{-- Ordena e pega as 5 primeiras por nome --}}
+                            @foreach($campanha->sistema->pericias->sortBy('nome')->take(5) as $pericia)
+                                <li class="list-group-item bg-dark d-flex justify-content-between align-items-center text-light">
+                                    <div>
+                                        <strong>{{ $pericia->nome }}</strong>
+                                        <small class="text-muted d-block">Modificador: {{ $pericia->modificador >= 0 ? '+' : '' }}{{ $pericia->modificador }}</small>
+                                    </div>
+                                    <span class="badge bg-info text-dark" title="Atributo: {{ $pericia->atributo_nome ?? $pericia->atributo_relacionado }}">
+                                        {{ $pericia->atributo_relacionado }}
+                                    </span>
+                                </li>
+                            @endforeach
+                            @if($campanha->sistema->pericias->count() > 5)
+                                <li class="list-group-item bg-dark text-center py-1">
+                                    <small class="text-muted fst-italic">Mais {{ $campanha->sistema->pericias->count() - 5 }} perícias disponíveis...</small>
+                                </li>
+                            @endif
+                        </ul>
+                    @else
+                        <p class="text-secondary fst-italic p-3 mb-0 text-center">Nenhuma perícia cadastrada para este sistema.</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @else
+    <div class="alert alert-info text-center mb-4">
+        Ainda não há um **Sistema de Regras** associado a esta Campanha.
+    </div>
+    @endif
+    {{--- FIM DO NOVO BLOCO ---}}
 
     {{-- Grid 2x2 --}}
     <div class="row g-4">
@@ -186,11 +259,11 @@
                     🧙 Personagens
                     <div class="d-flex gap-2">
                         {{-- Criar personagem --}}
-                        <a href="{{ route('personagens.create') }}?campanha={{ $campanha->id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                        <a href="{{ route('personagens.create', ['campanha' => $campanha->id]) }}" class="btn btn-outline-secondary btn-sm rounded-pill">
                             Criar
                         </a>
                         {{-- Index completo de personagens (visão do Mestre) --}}
-                        <a href="{{ route('personagens.index') }}?campanha={{ $campanha->id }}" class="btn btn-outline-info btn-sm rounded-pill">
+                        <a href="{{ route('personagens.index', ['campanha' => $campanha->id]) }}" class="btn btn-outline-info btn-sm rounded-pill">
                             Ver Todos
                         </a>
                     </div>
@@ -219,6 +292,8 @@
 .card-header { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 .list-group-dark .list-group-item { border-color: rgba(255, 255, 255, 0.05); }
 .bg-dark { background-color: #212529 !important; }
+.bg-secondary { background-color: #343a40 !important; }
+.border-secondary { border-color: #6c757d !important; }
 </style>
 
 {{-- Script para mostrar/ocultar o código de convite --}}
@@ -234,7 +309,6 @@
             toggleButton.addEventListener('click', function() {
                 if (isHidden) {
                     codeDisplay.textContent = inviteCode;
-                    // Usei FontAwesome 5 aqui, que é comum em templates
                     toggleButton.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar';
                     isHidden = false;
                 } else {

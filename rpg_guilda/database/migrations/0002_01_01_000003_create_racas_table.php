@@ -15,7 +15,6 @@ return new class extends Migration {
 
             // Mantendo os campos genéricos
             $table->enum('tipo_bonus', ['flat', 'multiplicador', 'escolha'])->default('flat');
-            $table->integer('bonus_livre')->default(0);
 
             // Página / referência
             $table->string('pagina', 50)->nullable();
