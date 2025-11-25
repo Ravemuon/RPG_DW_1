@@ -15,31 +15,28 @@
         </div>
     </div>
 @else
-{{-- Variáveis do Sistema extraídas do objeto $campanha->sistema para uso direto no JS --}}
+{{-- Variáveis do Sistema --}}
 @php
     $sistema = $campanha->sistema;
-    // O controller DEVE garantir que $racas, $classes e $origens são filtrados pelo $sistema->id.
     $atributosJson = json_encode($sistema->atributos ?? []);
-    $formulaPv = $sistema->formula_pontos_vida ?? '';
     $formulaModificador = $sistema->formula_modificador ?? 'dnd';
     $sistemaId = $sistema->id;
     $sistemaNome = $sistema->nome;
 
-    // Adicionando a lista de perícias do sistema diretamente (se existir no modelo Sistema)
-    // Se não existir, o JS fará o fallback.
-    $periciasSistema = is_string($sistema->pericias_sistema) ? json_decode($sistema->pericias_sistema, true) : ($sistema->pericias_sistema ?? []);
+    // Perícias do sistema (acessando a relação hasMany)
+    $periciasSistema = $sistema->pericias ?? collect();
 
-    // Mapeamento de Atributos para as Perícias (para o JS)
+    // Mapeamento de atributos para perícias
     $periciasMapeamento = [];
-    if (!empty($periciasSistema) && is_array($periciasSistema)) {
-        foreach ($periciasSistema as $pericia) {
-            $periciasMapeamento[] = [
-                'nome' => $pericia['nome'] ?? 'Perícia Sem Nome',
-                'atributo_relacionado' => $pericia['atributo_relacionado'] ?? 'inteligencia', // Fallback
-            ];
-        }
+    foreach ($periciasSistema as $pericia) {
+        $periciasMapeamento[] = [
+            'id' => $pericia->id,
+            'nome' => $pericia->nome,
+            'modificador_base' => $pericia->modificador,
+            'atributo_relacionado' => $pericia->atributo_relacionado,
+            'atributo_nome' => $pericia->atributo_nome ?? $sistema->atributos[$pericia->atributo_relacionado] ?? ucfirst($pericia->atributo_relacionado)
+        ];
     }
-
 @endphp
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
@@ -61,225 +58,195 @@
 
             <form action="{{ route('personagens.store') }}" method="POST" id="character-form">
                 @csrf
-                {{-- INPUTS HIDDEN COM DADOS DA CAMPANHA E SISTEMA --}}
                 <input type="hidden" name="campanha_id" value="{{ $campanha->id ?? 1 }}">
                 <input type="hidden" name="sistema_id" id="sistema_id_input" value="{{ $sistemaId }}">
 
-                {{-- campos auxiliares que serão preenchidos pelo JS --}}
+                {{-- Campos para dados calculados --}}
                 <input type="hidden" name="atributos" id="finalAttributesJsonInput">
-                <input type="hidden" name="race_choices" id="raceChoicesInput">
-                <input type="hidden" name="selected_equipment" id="selectedEquipmentInput">
-                <input type="hidden" name="selected_skills" id="selectedSkillsInput">
-                <input type="hidden" name="rolled_hp" id="rolledHpInput">
-                {{-- Campo auxiliar para Proficiência --}}
-                <input type="hidden" name="proficiencia_bonus" id="proficienciaBonusInput">
+                <input type="hidden" name="pericias_escolhidas" id="periciasEscolhidasInput">
+                <input type="hidden" name="equipamento_escolhido" id="equipamentoEscolhidoInput">
+                <input type="hidden" name="vida_rolada" id="vidaRoladaInput">
 
                 {{-- Informação do Sistema --}}
                 <div class="row g-4 mb-4">
                     <div class="col-12">
                         <div class="alert alert-info py-2 mb-0">
-                            <i class="fas fa-book"></i> **Sistema de Regras:** <strong class="text-dark">{{ $sistemaNome }}</strong>.
+                            <i class="fas fa-book"></i> <strong>Sistema de Regras:</strong> {{ $sistemaNome }}
+                            <span class="badge bg-dark ms-2" id="sistema-modificador-info"></span>
                         </div>
                     </div>
                 </div>
 
                 <div class="row g-4">
-                    {{-- coluna esquerda --}}
+                    {{-- COLUNA ESQUERDA --}}
                     <div class="col-xl-6 d-flex flex-column gap-4">
+                        {{-- DADOS BÁSICOS --}}
                         <div class="card shadow-sm border-secondary border-opacity-25">
-                            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                                <legend class="h5 text-primary fw-bold mb-0">1. Informações Essenciais</legend>
-                                <div>
-                                    <button type="button" id="randomize-button" class="btn btn-sm btn-info text-white fw-bold">🎲 Sortear Personagem</button>
-                                </div>
+                            <div class="card-header bg-transparent border-0">
+                                <legend class="h5 text-primary fw-bold mb-0">1. Informações Básicas</legend>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label for="nome" class="form-label">Nome</label>
-                                    <input type="text" name="nome" id="nome" value="{{ old('nome') }}" required class="form-control">
+                                    <label for="nome" class="form-label fw-bold">Nome do Personagem</label>
+                                    <input type="text" name="nome" id="nome" value="{{ old('nome') }}" required class="form-control" placeholder="Ex: Aragorn, Geralt...">
                                 </div>
 
-                                {{-- FILTRAGEM POR SISTEMA AQUI (ASSUMIDA) --}}
                                 <div class="mb-3">
-                                    <label for="raca_id" class="form-label">Raça</label>
+                                    <label for="raca_id" class="form-label fw-bold">Raça</label>
                                     <select name="raca_id" id="raca_id" required class="form-select">
-                                        <option value="">(Nenhuma)</option>
-                                        @foreach ($racas->where('sistema_id', $sistemaId) as $raca) {{-- FILTRO ADICIONADO AQUI POR SEGURANÇA --}}
-                                            @php
-                                                $modificadores = $raca->modificadores_atributos ?? (is_string($raca->modificadores_atributos) ? json_decode($raca->modificadores_atributos,true) : []);
-                                            @endphp
+                                        <option value="">Selecione uma raça...</option>
+                                        @foreach ($racas->where('sistema_id', $sistemaId) as $raca)
                                             <option
                                                 value="{{ $raca->id }}"
-                                                data-bonus='@json($modificadores)'
-                                                data-tipo-bonus="{{ $raca->tipo_bonus ?? 'flat' }}"
-                                                data-bonus-livre="{{ $raca->bonus_livre ?? 0 }}"
-                                                data-descricao="{{ $raca->descricao ?? '' }}">
+                                                data-modificadores='@json($raca->modificadores ?? [])'
+                                                data-descricao="{{ $raca->descricao ?? '' }}"
+                                                {{ old('raca_id') == $raca->id ? 'selected' : '' }}>
                                                 {{ $raca->nome }}
                                             </option>
                                         @endforeach
                                     </select>
                                     <p id="raca-descricao-display" class="small text-muted mt-2"></p>
-                                </div>
-
-                                <div id="race-choice-container" class="mt-3 p-3 bg-warning bg-opacity-10 rounded border border-warning d-none">
-                                    <h6 class="small fw-bold">Escolhas de Bônus Raciais:</h6>
-                                    <div id="race-choices-area"></div>
+                                    <div id="raca-bonus-display" class="mt-2"></div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="classe_id" class="form-label">Classe</label>
+                                    <label for="classe_id" class="form-label fw-bold">Classe</label>
                                     <select name="classe_id" id="classe_id" required class="form-select">
-                                        <option value="">(Nenhuma)</option>
-
-                                        @foreach ($classes->where('sistema_id', $sistemaId) as $classe) {{-- FILTRO ADICIONADO AQUI POR SEGURANÇA --}}
+                                        <option value="">Selecione uma classe...</option>
+                                        @foreach ($classes->where('sistema_id', $sistemaId) as $classe)
                                             @php
-                                                $equipRaw = $classe->equipamento_inicial;
-                                                if (is_string($equipRaw)) { $equipRaw = json_decode($equipRaw, true); }
-                                                if (!is_array($equipRaw)) { $equipRaw = []; }
-                                                $fixas = $equipRaw['fixas'] ?? [];
-                                                if (empty($fixas) && array_is_list($equipRaw)) { $fixas = $equipRaw; }
-                                                $opcoes = $equipRaw['opcoes'] ?? [];
-                                                $equipFormatado = ['fixas' => $fixas, 'opcoes' => $opcoes];
+                                                $periciasIniciais = is_string($classe->pericias_iniciais) ?
+                                                    json_decode($classe->pericias_iniciais, true) :
+                                                    ($classe->pericias_iniciais ?? []);
 
-                                                $periciasIniciais = is_string($classe->pericias_iniciais) ? json_decode($classe->pericias_iniciais, true) : ($classe->pericias_iniciais ?? []);
-                                                $atributosBonus = is_string($classe->atributos_bonus) ? json_decode($classe->atributos_bonus, true) : ($classe->atributos_bonus ?? []);
+                                                $equipamentoInicial = is_string($classe->equipamento_inicial) ?
+                                                    json_decode($classe->equipamento_inicial, true) :
+                                                    ($classe->equipamento_inicial ?? []);
                                             @endphp
-
                                             <option
                                                 value="{{ $classe->id }}"
-                                                data-class-bases='@json($atributosBonus)'
-                                                data-class-skills='@json($periciasIniciais)'
-                                                data-class-equipment='@json($equipFormatado)'
+                                                data-atributos-bonus='@json($classe->atributos_bonus ?? [])'
+                                                data-pericias-iniciais='@json($periciasIniciais)'
+                                                data-equipamento-inicial='@json($equipamentoInicial)'
+                                                data-usa-magia="{{ $classe->usa_magia ? 'true' : 'false' }}"
                                                 data-dado-vida="{{ $classe->dado_vida ?? 'd6' }}"
-                                                data-usa-magia="{{ $classe->usa_magia ? 'Sim' : 'Não' }}"
                                                 data-descricao="{{ $classe->descricao ?? '' }}"
-                                            >
+                                                {{ old('classe_id') == $classe->id ? 'selected' : '' }}>
                                                 {{ $classe->nome }}
                                             </option>
-
                                         @endforeach
-
                                     </select>
                                     <p id="classe-descricao-display" class="small text-muted mt-2"></p>
-                                    <p id="classe-magia-display" class="small text-muted mt-1 fw-bold"></p>
+                                    <div id="classe-detalhes-display" class="mt-2"></div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="origem_id" class="form-label">Origem / Background</label>
+                                    <label for="origem_id" class="form-label fw-bold">Origem</label>
                                     <select name="origem_id" id="origem_id" class="form-select">
-                                        <option value="">(Opcional)</option>
-                                        @foreach ($origens->where('sistema_id', $sistemaId) as $origem) {{-- FILTRO ADICIONADO AQUI POR SEGURANÇA --}}
+                                        <option value="">Selecione uma origem (opcional)...</option>
+                                        @foreach ($origens->where('sistema_id', $sistemaId) as $origem)
                                             @php
-                                                $bonusPericiasData = is_string($origem->bonus_pericias_data) ? json_decode($origem->bonus_pericias_data, true) : ($origem->bonus_pericias_data ?? []);
-                                                $recursosAdicionaisData = is_string($origem->recursos_adicionais_data) ? json_decode($origem->recursos_adicionais_data, true) : ($origem->recursos_adicionais_data ?? []);
+                                                $bonusPericias = is_string($origem->bonus_pericias_data) ?
+                                                    json_decode($origem->bonus_pericias_data, true) :
+                                                    ($origem->bonus_pericias_data ?? []);
+
+                                                $recursosAdicionais = is_string($origem->recursos_adicionais_data) ?
+                                                    json_decode($origem->recursos_adicionais_data, true) :
+                                                    ($origem->recursos_adicionais_data ?? []);
                                             @endphp
                                             <option
                                                 value="{{ $origem->id }}"
-                                                data-skills='@json($bonusPericiasData)'
-                                                data-resources='@json($recursosAdicionaisData)'
+                                                data-bonus-pericias='@json($bonusPericias)'
+                                                data-recursos-adicionais='@json($recursosAdicionais)'
                                                 data-descricao="{{ $origem->descricao ?? '' }}"
-                                            >
+                                                {{ old('origem_id') == $origem->id ? 'selected' : '' }}>
                                                 {{ $origem->nome }}
                                             </option>
                                         @endforeach
                                     </select>
                                     <p id="origem-descricao-display" class="small text-muted mt-2"></p>
-                                    <div id="origem-resources-display" class="alert alert-info small mt-2 d-none"></div>
+                                    <div id="origem-recursos-display" class="mt-2"></div>
                                 </div>
                             </div>
                         </div>
 
-                        {{-- Distribuição --}}
+                        {{-- ATRIBUTOS --}}
                         <div class="card shadow border-success border-opacity-25">
                             <div class="card-header bg-success text-white">
                                 <legend class="h5 fw-bold mb-0">2. Distribuição de Atributos</legend>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label for="proficiencia_bonus_select" class="form-label fw-bold text-dark">🎯 Modificador de Proficiência (PB)</label>
-                                    <select id="proficiencia_bonus_select" class="form-select" name="proficiencia_bonus_display">
-                                        {{-- Opções comuns em D&D para Nível 1 --}}
-                                        <option value="2" selected>+2 (Nível 1 - Padrão)</option>
-                                        <option value="3">+3 (Nível 5)</option>
-                                        <option value="4">+4 (Nível 9)</option>
-                                        <option value="5">+5 (Nível 13)</option>
-                                        <option value="6">+6 (Nível 17)</option>
-                                    </select>
-                                    <p class="small text-muted mt-1">Este valor será usado no cálculo das perícias proficientes.</p>
-                                </div>
-                                <hr>
-
-                                <div class="mb-3" id="distribution-methods-container">
-                                    <label class="form-label">Método de Distribuição:</label>
+                                    <label class="form-label fw-bold">Método de Distribuição:</label>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="distribution_method" id="method-point-buy" value="point_buy" checked>
                                         <label class="form-check-label" for="method-point-buy">Compra de Pontos (27)</label>
                                     </div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="distribution_method" id="method-manual" value="manual">
-                                        <label class="form-check-label" for="method-manual">Manual / Rolagem</label>
+                                        <label class="form-check-label" for="method-manual">Manual</label>
                                     </div>
                                 </div>
 
                                 <div id="point-buy-ui" class="border p-3 rounded bg-light">
-                                    <p class="mb-2">Pontos Restantes: <span id="points-remaining" class="fw-bold text-success">27</span> / 27</p>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span>Pontos Disponíveis:</span>
+                                        <span id="points-remaining" class="fw-bold text-success h5">27</span>
+                                    </div>
                                     <div id="attribute-list-container" class="d-flex flex-column gap-2"></div>
                                 </div>
 
                                 <div id="manual-ui" class="border p-3 rounded bg-light d-none">
-                                    <h6 class="fw-bold">Insira seus valores de atributo (ex: 15, 14, 13...)</h6>
+                                    <p class="text-muted small mb-3">Insira os valores manualmente (normalmente 8-18)</p>
                                     <div id="attribute-manual-list-container" class="d-flex flex-column gap-2"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- coluna direita --}}
+                    {{-- COLUNA DIREITA --}}
                     <div class="col-xl-6 d-flex flex-column gap-4">
-                        <div id="class-options-card" class="card shadow border-danger border-opacity-25 bg-danger bg-opacity-10 d-none">
-                            <div class="card-header bg-transparent border-0">
-                                <legend class="h5 text-danger fw-bold mb-0">3. Opções de Classe (Perícias e Equipamento)</legend>
+                        {{-- OPÇÕES DE CLASSE --}}
+                        <div id="class-options-card" class="card shadow border-warning border-opacity-25 d-none">
+                            <div class="card-header bg-warning text-dark">
+                                <legend class="h5 fw-bold mb-0">3. Opções de Classe</legend>
                             </div>
                             <div class="card-body">
-                                <div id="hp-roll-section">
-                                    <h6 class="fw-semibold text-danger">Vida Inicial (PV)</h6>
-                                    <p class="small text-muted mb-2">Sua classe usa um <strong id="dado-vida-display">d6</strong>. Rolar valor:</p>
-                                    <div class="d-flex align-items-center mb-4">
-                                        <button type="button" id="roll-hp-button" class="btn btn-sm btn-danger me-3">Rolar Dado de Vida</button>
-                                        <div class="small">Valor do Dado Rolado: <strong id="hp-roll-result" class="text-danger">0</strong></div>
+                                {{-- VIDA --}}
+                                <div class="mb-4">
+                                    <h6 class="fw-bold text-dark">❤️ Vida Inicial</h6>
+                                    <p class="small text-muted mb-2">Sua classe usa: <strong id="dado-vida-display">d6</strong></p>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <button type="button" id="roll-hp-button" class="btn btn-sm btn-warning">Rolar Dado de Vida</button>
+                                        <span class="small">Resultado: <strong id="hp-roll-result" class="text-warning">0</strong></span>
                                     </div>
-                                    <hr>
                                 </div>
 
-                                <h6 class="fw-semibold text-danger mt-4">Equipamento Inicial</h6>
-                                <div id="fixed-equipment-display" class="mb-2"></div>
-                                <div id="equipment-options-container" class="d-flex flex-column gap-3 mb-4">
-                                    <p class="small text-muted">Selecione uma opção de cada grupo (se houver).</p>
+                                {{-- EQUIPAMENTO --}}
+                                <div class="mb-4">
+                                    <h6 class="fw-bold text-dark">🎒 Equipamento Inicial</h6>
+                                    <div id="fixed-equipment-display" class="mb-3 p-2 bg-light rounded small"></div>
+                                    <div id="equipment-options-container"></div>
                                 </div>
 
-                                <hr>
-
-                                <h6 class="fw-semibold text-danger mt-4">Escolha de Perícias</h6>
-                                <div id="fixed-skills-info" class="mb-3">
-                                    <p class="small text-muted" id="fixed-skills-display"></p>
+                                {{-- PERÍCIAS --}}
+                                <div>
+                                    <h6 class="fw-bold text-dark">📚 Perícias Iniciais</h6>
+                                    <div id="fixed-skills-display" class="mb-3 p-2 bg-light rounded small"></div>
+                                    <div id="skill-options-container"></div>
                                 </div>
-                                <div id="skill-options-container" class="mb-3 d-none">
-                                    <p id="skill-choice-instructions" class="small text-muted mb-2"></p>
-                                    <div id="skill-choice-checkboxes" class="d-flex flex-column gap-2"></div>
-                                    <div id="skill-choice-alert" class="alert alert-warning small mt-2 d-none"></div>
-                                </div>
-
                             </div>
                         </div>
 
+                        {{-- DASHBOARD DE ATRIBUTOS --}}
                         <div class="card shadow border-primary border-opacity-25">
                             <div class="card-header bg-primary text-white">
-                                <h5 class="fw-bold mb-0">Dashboard de Atributos Finais e Perícias</h5>
+                                <h5 class="fw-bold mb-0">📊 Dashboard de Atributos</h5>
                             </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-7">
-                                        <h6 class="fw-bold text-dark">Valores Finais de Atributo</h6>
+                                        <h6 class="fw-bold text-dark">Valores Finais</h6>
                                         <div id="final-attributes-display" class="d-flex flex-column gap-2"></div>
                                         <div id="mod-formula-display" class="small mt-3 p-2 bg-light rounded text-muted"></div>
                                     </div>
@@ -287,929 +254,731 @@
                                         <canvas id="attribute-chart"></canvas>
                                     </div>
                                 </div>
-                                <hr class="my-4">
+                            </div>
+                        </div>
 
-                                {{-- NOVO BLOCO: Lista de Perícias --}}
-                                <div class="mt-3">
-                                    <h6 class="fw-bold text-success">Perícias Calculadas ({{ $sistemaNome }})</h6>
-                                    <div id="pericias-list-display" class="row row-cols-1 row-cols-md-2 g-2">
-                                        {{-- Perícias serão renderizadas aqui pelo JS --}}
-                                        <p class="text-muted small">Selecione uma classe e complete a distribuição de atributos para calcular as perícias.</p>
-                                    </div>
+                        {{-- LISTA DE PERÍCIAS --}}
+                        <div class="card shadow border-info border-opacity-25">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="fw-bold mb-0">🗡️ Perícias do Sistema</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="pericias-list-display" class="row row-cols-1 row-cols-md-2 g-2">
+                                    <p class="text-muted small">Complete os atributos para calcular as perícias...</p>
                                 </div>
-                                {{-- FIM DO NOVO BLOCO --}}
+                            </div>
+                        </div>
+
+                        {{-- FICHA PRÉVIA --}}
+                        <div class="card shadow border-dark border-opacity-25">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="fw-bold mb-0">📝 Ficha Prévia</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="ficha-previa" class="small">
+                                    <p class="text-muted">Preencha todas as informações para ver a ficha completa...</p>
+                                </div>
+                                <div class="mt-3">
+                                    <button type="submit" id="submit-button" class="btn btn-success w-100 fw-bold py-2" disabled>
+                                        🎭 Criar Personagem
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="mt-5 d-flex justify-content-end">
-                    <button type="submit" id="submit-button" class="btn btn-success btn-lg fw-bolder px-5 py-3 shadow-lg border-bottom border-4 border-success-subtle" disabled>
-                        Criar Personagem Lendário
-                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-{{-- Adaptações de JavaScript --}}
+{{-- JavaScript --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // VARIÁVEIS DO SISTEMA INJETADAS PELO PHP
+    // VARIÁVEIS DO SISTEMA
     const SISTEMA_ID = '{{ $sistemaId }}';
     const ATRIBUTOS_JSON = {!! $atributosJson !!};
     const FORMULA_MODIFICADOR = '{{ $formulaModificador }}';
-    const FORMULA_PV = '{{ $formulaPv }}';
-    const PERICIAS_MAPEAMENTO_JSON = {!! json_encode($periciasMapeamento) !!}; // Lista de Perícias do Sistema
+    const PERICIAS_SISTEMA = {!! json_encode($periciasMapeamento) !!};
 
     // CONSTANTES
     let ATTRIBUTE_MAP = {};
     let ATTRIBUTES = [];
-    const ATTRIBUTE_COSTS = {8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9};
+    const ATTRIBUTE_COSTS = {8:0, 9:1, 10:2, 11:3, 12:4, 13:5, 14:7, 15:9};
     const MAX_POINTS = 27;
 
-    let CURRENT_MODIFIER_FORMULA = FORMULA_MODIFICADOR;
-    let CURRENT_HP_FORMULA = FORMULA_PV;
-    // Variável para armazenar as perícias do sistema (preenchida pelo PHP)
-    let ALL_SYSTEM_SKILLS = PERICIAS_MAPEAMENTO_JSON;
+    // VARIÁVEIS DE ESTADO
+    let personagem = {
+        atributos: {},
+        pericias: [],
+        equipamento: [],
+        proficiencia: 2
+    };
 
-    // DOM (Selecionar elementos)
-    const proficienciaBonusSelect = document.getElementById('proficiencia_bonus_select');
-    const proficienciaBonusInput = document.getElementById('proficienciaBonusInput');
+    // ELEMENTOS DOM
+    const elements = {
+        // Seletores
+        racaSelect: document.getElementById('raca_id'),
+        classeSelect: document.getElementById('classe_id'),
+        origemSelect: document.getElementById('origem_id'),
+        nomeInput: document.getElementById('nome'),
 
-    const racaSelect = document.getElementById('raca_id');
-    const racaDescricaoDisplay = document.getElementById('raca-descricao-display');
-    const classeSelect = document.getElementById('classe_id');
-    const classeDescricaoDisplay = document.getElementById('classe-descricao-display');
-    const classeMagiaDisplay = document.getElementById('classe-magia-display');
-    const origemSelect = document.getElementById('origem_id');
-    const origemDescricaoDisplay = document.getElementById('origem-descricao-display');
-    const origemResourcesDisplay = document.getElementById('origem-resources-display');
+        // Distribuição
+        methodPointBuy: document.getElementById('method-point-buy'),
+        methodManual: document.getElementById('method-manual'),
+        pointBuyUI: document.getElementById('point-buy-ui'),
+        manualUI: document.getElementById('manual-ui'),
+        pointsRemaining: document.getElementById('points-remaining'),
+        attrListContainer: document.getElementById('attribute-list-container'),
+        attrManualListContainer: document.getElementById('attribute-manual-list-container'),
 
-    const nomeInput = document.getElementById('nome');
-    const randomizeButton = document.getElementById('randomize-button');
-    const submitButton = document.getElementById('submit-button');
+        // Opções de Classe
+        classOptionsCard: document.getElementById('class-options-card'),
+        dadoVidaDisplay: document.getElementById('dado-vida-display'),
+        rollHpButton: document.getElementById('roll-hp-button'),
+        hpRollResult: document.getElementById('hp-roll-result'),
+        fixedEquipmentDisplay: document.getElementById('fixed-equipment-display'),
+        equipmentOptionsContainer: document.getElementById('equipment-options-container'),
+        fixedSkillsDisplay: document.getElementById('fixed-skills-display'),
+        skillOptionsContainer: document.getElementById('skill-options-container'),
 
-    const methodPointBuy = document.getElementById('method-point-buy');
-    const methodManual = document.getElementById('method-manual');
-    const pointBuyUI = document.getElementById('point-buy-ui');
-    const manualUI = document.getElementById('manual-ui');
-    const pointsRemainingDisplay = document.getElementById('points-remaining');
-    const attrListContainer = document.getElementById('attribute-list-container');
-    const attrManualListContainer = document.getElementById('attribute-manual-list-container');
+        // Dashboard
+        finalAttributesDisplay: document.getElementById('final-attributes-display'),
+        finalAttributesJsonInput: document.getElementById('finalAttributesJsonInput'),
+        modFormulaDisplay: document.getElementById('mod-formula-display'),
+        periciasListDisplay: document.getElementById('pericias-list-display'),
+        periciasEscolhidasInput: document.getElementById('periciasEscolhidasInput'),
+        equipamentoEscolhidoInput: document.getElementById('equipamentoEscolhidoInput'),
+        vidaRoladaInput: document.getElementById('vidaRoladaInput'),
 
-    const raceChoiceContainer = document.getElementById('race-choice-container');
-    const raceChoicesArea = document.getElementById('race-choices-area');
-    const raceChoicesInput = document.getElementById('raceChoicesInput');
+        // Ficha
+        fichaPrevia: document.getElementById('ficha-previa'),
+        submitButton: document.getElementById('submit-button')
+    };
 
-    const classOptionsCard = document.getElementById('class-options-card');
-    const dadoVidaDisplay = document.getElementById('dado-vida-display');
-    const rollHpButton = document.getElementById('roll-hp-button');
-    const hpRollResultDisplay = document.getElementById('hp-roll-result');
-    const rolledHpInput = document.getElementById('rolledHpInput');
-    const hpRollSection = document.getElementById('hp-roll-section');
-
-    const fixedEquipmentDisplay = document.getElementById('fixed-equipment-display');
-    const equipmentOptionsContainer = document.getElementById('equipment-options-container');
-    const selectedEquipmentInput = document.getElementById('selectedEquipmentInput');
-
-    const skillOptionsContainer = document.getElementById('skill-options-container');
-    const skillChoiceInstructions = document.getElementById('skill-choice-instructions');
-    const skillChoiceCheckboxes = document.getElementById('skill-choice-checkboxes');
-    const skillChoiceAlert = document.getElementById('skill-choice-alert');
-    const selectedSkillsInput = document.getElementById('selectedSkillsInput');
-    const fixedSkillsDisplay = document.getElementById('fixed-skills-display');
-
-    const finalAttributesDisplay = document.getElementById('final-attributes-display');
-    const finalAttributesJsonInput = document.getElementById('finalAttributesJsonInput');
-    const modFormulaDisplay = document.getElementById('mod-formula-display');
-    const periciasListDisplay = document.getElementById('pericias-list-display');
-
-    let attributeChart;
-
-    // --- UTILS ---
-    function parseDataAttributeString(str) {
-        if (str === null || str === undefined) return {};
-        try { return typeof str === 'object' ? str : JSON.parse(str); } catch(e) { return {}; }
-    }
-    function rollDice(diceString) {
-        const m = String(diceString).match(/d(\d+)/i);
-        if (!m) return 0;
-        const sides = parseInt(m[1],10);
-        return Math.floor(Math.random()*sides)+1;
-    }
-
-    // Função para calcular o modificador com base na regra do sistema
-    function calculateModifier(score) {
-        score = parseInt(score);
-        if (isNaN(score)) return 0;
-
-        switch (CURRENT_MODIFIER_FORMULA) {
-            case 'ordem': // Ordem Paranormal: Modificador é igual ao Atributo
-                return score;
-            case 'dnd': // D&D 5e: Padrão
-            default:
-                return Math.floor((score - 10) / 2);
-        }
-    }
-
-    // --- SISTEMA E ATRIBUTOS ---
-
-    function setAttributesFromSistema() {
-        const attrs = ATRIBUTOS_JSON;
-
-        let newAttributeMap = { forca: 'Força', destreza: 'Destreza', constituicao: 'Constituição', inteligencia: 'Inteligência', sabedoria: 'Sabedoria', carisma: 'Carisma' };
-
-        if (attrs && Object.keys(attrs).length) {
-            ATTRIBUTES = Object.keys(attrs);
-            ATTRIBUTE_MAP = attrs;
-        } else {
-             // Fallback para D&D 5e-like
-            ATTRIBUTES = ['forca','destreza','constituicao','inteligencia','sabedoria','carisma'];
-            ATTRIBUTE_MAP = newAttributeMap;
-        }
-
-        // Adaptações de UI para diferentes sistemas
-        if (CURRENT_MODIFIER_FORMULA === 'ordem' || CURRENT_MODIFIER_FORMULA === 'cthulhu' || CURRENT_HP_FORMULA !== '') {
-            // Desativar Point Buy se as regras forem incompatíveis com o padrão D&D 5e
-            methodPointBuy.disabled = true;
-            if (methodPointBuy.checked) {
-                methodManual.checked = true;
-            }
-            if (CURRENT_HP_FORMULA !== '') {
-                 hpRollSection.classList.add('d-none');
-            }
-        } else {
-            methodPointBuy.disabled = false;
-            hpRollSection.classList.remove('d-none');
-        }
-        handleDistributionMethodChange();
-
-        // Re-inicializa os inputs de atributos e o gráfico após a mudança
-        initializeAttributeInputs();
+    // INICIALIZAÇÃO
+    function init() {
+        setupAttributes();
+        setupEventListeners();
+        updateSistemaInfo();
         updateFinalAttributesAndChart();
     }
 
-    // --- UI DE ATRIBUTOS ---
+    function setupAttributes() {
+        ATTRIBUTE_MAP = ATRIBUTOS_JSON;
+        ATTRIBUTES = Object.keys(ATTRIBUTE_MAP);
+
+        initializeAttributeInputs();
+    }
+
+    function setupEventListeners() {
+        // Mudanças nas seleções
+        elements.racaSelect.addEventListener('change', updateRaceDetails);
+        elements.classeSelect.addEventListener('change', updateClassDetails);
+        elements.origemSelect.addEventListener('change', updateOrigemDetails);
+        elements.nomeInput.addEventListener('input', validateForm);
+
+        // Distribuição
+        elements.methodPointBuy.addEventListener('change', handleDistributionMethodChange);
+        elements.methodManual.addEventListener('change', handleDistributionMethodChange);
+
+        // Vida
+        elements.rollHpButton.addEventListener('click', handleHpRoll);
+
+        // Atualizações iniciais
+        updateRaceDetails();
+        updateClassDetails();
+        updateOrigemDetails();
+    }
+
+    // SISTEMA E FÓRMULAS
+    function updateSistemaInfo() {
+        let formulaText = '';
+        switch(FORMULA_MODIFICADOR) {
+            case 'dnd':
+                formulaText = 'D&D 5e: Mod = ⌊(Atributo - 10) / 2⌋';
+                break;
+            case 'ordem':
+                formulaText = 'Ordem Paranormal: Mod = Atributo';
+                break;
+            case 'cthulhu':
+                formulaText = 'Call of Cthulhu: Mod = ⌊Atributo / 2⌋';
+                break;
+            default:
+                formulaText = 'Sistema personalizado';
+        }
+        document.getElementById('sistema-modificador-info').textContent = formulaText;
+    }
+
+    function calcularModificador(valor) {
+        valor = parseInt(valor) || 0;
+
+        switch(FORMULA_MODIFICADOR) {
+            case 'dnd':
+                return Math.floor((valor - 10) / 2);
+            case 'ordem':
+                return valor;
+            case 'cthulhu':
+                return Math.floor(valor / 2);
+            default:
+                return Math.floor((valor - 10) / 2);
+        }
+    }
+
+    // ATRIBUTOS
     function initializeAttributeInputs() {
-        attrListContainer.innerHTML = '';
-        attrManualListContainer.innerHTML = '';
+        elements.attrListContainer.innerHTML = '';
+        elements.attrManualListContainer.innerHTML = '';
 
         ATTRIBUTES.forEach(attrKey => {
-            const attrLabel = ATTRIBUTE_MAP[attrKey] || attrKey.toUpperCase();
-            const attrLabelShort = (attrLabel.length > 3) ? attrLabel.substr(0,3).toUpperCase() : attrLabel.toUpperCase();
+            const attrLabel = ATTRIBUTE_MAP[attrKey];
+            const attrShort = attrLabel.substring(0, 3).toUpperCase();
 
-            // Point Buy UI (Mínimo 8, Máximo 15, D&D 5e padrão)
+            // Point Buy UI
             const pointBuyHtml = `
-                <div class="d-flex align-items-center justify-content-between p-2 border-bottom">
-                    <span class="fw-bold me-3" title="${attrLabel}">${attrLabelShort}</span>
-                    <div class="d-flex align-items-center">
-                        <button type="button" class="btn btn-sm btn-outline-danger me-2 point-buy-btn" data-attr="${attrKey}" data-action="decrease">-</button>
+                <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-white">
+                    <span class="fw-bold" title="${attrLabel}">${attrShort}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger point-buy-btn" data-attr="${attrKey}" data-action="decrease">-</button>
                         <input type="number" class="form-control form-control-sm text-center point-buy-score" data-attr="${attrKey}" value="8" min="8" max="15" style="width: 60px;" readonly>
-                        <button type="button" class="btn btn-sm btn-outline-success ms-2 point-buy-btn" data-attr="${attrKey}" data-action="increase">+</button>
+                        <button type="button" class="btn btn-sm btn-outline-success point-buy-btn" data-attr="${attrKey}" data-action="increase">+</button>
                     </div>
                 </div>
             `;
-            attrListContainer.insertAdjacentHTML('beforeend', pointBuyHtml);
+            elements.attrListContainer.insertAdjacentHTML('beforeend', pointBuyHtml);
 
-            // Manual UI (Geral)
+            // Manual UI
             const manualHtml = `
-                <div class="d-flex align-items-center justify-content-between p-2 border-bottom">
-                    <label class="fw-bold me-3" title="${attrLabel}">${attrLabelShort}</label>
+                <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-white">
+                    <span class="fw-bold" title="${attrLabel}">${attrShort}</span>
                     <input type="number" class="form-control form-control-sm text-center manual-score" data-attr="${attrKey}" value="10" min="1" max="30" style="width: 80px;">
                 </div>
             `;
-            attrManualListContainer.insertAdjacentHTML('beforeend', manualHtml);
+            elements.attrManualListContainer.insertAdjacentHTML('beforeend', manualHtml);
         });
 
-        attrListContainer.querySelectorAll('.point-buy-btn').forEach(btn => btn.addEventListener('click', function() {
-            updatePointBuyState(this.getAttribute('data-attr'), this.getAttribute('data-action'));
-        }));
+        // Event listeners para point buy
+        elements.attrListContainer.querySelectorAll('.point-buy-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                updatePointBuyState(this.dataset.attr, this.dataset.action);
+            });
+        });
 
-        attrManualListContainer.querySelectorAll('.manual-score').forEach(input => input.addEventListener('input', updateFinalAttributesAndChart));
+        // Event listeners para manual
+        elements.attrManualListContainer.querySelectorAll('.manual-score').forEach(input => {
+            input.addEventListener('input', updateFinalAttributesAndChart);
+        });
 
-        pointsRemainingDisplay.textContent = MAX_POINTS - calculatePointCost();
+        updatePointsDisplay();
     }
 
     function handleDistributionMethodChange() {
-        const isPointBuy = methodPointBuy.checked && !methodPointBuy.disabled;
-        pointBuyUI.classList.toggle('d-none', !isPointBuy);
-        manualUI.classList.toggle('d-none', isPointBuy);
+        const isPointBuy = elements.methodPointBuy.checked;
+        elements.pointBuyUI.classList.toggle('d-none', !isPointBuy);
+        elements.manualUI.classList.toggle('d-none', isPointBuy);
         updateFinalAttributesAndChart();
     }
 
-    function calculatePointCost() {
+    function updatePointBuyState(attrKey, action) {
+        const input = elements.attrListContainer.querySelector(`.point-buy-score[data-attr="${attrKey}"]`);
+        if (!input) return;
+
+        let current = parseInt(input.value);
+        let newValue = current;
+
+        if (action === 'increase' && current < 15) newValue = current + 1;
+        if (action === 'decrease' && current > 8) newValue = current - 1;
+
+        if (newValue !== current) {
+            const oldCost = ATTRIBUTE_COSTS[current] || 0;
+            const newCost = ATTRIBUTE_COSTS[newValue] || 0;
+            const currentTotalCost = calculateTotalPointCost();
+
+            if (currentTotalCost + (newCost - oldCost) <= MAX_POINTS) {
+                input.value = newValue;
+                updatePointsDisplay();
+                updateFinalAttributesAndChart();
+            }
+        }
+    }
+
+    function calculateTotalPointCost() {
         let total = 0;
-        document.querySelectorAll('.point-buy-score').forEach(input => {
+        elements.attrListContainer.querySelectorAll('.point-buy-score').forEach(input => {
             const score = parseInt(input.value) || 0;
             total += ATTRIBUTE_COSTS[score] || 0;
         });
         return total;
     }
 
-    function updatePointBuyState(attrKey, action) {
-        const input = attrListContainer.querySelector(`.point-buy-score[data-attr="${attrKey}"]`);
-        if (!input) return;
-        let current = parseInt(input.value);
-        let next = current;
-        if (action === 'increase' && current < 15) next = current + 1;
-        if (action === 'decrease' && current > 8) next = current - 1;
-        if (next === current) return;
-
-        const oldCost = ATTRIBUTE_COSTS[current] || 0;
-        const newCost = ATTRIBUTE_COSTS[next] || 0;
-        const currentCost = calculatePointCost();
-        const totalAfter = currentCost + (newCost - oldCost);
-
-        if (totalAfter <= MAX_POINTS) {
-            input.value = next;
-        }
-
-        const finalCost = calculatePointCost();
-        pointsRemainingDisplay.textContent = MAX_POINTS - finalCost;
-        pointsRemainingDisplay.classList.toggle('text-danger', finalCost > MAX_POINTS);
-        pointsRemainingDisplay.classList.toggle('text-success', finalCost <= MAX_POINTS);
-        updateFinalAttributesAndChart();
+    function updatePointsDisplay() {
+        const totalCost = calculateTotalPointCost();
+        const remaining = MAX_POINTS - totalCost;
+        elements.pointsRemaining.textContent = remaining;
+        elements.pointsRemaining.className = `fw-bold h5 ${remaining < 0 ? 'text-danger' : 'text-success'}`;
     }
 
     function getBaseScores() {
-        const obj = {};
-        const isPointBuy = methodPointBuy.checked && !methodPointBuy.disabled;
+        const scores = {};
+        const isPointBuy = elements.methodPointBuy.checked;
         const selector = isPointBuy ? '.point-buy-score' : '.manual-score';
+
         document.querySelectorAll(selector).forEach(input => {
-            const key = input.getAttribute('data-attr');
-            obj[key] = parseInt(input.value) || 0;
-        });
-        return obj;
-    }
-
-    function updateFinalAttributesAndChart() {
-        const base = getBaseScores();
-        const final = {};
-        let html = '';
-
-        const raceOption = racaSelect.options[racaSelect.selectedIndex];
-        const raceFixedBonus = parseDataAttributeString(raceOption?.getAttribute('data-bonus') || null);
-
-        const classOption = classeSelect.options[classeSelect.selectedIndex];
-        const classBonus = parseDataAttributeString(classOption?.getAttribute('data-class-bases') || null);
-
-        const raceChoices = JSON.parse(raceChoicesInput.value || '[]');
-        const raceChoiceMap = {};
-        if (Array.isArray(raceChoices)) {
-            raceChoices.forEach(c => { raceChoiceMap[c.attribute] = (raceChoiceMap[c.attribute] || 0) + (parseInt(c.value) || 0); });
-        }
-
-        // Objeto para armazenar Modificadores
-        const finalModifiers = {};
-
-        ATTRIBUTES.forEach(key => {
-            const b = base[key] || 0;
-            const totalBonus = (parseInt(raceFixedBonus[key] || 0) || 0) + (parseInt(raceChoiceMap[key] || 0) || 0) + (parseInt(classBonus[key] || 0) || 0);
-            const finalScore = b + totalBonus;
-            final[key] = finalScore;
-
-            const modifier = calculateModifier(finalScore);
-            finalModifiers[key] = modifier;
-
-            const modifierSign = modifier >= 0 ? '+' : '';
-            const totalBonusSign = totalBonus >= 0 ? '+' : '';
-
-            const attrLabel = ATTRIBUTE_MAP[key] || key;
-            const attrLabelShort = (attrLabel.length > 3) ? attrLabel.substr(0,3).toUpperCase() : attrLabel.toUpperCase();
-
-            const baseBonusHtml = totalBonus > 0 ? `<span class="small text-success ms-1">(${totalBonusSign}${totalBonus})</span>` : '';
-
-            html += `<div class="p-2 border rounded d-flex justify-content-between align-items-center">
-                        <strong class="text-uppercase me-2" title="${attrLabel}">${attrLabelShort}</strong>
-                        <span class="d-flex align-items-baseline">
-                            <span class="text-muted small">${b}</span>
-                            ${baseBonusHtml}
-                            <span class="h5 fw-bolder text-primary ms-3">${finalScore}</span>
-                            <span class="small text-secondary ms-3">Mod: <strong class="text-dark">${modifierSign}${modifier}</strong></span>
-                        </span>
-                    </div>`;
+            const key = input.dataset.attr;
+            scores[key] = parseInt(input.value) || 0;
         });
 
-        finalAttributesDisplay.innerHTML = html;
-        finalAttributesJsonInput.value = JSON.stringify({ base, final });
-
-        // Display da fórmula do modificador
-        let formulaText = '';
-        if (CURRENT_MODIFIER_FORMULA === 'dnd') {
-            formulaText = `Modificador (D&D): $$\\lfloor \\frac{\\text{Atributo} - 10}{2} \\rfloor$$`;
-        } else if (CURRENT_MODIFIER_FORMULA === 'ordem') {
-            formulaText = `Modificador (Ordem): $$\\text{Atributo}$$`;
-        }
-        modFormulaDisplay.innerHTML = formulaText;
-
-        updateChart(final);
-        validateBaseDistribution();
-
-        // Chama a atualização das perícias
-        updateSkillCalculation(finalModifiers, final);
+        return scores;
     }
 
-    // ... Funções updateRaceDetails, renderRaceChoices, updateRaceChoicesInput (sem alterações) ...
+    // ATUALIZAÇÃO DE DETALHES
     function updateRaceDetails() {
-        const selected = racaSelect.options[racaSelect.selectedIndex];
-        const hasRace = selected && selected.value;
-        const descricao = selected?.getAttribute('data-descricao') || '';
-        const tipoBonus = selected?.getAttribute('data-tipo-bonus') || 'flat';
-        const bonusLivre = parseInt(selected?.getAttribute('data-bonus-livre') || 0);
+        const selected = elements.racaSelect.options[elements.racaSelect.selectedIndex];
+        const descricao = selected?.dataset.descricao || '';
+        const modificadores = JSON.parse(selected?.dataset.modificadores || '{}');
 
-        racaDescricaoDisplay.textContent = descricao;
+        // Atualizar descrição
+        elements.racaSelect.parentNode.querySelector('#raca-descricao-display').textContent = descricao;
 
-        if (hasRace && tipoBonus !== 'flat' && bonusLivre > 0) {
-            raceChoiceContainer.classList.remove('d-none');
-            renderRaceChoices(bonusLivre);
-        } else {
-            raceChoiceContainer.classList.add('d-none');
-            raceChoicesInput.value = '[]';
-        }
-        updateFinalAttributesAndChart();
-    }
-
-    function renderRaceChoices(choicesCount) {
-        raceChoicesArea.innerHTML = `<p class="small">Escolha ${choicesCount} bônus de atributo de +1 cada (não pode escolher o mesmo atributo mais de uma vez, ou conforme a regra da raça).</p>`;
-
-        for (let i = 0; i < choicesCount; i++) {
-            let selectHtml = `<select class="form-select form-select-sm mt-2 race-choice-select" data-index="${i}">`;
-            selectHtml += `<option value="">--- Escolha um Atributo ---</option>`;
-
-            ATTRIBUTES.forEach(attrKey => {
-                const attrLabel = ATTRIBUTE_MAP[attrKey] || attrKey;
-                selectHtml += `<option value="${attrKey}">+1 ${attrLabel}</option>`;
-            });
-            selectHtml += `</select>`;
-            raceChoicesArea.insertAdjacentHTML('beforeend', selectHtml);
-        }
-
-        raceChoicesArea.querySelectorAll('.race-choice-select').forEach(select => {
-            select.addEventListener('change', updateRaceChoicesInput);
-        });
-        updateRaceChoicesInput();
-    }
-
-    function updateRaceChoicesInput() {
-        const selectedChoices = [];
-        raceChoicesArea.querySelectorAll('.race-choice-select').forEach(select => {
-            if (select.value) {
-                selectedChoices.push({ attribute: select.value, value: 1 });
+        // Atualizar bônus
+        let bonusHtml = '';
+        if (Object.keys(modificadores).length > 0) {
+            bonusHtml = '<div class="mt-2"><strong>Bônus de Atributos:</strong><div class="d-flex flex-wrap gap-1 mt-1">';
+            for (const [atributo, valor] of Object.entries(modificadores)) {
+                const nomeAtributo = ATTRIBUTE_MAP[atributo] || atributo;
+                bonusHtml += `<span class="badge bg-success">${nomeAtributo}: +${valor}</span>`;
             }
-        });
-        raceChoicesInput.value = JSON.stringify(selectedChoices);
+            bonusHtml += '</div></div>';
+        }
+        elements.racaSelect.parentNode.querySelector('#raca-bonus-display').innerHTML = bonusHtml;
+
         updateFinalAttributesAndChart();
     }
-    // ... FIM das funções sem alteração (Race Details) ...
 
     function updateClassDetails() {
-        const selected = classeSelect.options[classeSelect.selectedIndex];
+        const selected = elements.classeSelect.options[elements.classeSelect.selectedIndex];
         const hasClass = selected && selected.value;
 
-        classOptionsCard.classList.toggle('d-none', !hasClass);
+        elements.classOptionsCard.classList.toggle('d-none', !hasClass);
 
         if (!hasClass) {
-             // Limpa campos se nenhuma classe for selecionada
-            classeDescricaoDisplay.textContent = '';
-            classeMagiaDisplay.textContent = '';
-            dadoVidaDisplay.textContent = 'd6';
-            hpRollResultDisplay.textContent = '0';
-            rolledHpInput.value = '';
-            fixedEquipmentDisplay.innerHTML = '';
-            equipmentOptionsContainer.innerHTML = '<p class="small text-muted">Selecione uma classe para ver as opções.</p>';
-            skillOptionsContainer.classList.add('d-none');
-            fixedSkillsDisplay.innerHTML = '';
-            updateSelectedEquipment();
-            updateSelectedSkills(); // Limpa as escolhas
+            elements.classeSelect.parentNode.querySelector('#classe-descricao-display').textContent = '';
+            elements.classeSelect.parentNode.querySelector('#classe-detalhes-display').innerHTML = '';
             return;
         }
 
-        const descricao = selected.getAttribute('data-descricao') || '';
-        const usaMagia = selected.getAttribute('data-usa-magia') || 'Não';
-        classeDescricaoDisplay.textContent = descricao;
-        classeMagiaDisplay.textContent = `Usa Magia: ${usaMagia}`;
+        const descricao = selected.dataset.descricao || '';
+        const usaMagia = selected.dataset.usaMagia === 'true';
+        const dadoVida = selected.dataset.dadoVida || 'd6';
+        const atributosBonus = JSON.parse(selected.dataset.atributosBonus || '{}');
+        const periciasIniciais = JSON.parse(selected.dataset.periciasIniciais || '{}');
+        const equipamentoInicial = JSON.parse(selected.dataset.equipamentoInicial || '{}');
 
-        const dadoVida = selected.getAttribute('data-dado-vida') || 'd6';
-        dadoVidaDisplay.textContent = dadoVida.toUpperCase();
-        hpRollResultDisplay.textContent = '0';
-        rolledHpInput.value = '';
+        // Atualizar informações básicas
+        elements.classeSelect.parentNode.querySelector('#classe-descricao-display').textContent = descricao;
 
-        const equip = parseDataAttributeString(selected.getAttribute('data-class-equipment') || null);
-        renderEquipmentOptions(equip);
+        // Detalhes da classe
+        let detalhesHtml = '<div class="mt-2">';
+        detalhesHtml += `<p><strong>Dado de Vida:</strong> ${dadoVida.toUpperCase()}</p>`;
+        detalhesHtml += `<p><strong>Usa Magia:</strong> ${usaMagia ? '✅ Sim' : '❌ Não'}</p>`;
 
-        const skills = parseDataAttributeString(selected.getAttribute('data-class-skills') || null);
-        renderSkillOptions(skills);
+        if (Object.keys(atributosBonus).length > 0) {
+            detalhesHtml += '<p><strong>Bônus de Atributos:</strong>';
+            for (const [atributo, valor] of Object.entries(atributosBonus)) {
+                const nomeAtributo = ATTRIBUTE_MAP[atributo] || atributo;
+                detalhesHtml += ` <span class="badge bg-info">${nomeAtributo}: +${valor}</span>`;
+            }
+            detalhesHtml += '</p>';
+        }
+        detalhesHtml += '</div>';
+
+        elements.classeSelect.parentNode.querySelector('#classe-detalhes-display').innerHTML = detalhesHtml;
+
+        // Atualizar opções de classe
+        elements.dadoVidaDisplay.textContent = dadoVida.toUpperCase();
+        renderEquipmentOptions(equipamentoInicial);
+        renderSkillOptions(periciasIniciais);
 
         updateFinalAttributesAndChart();
     }
 
     function updateOrigemDetails() {
-        const selected = origemSelect.options[origemSelect.selectedIndex];
-        const hasOrigem = selected && selected.value;
+        const selected = elements.origemSelect.options[elements.origemSelect.selectedIndex];
+        const descricao = selected?.dataset.descricao || '';
+        const bonusPericias = JSON.parse(selected?.dataset.bonusPericias || '{}');
+        const recursosAdicionais = JSON.parse(selected?.dataset.recursosAdicionais || '{}');
 
-        if (!hasOrigem) {
-            origemDescricaoDisplay.textContent = '';
-            origemResourcesDisplay.classList.add('d-none');
-            origemResourcesDisplay.innerHTML = '';
-            // Origem removida, deve recalcular as perícias para remover o bônus de origem
-            updateSelectedSkills();
-            return;
-        }
+        elements.origemSelect.parentNode.querySelector('#origem-descricao-display').textContent = descricao;
 
-        const descricao = selected.getAttribute('data-descricao') || '';
-        const resources = parseDataAttributeString(selected.getAttribute('data-resources') || null);
+        let recursosHtml = '';
+        if (Object.keys(bonusPericias).length > 0 || Object.keys(recursosAdicionais).length > 0) {
+            recursosHtml = '<div class="mt-2">';
 
-        origemDescricaoDisplay.textContent = descricao;
-
-        if (Object.keys(resources).length > 0) {
-            let html = '<h6 class="small fw-bold border-bottom pb-1">Recursos de Origem:</h6><ul class="list-unstyled mb-0">';
-            for (const [key, value] of Object.entries(resources)) {
-                html += `<li><strong class="text-dark">${key}:</strong> ${value}</li>`;
+            if (Object.keys(bonusPericias).length > 0) {
+                recursosHtml += '<p><strong>Bônus de Perícias:</strong><br>';
+                for (const [pericia, bonus] of Object.entries(bonusPericias)) {
+                    recursosHtml += `<span class="badge bg-warning text-dark">${pericia}: +${bonus}</span> `;
+                }
+                recursosHtml += '</p>';
             }
-            html += '</ul>';
-            origemResourcesDisplay.innerHTML = html;
-            origemResourcesDisplay.classList.remove('d-none');
-        } else {
-            origemResourcesDisplay.classList.add('d-none');
+
+            if (Object.keys(recursosAdicionais).length > 0) {
+                recursosHtml += '<p><strong>Recursos Adicionais:</strong><br>';
+                for (const [recurso, desc] of Object.entries(recursosAdicionais)) {
+                    recursosHtml += `<small>• <strong>${recurso}:</strong> ${desc}</small><br>`;
+                }
+                recursosHtml += '</p>';
+            }
+
+            recursosHtml += '</div>';
         }
 
-        updateSelectedSkills(); // A origem pode adicionar perícias fixas
+        elements.origemSelect.parentNode.querySelector('#origem-recursos-display').innerHTML = recursosHtml;
+        updateFinalAttributesAndChart();
     }
 
-    // ... Funções handleHpRoll, renderEquipmentOptions, updateSelectedEquipment (sem alterações) ...
-    // --- ROLAGEM DE HP ---
-    function handleHpRoll() {
-        const selected = classeSelect.options[classeSelect.selectedIndex];
-        if (!selected || !selected.value) return;
-        const dado = selected.getAttribute('data-dado-vida') || 'd6';
-        const roll = rollDice(dado);
-        hpRollResultDisplay.textContent = roll;
-        rolledHpInput.value = roll;
-        validateBaseDistribution();
+    // EQUIPAMENTO E PERÍCIAS
+    function renderEquipmentOptions(equipamento) {
+        const fixas = equipamento.fixas || [];
+        const opcoes = equipamento.opcoes || [];
+
+        // Equipamento fixo
+        let fixedHtml = '';
+        if (fixas.length > 0) {
+            fixedHtml = `<div class="mb-3"><strong>Equipamento Fixo:</strong><ul class="mb-0">`;
+            fixas.forEach(item => {
+                fixedHtml += `<li>${item}</li>`;
+            });
+            fixedHtml += '</ul></div>';
+        }
+        elements.fixedEquipmentDisplay.innerHTML = fixedHtml;
+
+        // Opções de equipamento
+        let optionsHtml = '';
+        if (opcoes.length > 0) {
+            optionsHtml = '<div><strong>Escolhas de Equipamento:</strong>';
+            opcoes.forEach((grupo, index) => {
+                optionsHtml += `<div class="mt-2"><small>Grupo ${index + 1}:</small>`;
+                optionsHtml += `<select class="form-select form-select-sm equipment-choice" data-group="${index}">`;
+                grupo.forEach(item => {
+                    optionsHtml += `<option value="${item}">${item}</option>`;
+                });
+                optionsHtml += '</select></div>';
+            });
+            optionsHtml += '</div>';
+        }
+        elements.equipmentOptionsContainer.innerHTML = optionsHtml;
+
+        // Event listeners para escolhas de equipamento
+        elements.equipmentOptionsContainer.querySelectorAll('.equipment-choice').forEach(select => {
+            select.addEventListener('change', updateEquipamentoEscolhido);
+        });
+
+        updateEquipamentoEscolhido();
     }
 
-    // --- EQUIPAMENTO ---
-    function renderEquipmentOptions(equipData) {
-        fixedEquipmentDisplay.innerHTML = '';
-        equipmentOptionsContainer.innerHTML = '';
-        selectedEquipmentInput.value = '';
+    function renderSkillOptions(pericias) {
+        const fixas = pericias.fixas || [];
+        const lista = pericias.lista || [];
+        const escolha = pericias.escolha || 0;
 
-        const fixed = equipData.fixas || [];
-        const options = equipData.opcoes || [];
-
-        if (fixed.length > 0) {
-            fixedEquipmentDisplay.innerHTML = `<p class="small fw-bold mb-1">Equipamento Fixo:</p><p class="small text-dark">${fixed.join(', ')}</p>`;
-        } else {
-             fixedEquipmentDisplay.innerHTML = `<p class="small text-muted">Nenhum equipamento fixo.</p>`;
+        // Perícias fixas
+        let fixedHtml = '';
+        if (fixas.length > 0) {
+            fixedHtml = `<div class="mb-3"><strong>Perícias Fixas:</strong><br>`;
+            fixas.forEach(pericia => {
+                fixedHtml += `<span class="badge bg-success">${pericia}</span> `;
+            });
+            fixedHtml += '</div>';
         }
+        elements.fixedSkillsDisplay.innerHTML = fixedHtml;
 
-
-        if (!Array.isArray(options) || options.length === 0) {
-            equipmentOptionsContainer.innerHTML = '<p class="small text-muted">Nenhum equipamento inicial de escolha fornecido por esta classe.</p>';
-            updateSelectedEquipment();
-            return;
-        }
-
-        options.forEach((group, idx) => {
-            const isChoiceGroup = group.instrucao && Array.isArray(group.opcoes);
-            const instr = isChoiceGroup ? group.instrucao : `Escolha um item do Grupo ${idx+1}`;
-            const groupOptions = isChoiceGroup ? group.opcoes : group;
-
-            const groupKey = `equipment_group_${idx}`;
-            let html = `<div class="p-3 border rounded"><h6 class="small fw-bold mb-2">${instr}</h6>`;
-
-            const items = Array.isArray(groupOptions) ? groupOptions : (Array.isArray(groupOptions.opcoes) ? groupOptions.opcoes : [groupOptions]);
-
-            items.forEach((item, i) => {
-                const itemLabel = typeof item === 'object' && item.nome ? item.nome : item;
-                const itemValue = typeof item === 'object' && item.item_id ? item.item_id : item;
-                const id = `${groupKey}_${i}`;
-                const checked = i === 0 ? 'checked' : '';
-
-                html += `
-                    <div class="form-check small">
-                        <input class="form-check-input equipment-choice" type="radio" name="${groupKey}" id="${id}" value="${itemValue}" ${checked}>
-                        <label class="form-check-label" for="${id}">${itemLabel}</label>
+        // Opções de perícias
+        let optionsHtml = '';
+        if (lista.length > 0 && escolha > 0) {
+            optionsHtml = `<div class="mb-3"><strong>Escolha ${escolha} perícias:</strong><div class="mt-2">`;
+            lista.forEach(pericia => {
+                const id = `skill_${pericia.replace(/\s+/g, '_')}`;
+                optionsHtml += `
+                    <div class="form-check">
+                        <input class="form-check-input skill-choice" type="checkbox" id="${id}" value="${pericia}">
+                        <label class="form-check-label small" for="${id}">${pericia}</label>
                     </div>
                 `;
             });
-            html += `</div>`;
-            equipmentOptionsContainer.insertAdjacentHTML('beforeend', html);
+            optionsHtml += '</div></div>';
+        }
+        elements.skillOptionsContainer.innerHTML = optionsHtml;
+
+        // Event listeners para perícias
+        elements.skillOptionsContainer.querySelectorAll('.skill-choice').forEach(checkbox => {
+            checkbox.addEventListener('change', updatePericiasEscolhidas);
         });
 
-        equipmentOptionsContainer.querySelectorAll('.equipment-choice').forEach(r => r.addEventListener('change', updateSelectedEquipment));
-        updateSelectedEquipment();
+        updatePericiasEscolhidas();
     }
 
-    function updateSelectedEquipment() {
-        const selected = classeSelect.options[classeSelect.selectedIndex];
-        if (!selected || !selected.value) {
-            selectedEquipmentInput.value = '';
-            return;
-        }
-
-        const equipData = parseDataAttributeString(selected.getAttribute('data-class-equipment') || null);
-        const fixed = equipData.fixas || [];
-        const choices = {};
-        let allChoicesMade = true;
-        let choiceGroupsCount = 0;
-
-        equipmentOptionsContainer.querySelectorAll('div.p-3').forEach(div => {
-            const firstInput = div.querySelector('input');
-            if (!firstInput) return;
-
-            choiceGroupsCount++;
-
-            const name = firstInput.name;
-            const selectedRadio = div.querySelector(`input[name="${name}"]:checked`);
-
-            if (selectedRadio) {
-                choices[name] = selectedRadio.value;
-            } else {
-                allChoicesMade = false;
-            }
+    function updateEquipamentoEscolhido() {
+        const escolhas = {};
+        elements.equipmentOptionsContainer.querySelectorAll('.equipment-choice').forEach(select => {
+            escolhas[select.dataset.group] = select.value;
         });
-
-        if (choiceGroupsCount === 0) allChoicesMade = true;
-
-        selectedEquipmentInput.value = JSON.stringify({
-            fixas: fixed,
-            escolhas: choices
-        });
-
-        validateBaseDistribution(allChoicesMade, checkSkillRequirements());
+        elements.equipamentoEscolhidoInput.value = JSON.stringify(escolhas);
+        validateForm();
     }
-    // ... FIM das funções sem alteração (HP e Equipment) ...
 
-    // --- PERÍCIAS DE CLASSE E ORIGEM ---
-    function renderSkillOptions(skills) {
-        skillOptionsContainer.classList.add('d-none');
-        skillChoiceCheckboxes.innerHTML = '';
-        skillChoiceAlert.classList.add('d-none');
-        fixedSkillsDisplay.innerHTML = '';
+    function updatePericiasEscolhidas() {
+        const periciasEscolhidas = [];
+        const escolhaNecessaria = parseInt(elements.classeSelect.selectedOptions[0]?.dataset.periciasIniciais?.escolha) || 0;
 
-        if (!skills || typeof skills !== 'object') {
-            return;
-        }
+        elements.skillOptionsContainer.querySelectorAll('.skill-choice:checked').forEach(checkbox => {
+            periciasEscolhidas.push(checkbox.value);
+        });
 
-        const fixedSkills = skills.fixas || [];
-        const choiceSkills = skills.lista || [];
-        const choicesCount = parseInt(skills.escolha) || 0;
-
-        // Perícias Fixas de Origem (Para exibir no bloco de info fixo)
-        const origemOption = origemSelect.options[origemSelect.selectedIndex];
-        const origemSkills = parseDataAttributeString(origemOption?.getAttribute('data-skills') || null);
-        // As perícias de Origem estão como chaves no objeto de Origem:
-        const fixedOrigem = Object.keys(origemSkills);
-
-        const allFixedSkills = [...new Set([...fixedSkills, ...fixedOrigem])];
-
-        if (allFixedSkills.length > 0) {
-            fixedSkillsDisplay.innerHTML = `<p class="small fw-bold">Perícias Fixas (Classe e Origem):</p><p class="small text-dark">${allFixedSkills.join(', ')}</p>`;
-        } else {
-            fixedSkillsDisplay.innerHTML = `<p class="small text-muted">Nenhuma perícia fixa.</p>`;
-        }
-
-        if (choicesCount > 0 && Array.isArray(choiceSkills) && choiceSkills.length > 0) {
-            skillOptionsContainer.classList.remove('d-none');
-            skillChoiceInstructions.textContent = `Escolha ${choicesCount} perícias da lista abaixo:`;
-
-            choiceSkills.forEach(skill => {
-                const id = `skill_choice_${skill.replace(/\s/g, '_')}`;
-                // Desabilita se a perícia já for fixa por Classe ou Origem
-                const isDisabled = allFixedSkills.includes(skill);
-                const disabledAttr = isDisabled ? 'disabled' : '';
-
-                skillChoiceCheckboxes.insertAdjacentHTML('beforeend', `
-                    <div class="form-check small">
-                        <input class="form-check-input skill-choice-checkbox" type="checkbox" id="${id}" value="${skill}" ${disabledAttr}>
-                        <label class="form-check-label" for="${id}">${skill} ${isDisabled ? '(Já é fixa)' : ''}</label>
-                    </div>
-                `);
+        // Validar número de escolhas
+        if (periciasEscolhidas.length > escolhaNecessaria) {
+            alert(`Você só pode escolher ${escolhaNecessaria} perícias.`);
+            // Desmarcar a última escolha
+            periciasEscolhidas.pop();
+            elements.skillOptionsContainer.querySelectorAll('.skill-choice:checked').forEach((checkbox, index) => {
+                if (index >= escolhaNecessaria) {
+                    checkbox.checked = false;
+                }
             });
-            skillChoiceCheckboxes.querySelectorAll('.skill-choice-checkbox').forEach(cb => cb.addEventListener('change', updateSelectedSkills));
         }
 
-        updateSelectedSkills();
+        elements.periciasEscolhidasInput.value = JSON.stringify(periciasEscolhidas);
+        validateForm();
+        updatePericiasCalculadas();
     }
 
-    function checkSkillRequirements() {
-        const selected = classeSelect.options[classeSelect.selectedIndex];
-        if (!selected || !selected.value) return true;
+    // CÁLCULOS E ATUALIZAÇÕES
+    function updateFinalAttributesAndChart() {
+        const baseScores = getBaseScores();
+        const finalScores = {};
+        const bonuses = calcularBonusAtributos();
 
-        const skills = parseDataAttributeString(selected.getAttribute('data-class-skills') || null);
-        const choicesCount = parseInt(skills.escolha) || 0;
-
-        if (choicesCount === 0) return true;
-
-        const checkedCount = skillChoiceCheckboxes.querySelectorAll('.skill-choice-checkbox:checked').length;
-        const requiredMet = checkedCount === choicesCount;
-
-        skillChoiceAlert.classList.toggle('d-none', requiredMet);
-        if (!requiredMet) {
-             skillChoiceAlert.textContent = `Você deve selecionar exatamente ${choicesCount} perícia(s). Selecionado: ${checkedCount}`;
-        }
-
-        return requiredMet;
-    }
-
-
-    function updateSelectedSkills() {
-        const selected = classeSelect.options[classeSelect.selectedIndex];
-        if (!selected || !selected.value) {
-            selectedSkillsInput.value = '[]';
-            updateSkillCalculation(); // Recalcula com 0 proficiência
-            return;
-        }
-
-        const skillsData = parseDataAttributeString(selected.getAttribute('data-class-skills') || null);
-        const fixedSkills = skillsData.fixas || [];
-
-        const origemOption = origemSelect.options[origemSelect.selectedIndex];
-        const origemSkills = parseDataAttributeString(origemOption?.getAttribute('data-skills') || null);
-        const fixedOrigem = Object.keys(origemSkills);
-
-        const chosenSkills = [];
-        skillChoiceCheckboxes.querySelectorAll('.skill-choice-checkbox:checked').forEach(cb => {
-            chosenSkills.push(cb.value);
+        // Calcular scores finais
+        ATTRIBUTES.forEach(attr => {
+            const base = baseScores[attr] || 0;
+            const bonus = bonuses[attr] || 0;
+            finalScores[attr] = base + bonus;
         });
 
-        // Junta as fixas de classe, fixas de origem e as escolhidas
-        const allSkills = [...new Set([...fixedSkills, ...fixedOrigem, ...chosenSkills])];
+        // Atualizar display
+        updateAttributesDisplay(finalScores);
+        updateChart(finalScores);
+        updatePericiasCalculadas();
+        validateForm();
 
-        selectedSkillsInput.value = JSON.stringify(allSkills);
-
-        checkSkillRequirements();
-        validateBaseDistribution(null, checkSkillRequirements());
-        updateSkillCalculation(); // Recalcula com as perícias atualizadas
+        // Salvar no hidden input
+        elements.finalAttributesJsonInput.value = JSON.stringify({
+            base: baseScores,
+            final: finalScores,
+            bonuses: bonuses
+        });
     }
 
-    // --- CÁLCULO E EXIBIÇÃO DE PERÍCIAS FINAIS (CORRIGIDO PARA MOSTRAR TODAS) ---
+    function calcularBonusAtributos() {
+        const bonuses = {};
 
-    function updateSkillCalculation(finalModifiers = null, finalScores = null) {
-        // Obter Modificadores Finais
-        if (!finalModifiers || !finalScores) {
-            const finalAttrData = finalAttributesJsonInput.value ? JSON.parse(finalAttributesJsonInput.value) : null;
-            if (finalAttrData && finalAttrData.final) {
-                finalScores = finalAttrData.final;
-                finalModifiers = {};
-                Object.keys(finalScores).forEach(key => {
-                    finalModifiers[key] = calculateModifier(finalScores[key]);
-                });
-            } else {
-                periciasListDisplay.innerHTML = '<p class="text-muted small">Complete a distribuição de atributos e selecione uma classe para calcular as perícias.</p>';
-                return;
-            }
+        // Bônus da raça
+        const racaModificadores = JSON.parse(elements.racaSelect.selectedOptions[0]?.dataset.modificadores || '{}');
+        for (const [attr, bonus] of Object.entries(racaModificadores)) {
+            bonuses[attr] = (bonuses[attr] || 0) + bonus;
         }
 
-        if (ALL_SYSTEM_SKILLS.length === 0) {
-            periciasListDisplay.innerHTML = '<p class="text-muted small">Nenhuma perícia cadastrada no sistema.</p>';
-            return;
+        // Bônus da classe
+        const classeBonus = JSON.parse(elements.classeSelect.selectedOptions[0]?.dataset.atributosBonus || '{}');
+        for (const [attr, bonus] of Object.entries(classeBonus)) {
+            bonuses[attr] = (bonuses[attr] || 0) + bonus;
         }
 
-        // Proficiência
-        const proficienciaBonus = parseInt(proficienciaBonusSelect.value) || 0;
-        proficienciaBonusInput.value = proficienciaBonus;
+        return bonuses;
+    }
 
-        // Perícias proficientes selecionadas
-        const proficientSkills = JSON.parse(selectedSkillsInput.value || '[]');
-
+    function updateAttributesDisplay(finalScores) {
         let html = '';
 
-        ALL_SYSTEM_SKILLS.forEach(skill => {
-            const attrKey = skill.atributo_relacionado ? skill.atributo_relacionado.toLowerCase() : '';
-            const attrLabelShort = (ATTRIBUTE_MAP[attrKey] || attrKey).substr(0,3).toUpperCase();
-
-            const attrScore = finalScores[attrKey] !== undefined ? finalScores[attrKey] : 0;
-            const attrMod = finalModifiers[attrKey] !== undefined ? finalModifiers[attrKey] : 0;
-
-            const isProficient = proficientSkills.includes(skill.nome);
-            const pb = isProficient ? proficienciaBonus : 0;
-            const totalSkillBonus = attrMod + pb;
-            const sign = totalSkillBonus >= 0 ? '+' : '';
-
-            let skillClass = 'text-secondary';
-            let statusBadge = '<span class="badge bg-light text-muted border border-secondary border-opacity-25">Básica</span>';
-
-            if (isProficient) {
-                skillClass = 'text-dark fw-bold';
-                statusBadge = '<span class="badge bg-success">Proficiente</span>';
-            }
+        ATTRIBUTES.forEach(attr => {
+            const score = finalScores[attr] || 0;
+            const modifier = calcularModificador(score);
+            const modifierSign = modifier >= 0 ? '+' : '';
+            const label = ATTRIBUTE_MAP[attr];
+            const shortLabel = label.substring(0, 3).toUpperCase();
 
             html += `
-                <div class="col-12 col-md-6">
-                    <div class="p-2 border rounded ${isProficient ? 'border-success bg-success-subtle' : 'bg-light'}">
+                <div class="d-flex justify-content-between align-items-center p-2 border rounded bg-light">
+                    <strong class="text-uppercase">${shortLabel}</strong>
+                    <div class="text-end">
+                        <div class="h5 mb-0 text-primary">${score}</div>
+                        <small class="text-muted">${modifierSign}${modifier}</small>
+                    </div>
+                </div>
+            `;
+        });
+
+        elements.finalAttributesDisplay.innerHTML = html;
+    }
+
+    function updatePericiasCalculadas() {
+        const finalData = JSON.parse(elements.finalAttributesJsonInput.value || '{}');
+        const finalScores = finalData.final || {};
+
+        if (Object.keys(finalScores).length === 0) {
+            elements.periciasListDisplay.innerHTML = '<p class="text-muted small">Complete os atributos para calcular as perícias...</p>';
+            return;
+        }
+
+        let html = '';
+        const periciasProficientes = JSON.parse(elements.periciasEscolhidasInput.value || '[]');
+        const bonusOrigem = JSON.parse(elements.origemSelect.selectedOptions[0]?.dataset.bonusPericias || '{}');
+
+        PERICIAS_SISTEMA.forEach(pericia => {
+            const atributo = pericia.atributo_relacionado;
+            const score = finalScores[atributo] || 0;
+            const modificador = calcularModificador(score);
+            const isProficiente = periciasProficientes.includes(pericia.nome);
+            const bonusProficiencia = isProficiente ? personagem.proficiencia : 0;
+            const bonusPericiaOrigem = bonusOrigem[pericia.nome] || 0;
+
+            const total = modificador + bonusProficiencia + bonusPericiaOrigem + (pericia.modificador_base || 0);
+            const totalSign = total >= 0 ? '+' : '';
+
+            const badgeClass = isProficiente ? 'bg-success' : 'bg-secondary';
+            const borderClass = isProficiente ? 'border-success' : '';
+
+            html += `
+                <div class="col">
+                    <div class="p-2 border rounded ${borderClass}">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="${skillClass} me-2">${skill.nome}</span>
-                            ${statusBadge}
+                            <span class="fw-bold small">${pericia.nome}</span>
+                            <span class="badge ${badgeClass}">${totalSign}${total}</span>
                         </div>
-                        <div class="small text-muted mt-1">
-                            <span class="me-3">${attrLabelShort} Mod: ${attrMod >= 0 ? '+' : ''}${attrMod}</span>
-                            <span class="fw-bold text-dark">Total: ${sign}${totalSkillBonus}</span>
+                        <div class="small text-muted">
+                            ${ATTRIBUTE_MAP[atributo]?.substring(0, 3).toUpperCase()} ${modificador >= 0 ? '+' : ''}${modificador}
+                            ${isProficiente ? `+ PB${personagem.proficiencia}` : ''}
+                            ${bonusPericiaOrigem > 0 ? `+ Origem${bonusPericiaOrigem}` : ''}
                         </div>
                     </div>
                 </div>
             `;
         });
 
-        periciasListDisplay.innerHTML = html;
+        elements.periciasListDisplay.innerHTML = html;
     }
 
-
-    // --- VALIDAÇÃO E SUBMISSÃO ---
-    function validateBaseDistribution(equipmentComplete = null, skillsComplete = null) {
-        const isPointBuy = methodPointBuy.checked && !methodPointBuy.disabled;
-        const totalCost = isPointBuy ? calculatePointCost() : 0;
-        const hasClass = classeSelect.value;
-        const hpRolled = rolledHpInput.value !== '';
-        const hasName = nomeInput.value.trim() !== '';
-
-        const isCostValid = !isPointBuy || totalCost <= MAX_POINTS;
-
-        if (equipmentComplete === null) {
-            equipmentComplete = true;
-            equipmentOptionsContainer.querySelectorAll('div.p-3').forEach(div => {
-                const firstInput = div.querySelector('input');
-                if (!firstInput) return;
-                const name = firstInput.name;
-                const selectedRadio = div.querySelector(`input[name="${name}"]:checked`);
-                if (!selectedRadio) equipmentComplete = false;
-            });
-        }
-
-        if (skillsComplete === null) {
-            skillsComplete = checkSkillRequirements();
-        }
-
-        const raceOption = racaSelect.options[racaSelect.selectedIndex];
-        const tipoBonus = raceOption?.getAttribute('data-tipo-bonus') || 'flat';
-        const bonusLivre = parseInt(raceOption?.getAttribute('data-bonus-livre') || 0);
-        let raceChoicesComplete = true;
-
-        if (tipoBonus !== 'flat' && bonusLivre > 0) {
-            raceChoicesComplete = JSON.parse(raceChoicesInput.value || '[]').length === bonusLivre;
-        }
-
-        const isHpValid = !hasClass || hpRollSection.classList.contains('d-none') || hpRolled;
-
-        const isValid = isCostValid && hasClass && isHpValid && equipmentComplete && skillsComplete && raceChoicesComplete && hasName;
-
-        submitButton.disabled = !isValid;
-        submitButton.textContent = isValid ? 'Criar Personagem Lendário' : 'Preencha todos os campos obrigatórios';
-    }
-
-    // ... Função updateChart (sem alterações) ...
+    // GRÁFICO E VISUAIS
     function updateChart(finalScores) {
-        const labels = ATTRIBUTES.map(key => (ATTRIBUTE_MAP[key]||key).substr(0,3).toUpperCase());
-        const data = ATTRIBUTES.map(key => finalScores[key] || 0);
-        const backgroundColors = [
-            'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)',
-            'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'
-        ];
+        const ctx = document.getElementById('attribute-chart').getContext('2d');
+        const labels = ATTRIBUTES.map(attr => ATTRIBUTE_MAP[attr].substring(0, 3).toUpperCase());
+        const data = ATTRIBUTES.map(attr => finalScores[attr] || 0);
 
-        const chartData = {
-            labels: labels,
-            datasets: [{
-                label: 'Atributos Finais',
-                data: data,
-                backgroundColor: backgroundColors.slice(0, ATTRIBUTES.length),
-                borderColor: backgroundColors.slice(0, ATTRIBUTES.length).map(c => c.replace('0.7', '1')),
-                borderWidth: 1
-            }]
-        };
+        if (window.attributeChart) {
+            window.attributeChart.destroy();
+        }
 
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                r: {
-                    angleLines: { display: false },
-                    suggestedMin: 0,
-                    suggestedMax: 20,
-                    pointLabels: { font: { size: 12 } },
-                    ticks: { display: false }
-                }
+        window.attributeChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Atributos',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    pointBackgroundColor: 'rgb(54, 162, 235)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(54, 162, 235)'
+                }]
             },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    formatter: (value) => value,
-                    color: '#fff',
-                    font: { weight: 'bold' }
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        suggestedMax: 20
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
                 }
             }
-        };
-
-        if (attributeChart) {
-            attributeChart.data = chartData;
-            attributeChart.update();
-        } else {
-            const ctx = document.getElementById('attribute-chart').getContext('2d');
-            attributeChart = new Chart(ctx, {
-                type: 'radar',
-                data: chartData,
-                options: chartOptions,
-                plugins: [ChartDataLabels]
-            });
-        }
+        });
     }
-    // ... FIM da função updateChart ...
 
-    // --- INICIALIZAÇÃO E LISTENERS GLOBAIS ---
+    // VALIDAÇÃO E SUBMISSÃO
+    function validateForm() {
+        const hasName = elements.nomeInput.value.trim() !== '';
+        const hasRace = elements.racaSelect.value !== '';
+        const hasClass = elements.classeSelect.value !== '';
+        const pointsValid = elements.methodPointBuy.checked ? calculateTotalPointCost() <= MAX_POINTS : true;
+        const hasHpRoll = elements.hpRollResult.textContent !== '0';
 
-    // Função de Randomização (Corrigida)
-    randomizeButton.addEventListener('click', () => {
-        // 1. Informações Básicas
-        nomeInput.value = ['Aria', 'Kael', 'Lyra', 'Zarok', 'Faelar'][Math.floor(Math.random() * 5)] + ' ' + Math.floor(Math.random() * 999);
+        const isValid = hasName && hasRace && hasClass && pointsValid && hasHpRoll;
 
-        // Seleção aleatória de raça/classe/origem (ignora a primeira opção que é "(Nenhuma)")
-        if (racaSelect.options.length > 1) racaSelect.selectedIndex = Math.floor(Math.random() * (racaSelect.options.length - 1)) + 1;
-        if (classeSelect.options.length > 1) classeSelect.selectedIndex = Math.floor(Math.random() * (classeSelect.options.length - 1)) + 1;
-        if (origemSelect.options.length > 1) origemSelect.selectedIndex = Math.floor(Math.random() * origemSelect.options.length); // 0 pode ser "(Opcional)"
+        elements.submitButton.disabled = !isValid;
+        updateFichaPrevia();
 
-        // 2. Distribuição
-        methodManual.checked = true; // Força para Manual/Rolagem para simplificar a randomização
-        handleDistributionMethodChange();
+        return isValid;
+    }
 
-        const rolledValues = [15, 14, 13, 12, 10, 8].sort(() => Math.random() - 0.5); // Valores D&D padrão
-        document.querySelectorAll('.manual-score').forEach((input, index) => {
-            input.value = rolledValues[index] || 10;
-            input.dispatchEvent(new Event('input'));
-        });
-
-        // 3. Opções de Raça, Classe, Origem
-        racaSelect.dispatchEvent(new Event('change'));
-        classeSelect.dispatchEvent(new Event('change'));
-        origemSelect.dispatchEvent(new Event('change'));
-
-        // Se houver opções de raça livre, escolhe o primeiro atributo disponível para todas
-        if (!raceChoiceContainer.classList.contains('d-none')) {
-            raceChoicesArea.querySelectorAll('.race-choice-select').forEach((select, index) => {
-                if (select.options.length > 1) {
-                    select.selectedIndex = (index % (ATTRIBUTES.length)) + 1; // Escolhe atributos diferentes (cíclico)
-                    select.dispatchEvent(new Event('change'));
-                }
-            });
+    function updateFichaPrevia() {
+        if (!validateForm()) {
+            elements.fichaPrevia.innerHTML = '<p class="text-muted">Preencha todas as informações para ver a ficha completa...</p>';
+            return;
         }
 
-        // Seleção aleatória de equipamentos
-        equipmentOptionsContainer.querySelectorAll('div.p-3').forEach(div => {
-            const radios = div.querySelectorAll('input[type="radio"]');
-            if (radios.length > 0) {
-                const randomIndex = Math.floor(Math.random() * radios.length);
-                radios[randomIndex].checked = true;
-                radios[randomIndex].dispatchEvent(new Event('change'));
+        const finalData = JSON.parse(elements.finalAttributesJsonInput.value || '{}');
+        const finalScores = finalData.final || {};
+
+        let html = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Informações Básicas</h6>
+                    <p><strong>Nome:</strong> ${elements.nomeInput.value}</p>
+                    <p><strong>Raça:</strong> ${elements.racaSelect.selectedOptions[0]?.text}</p>
+                    <p><strong>Classe:</strong> ${elements.classeSelect.selectedOptions[0]?.text}</p>
+                    <p><strong>Origem:</strong> ${elements.origemSelect.selectedOptions[0]?.text || 'Nenhuma'}</p>
+                    <p><strong>Vida:</strong> ${elements.hpRollResult.textContent} + CONST</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Atributos Principais</h6>
+        `;
+
+        ['forca', 'destreza', 'constituicao', 'inteligencia', 'sabedoria', 'carisma'].forEach(attr => {
+            if (finalScores[attr]) {
+                const modifier = calcularModificador(finalScores[attr]);
+                const sign = modifier >= 0 ? '+' : '';
+                html += `<p><strong>${ATTRIBUTE_MAP[attr]}:</strong> ${finalScores[attr]} (${sign}${modifier})</p>`;
             }
         });
-        updateSelectedEquipment();
 
-        // Seleção aleatória de perícias
-        const skillsData = parseDataAttributeString(classeSelect.options[classeSelect.selectedIndex]?.getAttribute('data-class-skills') || null);
-        const choicesCount = parseInt(skillsData.escolha) || 0;
-        const availableCheckboxes = Array.from(skillChoiceCheckboxes.querySelectorAll('.skill-choice-checkbox:not(:disabled)'));
+        html += `
+                </div>
+            </div>
+            <div class="mt-3">
+                <small class="text-muted">Personagem balanceado e pronto para criação!</small>
+            </div>
+        `;
 
-        // Desmarca tudo primeiro
-        availableCheckboxes.forEach(cb => { cb.checked = false; });
+        elements.fichaPrevia.innerHTML = html;
+    }
 
-        // Sorteia as escolhas
-        const shuffledSkills = availableCheckboxes.sort(() => 0.5 - Math.random());
-        shuffledSkills.slice(0, choicesCount).forEach(cb => { cb.checked = true; });
-        updateSelectedSkills();
+    // ROLAGEM DE VIDA
+    function handleHpRoll() {
+        const dadoVida = elements.classeSelect.selectedOptions[0]?.dataset.dadoVida || 'd6';
+        const sides = parseInt(dadoVida.substring(1));
+        const roll = Math.floor(Math.random() * sides) + 1;
 
+        elements.hpRollResult.textContent = roll;
+        elements.vidaRoladaInput.value = roll;
+        validateForm();
+    }
 
-        // Rolagem de HP
-        if (rolledHpInput.value === '') {
-            rollHpButton.click();
-        }
-
-        validateBaseDistribution();
-    });
-
-    // Inicialização principal
-    setAttributesFromSistema();
-
-    // Listeners para mudanças
-    methodPointBuy.addEventListener('change', handleDistributionMethodChange);
-    methodManual.addEventListener('change', handleDistributionMethodChange);
-
-    racaSelect.addEventListener('change', updateRaceDetails);
-    classeSelect.addEventListener('change', updateClassDetails);
-    origemSelect.addEventListener('change', updateOrigemDetails);
-
-    // NOVO LISTENER: Mudança no Modificador de Proficiência
-    proficienciaBonusSelect.addEventListener('change', updateSkillCalculation);
-
-
-    rollHpButton.addEventListener('click', handleHpRoll);
-    nomeInput.addEventListener('input', validateBaseDistribution);
-
-    updateRaceDetails();
-    updateClassDetails();
-    updateOrigemDetails();
-    updateSkillCalculation();
-    validateBaseDistribution();
+    // INICIAR APLICAÇÃO
+    init();
 });
 </script>
 @endif

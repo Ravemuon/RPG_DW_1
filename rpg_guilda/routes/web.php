@@ -87,9 +87,9 @@ Route::middleware(['auth'])->group(function () {
 
         // Área do mestre
         Route::get('/{campanha}/mestre', [CampanhaController::class, 'mestre'])->name('campanhas.mestre');
-        Route::post('/{campanha}/usuarios/gerenciar', [CampanhaController::class, 'gerenciarUsuario'])->name('campanhas.usuarios.gerenciar');
-        Route::post('/{campanha}/usuarios/aprovar', [CampanhaController::class, 'aprovarUsuario'])->name('campanhas.usuarios.aprovar');
-        Route::post('/{campanha}/usuarios/adicionar', [CampanhaController::class, 'adicionarAmigo'])->name('campanhas.usuarios.adicionar');
+        Route::post('/{campanha}/usuarios/gerenciar', [CampanhaController::class, 'gerenciarUsuario'])->name('campanhas.gerenciar');
+        Route::post('/{campanha}/usuarios/aprovar', [CampanhaController::class, 'aprovarUsuario'])->name('campanhas.aprovar');
+        Route::post('/{campanha}/usuarios/adicionar', [CampanhaController::class, 'adicionarAmigo'])->name('campanhas.adicionar');
 
         // Missões
         Route::prefix('{campanha}/missoes')->name('missoes.')->group(function () {
@@ -103,7 +103,7 @@ Route::middleware(['auth'])->group(function () {
 
             Route::get('{missao}/pdf', [MissaoController::class, 'exportarPdf'])->name('exportarPdf');
         });
-
+        
         Route::prefix('{campanha}/sessoes')->name('sessoes.')->group(function () {
             Route::get('/', [SessaoController::class, 'index'])->name('index');
             Route::get('/criar', [SessaoController::class, 'create'])->name('create');
@@ -118,8 +118,14 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{sessao}/confirmar-personagem', [SessaoController::class, 'confirmarPersonagem'])->name('confirmar-personagem');
             Route::put('/{sessao}/personagem/{personagem}', [SessaoController::class, 'atualizarPersonagem'])->name('atualizar-personagem');
             Route::get('/{sessao}/exportar-pdf', [SessaoController::class, 'exportarPdf'])->name('exportar-pdf');
-            Route::post('/{sessao}/confirmar-presenca', [SessaoController::class, 'adicionarPersonagem'])->name('confirmar-presenca');
+
+            // CORREÇÃO: Usando o nome 'marcar_presenca' e o método correto 'marcarPresenca' do controller
+            Route::post('/{sessao}/marcar-presenca', [SessaoController::class, 'marcarPresenca'])->name('marcar_presenca');
+
+            // Removi a rota duplicada:
+            // Route::post('/{sessao}/confirmar-presenca', [SessaoController::class, 'adicionarPersonagem'])->name('confirmar-presenca');
         });
+
 
 
     });

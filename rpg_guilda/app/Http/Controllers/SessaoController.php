@@ -8,6 +8,7 @@ use App\Models\Personagem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 class SessaoController extends Controller
 {
@@ -62,6 +63,7 @@ class SessaoController extends Controller
 
         if ($user) {
             // Verifica se o usuário logado existe no relacionamento 'presencas'
+            // Mantendo 'jogador_id' como você definiu, assumindo que esta é a coluna na tabela pivot.
             $jaMarqueiPresenca = $sessao->presencas()->where('jogador_id', $user->id)->exists();
         }
 
@@ -82,10 +84,12 @@ class SessaoController extends Controller
             'titulo' => 'required|string|max:150',
             'data_hora' => 'required|date',
             'resumo' => 'nullable|string',
+            'descricao_detalhada' => 'nullable|string', // Adicionado para permitir atualização no formulário
             'status' => 'required|in:agendada,em_andamento,concluida,cancelada'
         ]);
 
-        $sessao->update($request->only('titulo', 'data_hora', 'resumo', 'status'));
+        // Incluindo 'descricao_detalhada' na atualização
+        $sessao->update($request->only('titulo', 'data_hora', 'resumo', 'status', 'descricao_detalhada'));
 
         // Se o status for concluída, exporta o PDF
         if ($request->status === 'concluida') {
@@ -105,7 +109,11 @@ class SessaoController extends Controller
                          ->with('success', 'Sessão deletada com sucesso!');
     }
 
-    public function marcarPresenca(Campanha $campanha, Sessao $sessao)
+    /**
+     * Marca a presença de um jogador em uma sessão.
+     * Corrigido para injetar Request.
+     */
+    public function marcarPresenca(Request $request, Campanha $campanha, Sessao $sessao)
     {
         $user = Auth::user();
 
@@ -129,11 +137,27 @@ class SessaoController extends Controller
 
         } catch (\Illuminate\Database\QueryException $e) {
 
+            // Loga o erro completo para debug, mas mostra uma mensagem amigável ao usuário
+            Log::error("Erro ao marcar presença para user {$user->id} na sessão {$sessao->id}: " . $e->getMessage());
+
             if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'Integrity constraint violation')) {
                  return back()->with('error', '⚠️ Sua presença já está confirmada nesta sessão.');
             }
             return back()->with('error', 'Erro ao registrar presença. Tente novamente.');
         }
+    }
+
+    // Métodos stubs (corpos vazios) para rotas que não foram fornecidas no Controller
+    public function adicionarPersonagem(Request $request, Campanha $campanha, Sessao $sessao) {
+        return back()->with('error', 'Função de adicionar personagem ainda não implementada.');
+    }
+
+    public function confirmarPersonagem(Request $request, Campanha $campanha, Sessao $sessao) {
+        return back()->with('error', 'Função de confirmar personagem ainda não implementada.');
+    }
+
+    public function atualizarPersonagem(Request $request, Campanha $campanha, Sessao $sessao, Personagem $personagem) {
+        return back()->with('error', 'Função de atualizar personagem ainda não implementada.');
     }
 
     public function exportarPdf(Campanha $campanha, Sessao $sessao)

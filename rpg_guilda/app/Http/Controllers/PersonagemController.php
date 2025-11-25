@@ -25,15 +25,9 @@ class PersonagemController extends Controller
         $classes = Classe::all();
         $origens = Origem::all();
 
-        // Garante que uma campanha seja selecionada ou pega a primeira ativa
         $campanha = $request->query('campanha')
             ? Campanha::find($request->query('campanha'))
             : ($campanhas->count() ? $campanhas->first() : null);
-
-        // O Blade depende que $campanha->sistema esteja carregado
-        if ($campanha) {
-            $campanha->load('sistema');
-        }
 
         return view(
             'personagens.create',
@@ -48,12 +42,11 @@ class PersonagemController extends Controller
     {
         $data = $request->validated();
 
-        // Convertendo campos JSON/array e novos campos do formulário
+        // Convertendo campos JSON/array
         $atributos = $data['atributos'] ?? [];
         $selected_skills = $data['selected_skills'] ?? [];
         $selected_equipment = $data['selected_equipment'] ?? [];
         $race_choices = $data['race_choices'] ?? [];
-        $proficiencia_bonus = $data['proficiencia_bonus'] ?? 2; // Novo campo
 
         // Upload de imagem
         $imagemPath = $request->hasFile('imagem')
@@ -62,24 +55,23 @@ class PersonagemController extends Controller
 
         // Criação do personagem
         $personagem = Personagem::create([
-            'nome'            => $data['nome'],
-            'user_id'         => auth()->id(),
-            'campanha_id'     => $data['campanha_id'],
-            'raca_id'         => $data['raca_id'] ?? null,
-            'classe_id'       => $data['classe_id'] ?? null,
-            'origem_id'       => $data['origem_id'] ?? null,
-            'sistema_id'      => $data['sistema_id'] ?? null,
-            'atributos'       => $atributos,
-            'descricao'       => $data['descricao'] ?? null,
-            'historia'        => $data['historia'] ?? null,
-            'personalidade'   => $data['personalidade'] ?? null,
-            'inventario'      => $selected_equipment,
+            'nome'          => $data['nome'],
+            'user_id'       => auth()->id(),
+            'campanha_id'   => $data['campanha_id'],
+            'raca_id'       => $data['raca_id'] ?? null,
+            'classe_id'     => $data['classe_id'] ?? null,
+            'origem_id'     => $data['origem_id'] ?? null,
+            'sistema_id'    => $data['sistema_id'] ?? null,
+            'atributos'     => $atributos,
+            'descricao'     => $data['descricao'] ?? null,
+            'historia'      => $data['historia'] ?? null,
+            'personalidade' => $data['personalidade'] ?? null,
+            'inventario'    => $selected_equipment,
             'selected_skills' => $selected_skills,
             'race_choices'    => $race_choices,
-            'rolled_hp'       => $data['rolled_hp'] ?? null,
-            'proficiencia_bonus' => $proficiencia_bonus, // Salvando o PB
-            'imagem'          => $imagemPath,
-            'ativo'           => true,
+            'rolled_hp'     => $data['rolled_hp'] ?? null,
+            'imagem'        => $imagemPath,
+            'ativo'         => true,
         ]);
 
         // Redirecionamento condicional: para index ou show

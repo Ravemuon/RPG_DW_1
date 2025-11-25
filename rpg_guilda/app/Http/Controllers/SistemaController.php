@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class SistemaController extends Controller
 {
+
     /**
      * Lista todos os sistemas com suas relações (classes, origens, raças e perícias).
      */
@@ -37,26 +38,70 @@ class SistemaController extends Controller
     public function store(Request $request)
     {
         try {
-            // Valida os dados enviados para criar o sistema
+            // Regras de validação atualizadas
             $validatedData = $request->validate([
                 'nome' => 'required|string|max:100|unique:sistemas,nome',
                 'descricao' => 'nullable|string',
                 'foco' => 'nullable|string|max:100',
                 'mecanica_principal' => 'nullable|string|max:50',
                 'complexidade' => 'nullable|string|max:50',
-                'regras_opcionais' => 'nullable|json',
-                'max_atributos' => 'required|integer|min:1|max:6',
+
+                // Novos campos da migration
+                'usa_sanidade' => 'nullable|boolean',
+                'formula_pontos_vida' => 'nullable|string|max:200',
+                'recursos' => 'nullable|json', // Se vier como string JSON do formulário
+                'regras_opcionais' => 'nullable|json', // Se vier como string JSON do formulário
+
+                // Campos que serão usados para montar o JSON 'atributos'
+                'max_atributos' => 'required|integer|min:0|max:6', // 0 para sistemas sem atributos.
+                'atributo1_chave' => 'nullable|string|max:50', // Assumindo que você agora tem uma 'chave'
                 'atributo1_nome' => 'nullable|string|max:50',
+                'atributo2_chave' => 'nullable|string|max:50',
                 'atributo2_nome' => 'nullable|string|max:50',
+                'atributo3_chave' => 'nullable|string|max:50',
                 'atributo3_nome' => 'nullable|string|max:50',
+                'atributo4_chave' => 'nullable|string|max:50',
                 'atributo4_nome' => 'nullable|string|max:50',
+                'atributo5_chave' => 'nullable|string|max:50',
                 'atributo5_nome' => 'nullable|string|max:50',
+                'atributo6_chave' => 'nullable|string|max:50',
                 'atributo6_nome' => 'nullable|string|max:50',
-                'pagina' => 'nullable|string|max:50',
             ]);
 
+            // Lógica para montar o campo 'atributos' (JSON)
+            $atributos = [];
+            $maxAtributos = (int) $validatedData['max_atributos'];
+            for ($i = 1; $i <= $maxAtributos; $i++) {
+                $chave = $validatedData["atributo{$i}_chave"] ?? null;
+                $nome = $validatedData["atributo{$i}_nome"] ?? null;
+
+                if ($chave && $nome) {
+                    $atributos[$chave] = $nome;
+                }
+            }
+
+            // Prepara os dados para criação (removendo os campos auxiliares)
+            $dataToCreate = array_merge(
+                $request->only([
+                    'nome', 'descricao', 'foco', 'mecanica_principal', 'complexidade',
+                    'usa_sanidade', 'formula_pontos_vida', 'recursos', 'regras_opcionais'
+                ]),
+                ['atributos' => $atributos]
+            );
+
+            // Se 'recursos' e 'regras_opcionais' vierem como strings JSON, eles precisam ser decodificados
+            if (isset($dataToCreate['recursos']) && is_string($dataToCreate['recursos'])) {
+                $dataToCreate['recursos'] = json_decode($dataToCreate['recursos'], true);
+            }
+             if (isset($dataToCreate['regras_opcionais']) && is_string($dataToCreate['regras_opcionais'])) {
+                $dataToCreate['regras_opcionais'] = json_decode($dataToCreate['regras_opcionais'], true);
+            }
+             // Lembre-se que o campo 'usa_sanidade' deve vir do form, talvez como checkbox (null ou 'on')
+            $dataToCreate['usa_sanidade'] = $request->has('usa_sanidade');
+
+
             // Cria o novo sistema no banco de dados
-            Sistema::create($validatedData);
+            Sistema::create($dataToCreate);
 
             return redirect()->route('sistemas.index')->with('success', 'Sistema criado com sucesso!');
         } catch (ValidationException $e) {
@@ -65,21 +110,16 @@ class SistemaController extends Controller
         }
     }
 
-    /**
-     * Exibe os detalhes de um sistema específico.
-     */
-    public function show(Sistema $sistema)
-    {
-        // Carrega as relações do sistema, como classes, origens, raças e perícias
-        $sistema->load(['classes', 'origens', 'racas', 'pericias']);
-        return view('sistemas.show', compact('sistema'));
-    }
+    // ... show, edit ...
 
     /**
      * Exibe o formulário para editar um sistema.
      */
     public function edit(Sistema $sistema)
     {
+         // Para facilitar a edição, você pode querer desempacotar os atributos JSON
+        // em variáveis separadas aqui antes de enviar para a view,
+        // mas a implementação da view não está visível.
         return view('sistemas.edit', compact('sistema'));
     }
 
@@ -89,26 +129,70 @@ class SistemaController extends Controller
     public function update(Request $request, Sistema $sistema)
     {
         try {
-            // Valida os dados para atualização
+             // Regras de validação atualizadas
             $validatedData = $request->validate([
                 'nome' => 'required|string|max:100|unique:sistemas,nome,' . $sistema->id,
                 'descricao' => 'nullable|string',
                 'foco' => 'nullable|string|max:100',
                 'mecanica_principal' => 'nullable|string|max:50',
                 'complexidade' => 'nullable|string|max:50',
-                'regras_opcionais' => 'nullable|json',
-                'max_atributos' => 'required|integer|min:1|max:6',
+
+                // Novos campos da migration
+                'usa_sanidade' => 'nullable|boolean',
+                'formula_pontos_vida' => 'nullable|string|max:200',
+                'recursos' => 'nullable|json', // Se vier como string JSON do formulário
+                'regras_opcionais' => 'nullable|json', // Se vier como string JSON do formulário
+
+                // Campos que serão usados para montar o JSON 'atributos'
+                'max_atributos' => 'required|integer|min:0|max:6',
+                'atributo1_chave' => 'nullable|string|max:50',
                 'atributo1_nome' => 'nullable|string|max:50',
+                'atributo2_chave' => 'nullable|string|max:50',
                 'atributo2_nome' => 'nullable|string|max:50',
+                'atributo3_chave' => 'nullable|string|max:50',
                 'atributo3_nome' => 'nullable|string|max:50',
+                'atributo4_chave' => 'nullable|string|max:50',
                 'atributo4_nome' => 'nullable|string|max:50',
+                'atributo5_chave' => 'nullable|string|max:50',
                 'atributo5_nome' => 'nullable|string|max:50',
+                'atributo6_chave' => 'nullable|string|max:50',
                 'atributo6_nome' => 'nullable|string|max:50',
-                'pagina' => 'nullable|string|max:50',
             ]);
 
+            // Lógica para montar o campo 'atributos' (JSON)
+            $atributos = [];
+            $maxAtributos = (int) $validatedData['max_atributos'];
+            for ($i = 1; $i <= $maxAtributos; $i++) {
+                 $chave = $validatedData["atributo{$i}_chave"] ?? null;
+                $nome = $validatedData["atributo{$i}_nome"] ?? null;
+
+                if ($chave && $nome) {
+                    $atributos[$chave] = $nome;
+                }
+            }
+
+            // Prepara os dados para atualização (removendo os campos auxiliares)
+            $dataToUpdate = array_merge(
+                $request->only([
+                    'nome', 'descricao', 'foco', 'mecanica_principal', 'complexidade',
+                    'usa_sanidade', 'formula_pontos_vida', 'recursos', 'regras_opcionais'
+                ]),
+                ['atributos' => $atributos]
+            );
+
+             // Se 'recursos' e 'regras_opcionais' vierem como strings JSON, eles precisam ser decodificados
+            if (isset($dataToUpdate['recursos']) && is_string($dataToUpdate['recursos'])) {
+                $dataToUpdate['recursos'] = json_decode($dataToUpdate['recursos'], true);
+            }
+             if (isset($dataToUpdate['regras_opcionais']) && is_string($dataToUpdate['regras_opcionais'])) {
+                $dataToUpdate['regras_opcionais'] = json_decode($dataToUpdate['regras_opcionais'], true);
+            }
+             // Lembre-se que o campo 'usa_sanidade' deve vir do form, talvez como checkbox (null ou 'on')
+            $dataToUpdate['usa_sanidade'] = $request->has('usa_sanidade');
+
+
             // Atualiza o sistema com os dados validados
-            $sistema->update($validatedData);
+            $sistema->update($dataToUpdate);
 
             return redirect()->route('sistemas.index')->with('success', 'Sistema atualizado com sucesso!');
         } catch (ValidationException $e) {

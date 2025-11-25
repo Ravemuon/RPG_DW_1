@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class CampanhaController extends Controller
 {
     /**
-     * Mapear status do pivot para texto legível
+     * Mapear status do pivot para texto legível.
      */
     private function mapStatus(string $statusPivot): string
     {
@@ -27,7 +27,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Redireciona para minhas campanhas
+     * Redireciona para minhas campanhas.
      */
     public function index()
     {
@@ -35,12 +35,14 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Minhas campanhas (criado ou participa)
+     * Minhas campanhas (criado ou participa).
      */
     public function minhas()
     {
         $user = Auth::user();
-        if (!$user) return redirect()->route('login');
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
         $campanhasMestre = Campanha::where('criador_id', $user->id)
             ->with('sistema', 'criador')
@@ -57,7 +59,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Todas campanhas públicas (e privadas que o usuário participa/é mestre)
+     * Todas campanhas públicas (e privadas que o usuário participa/é mestre).
      * NOTA: O filtro de privacidade pode ser melhorado com Scopes no Model.
      */
     public function todas(Request $request)
@@ -75,7 +77,6 @@ class CampanhaController extends Controller
             }
         });
 
-
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -90,7 +91,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Área do mestre
+     * Área do mestre.
      */
     public function mestre($id)
     {
@@ -104,7 +105,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Deletar campanha
+     * Deletar campanha.
      */
     public function destroy($id)
     {
@@ -120,7 +121,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Tela criar campanha
+     * Tela criar campanha.
      */
     public function create()
     {
@@ -129,7 +130,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Salvar campanha
+     * Salvar campanha.
      */
     public function store(Request $request)
     {
@@ -168,7 +169,7 @@ class CampanhaController extends Controller
             'codigo_convite' => $inviteCode,
         ]);
 
-        // Mestre é automaticamente anexado como 'ativo'
+        // Mestre é automaticamente anexado como 'mestre'
         $campanha->jogadores()->attach(auth()->id(), ['status' => 'mestre']);
 
         Notificacao::create([
@@ -181,7 +182,7 @@ class CampanhaController extends Controller
                             ->with('success', 'Campanha criada com sucesso!');
     }
 
-      public function edit(Campanha $campanha)
+    public function edit(Campanha $campanha)
     {
         // Apenas o criador ou admin pode editar
         if(auth()->id() !== $campanha->criador_id && auth()->user()->tipo !== 'administrador') {
@@ -193,7 +194,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Atualizar campanha
+     * Atualizar campanha.
      */
     public function update(Request $request, Campanha $campanha)
     {
@@ -241,7 +242,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Visualizar campanha
+     * Visualizar campanha.
      */
     public function show(Campanha $campanha)
     {
@@ -270,12 +271,14 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Solicitar entrada em campanha
+     * Solicitar entrada em campanha.
      */
     public function solicitarEntrada(Campanha $campanha)
     {
         $user = Auth::user();
-        if (!$user) return redirect()->route('login')->with('error', 'Você precisa estar logado.');
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Você precisa estar logado.');
+        }
 
         // Checa se já participa ou já solicitou
         $jaParticipa = $campanha->jogadores()->where('user_id', $user->id)->exists();
@@ -300,11 +303,11 @@ class CampanhaController extends Controller
         ]);
 
         return redirect()->route('campanhas.show', $campanha->id)
-                         ->with('success', 'Solicitação enviada! Aguarde aprovação do mestre.');
+                           ->with('success', 'Solicitação enviada! Aguarde aprovação do mestre.');
     }
 
     /**
-     * Entrar em campanha privada usando um código de convite
+     * Entrar em campanha privada usando um código de convite.
      */
     public function entrarComCodigo(Request $request)
     {
@@ -351,7 +354,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Aprovar ou rejeitar jogador
+     * Aprovar ou rejeitar jogador.
      */
     public function aprovarUsuario(Request $request, Campanha $campanha)
     {
@@ -384,5 +387,54 @@ class CampanhaController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Status do jogador atualizado com sucesso!');
+    }
+
+    /**
+     * Gerenciar usuário (Método adicionado/mantido para cobrir a rota campanhas.gerenciar).
+     * Nota: O método aprovarUsuario já trata a aprovação/rejeição/remoção; este método deve ser
+     * usado para qualquer outra lógica de gerenciamento ou, se necessário, unificado.
+     */
+    public function gerenciarUsuario(Request $request, Campanha $campanha)
+    {
+        $mestre = Auth::user();
+        if ($mestre->id !== $campanha->criador_id) {
+            return redirect()->back()->with('error', 'Apenas o mestre pode gerenciar usuários.');
+        }
+
+        // Exemplo: Delega a lógica de status para aprovarUsuario se for o caso
+        if ($request->filled('status') && in_array($request->status, ['ativo', 'pendente', 'rejeitado', 'remover'])) {
+            return $this->aprovarUsuario($request, $campanha);
+        }
+
+        // Lógica de gerenciamento adicional aqui, se houver.
+
+        return redirect()->route('campanhas.mestre', $campanha->id)->with('info', 'Ação de gerenciamento de usuário concluída.');
+    }
+
+    /**
+     * Adicionar Amigo por convite (Método adicionado/mantido para cobrir a rota campanhas.adicionar).
+     */
+    public function adicionarAmigo(Request $request, Campanha $campanha)
+    {
+        $mestre = Auth::user();
+        if ($mestre->id !== $campanha->criador_id) {
+            return redirect()->back()->with('error', 'Apenas o mestre pode adicionar amigos.');
+        }
+
+        $request->validate([
+            'amigo_id' => 'required|exists:users,id',
+        ]);
+
+        $amigo = User::findOrFail($request->amigo_id);
+
+        // Anexa o usuário como 'ativo' (assumindo que convite de mestre é aprovação imediata)
+        $campanha->jogadores()->attach($amigo->id, ['status' => 'ativo']);
+
+        Notificacao::create([
+            'usuario_id' => $amigo->id,
+            'mensagem' => "🎉 Você foi adicionado à campanha **{$campanha->nome}** pelo mestre.",
+        ]);
+
+        return redirect()->back()->with('success', "O jogador {$amigo->nome} foi adicionado à campanha.");
     }
 }
