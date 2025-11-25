@@ -124,15 +124,31 @@ Route::middleware(['auth'])->group(function () {
 
     });
 
-
     /*------------------------------------
     | Personagens
     ------------------------------------*/
     Route::resource('personagens', PersonagemController::class);
-    Route::post('/personagens/{personagem}/origens/add', [PersonagemOrigemController::class, 'store'])->name('personagens.origens.add');
-    Route::delete('/personagens/{personagem}/origens/{origem}', [PersonagemOrigemController::class, 'destroy'])->name('personagens.origens.remove');
-    Route::post('/personagens/{personagem}/pericias/add', [PersonagemPericiaController::class, 'store'])->name('personagens.pericias.add');
-    Route::delete('/personagens/{personagem}/pericias/{pericia}', [PersonagemPericiaController::class, 'destroy'])->name('personagens.pericias.remove');
+
+    /* Rotas extras agrupadas para evitar conflito */
+    Route::prefix('personagens/{personagem}')->group(function () {
+        // Origens
+        Route::post('/origens/add', [PersonagemOrigemController::class, 'store'])
+            ->name('personagens.origens.add');
+        Route::delete('/origens/{origem}', [PersonagemOrigemController::class, 'destroy'])
+            ->name('personagens.origens.remove');
+
+        // Perícias
+        Route::post('/pericias/add', [PersonagemPericiaController::class, 'store'])
+            ->name('personagens.pericias.add');
+        Route::delete('/pericias/{pericia}', [PersonagemPericiaController::class, 'destroy'])
+            ->name('personagens.pericias.remove');
+
+        // Formulário de edição de perícias
+        Route::get('/pericias/edit', [PersonagemController::class, 'editPericias'])
+            ->name('personagens.pericias.edit');
+        Route::put('/pericias', [PersonagemController::class, 'updatePericias'])
+            ->name('personagens.pericias.update');
+    });
 
 
     // ============================================================================

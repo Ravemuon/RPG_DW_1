@@ -15,17 +15,31 @@ class Raca extends Model
         'nome',
         'sistema_id',
         'descricao',
-        'forca_bonus',
-        'destreza_bonus',
-        'constituicao_bonus',
-        'inteligencia_bonus',
-        'sabedoria_bonus',
-        'carisma_bonus',
+        'modificadores_atributos',
+        'tipo_bonus',
+        'bonus_livre',
         'pagina'
     ];
 
+    protected $casts = [
+        'modificadores_atributos' => 'array',
+    ];
+
+    // RELACIONAMENTOS
+
+    /**
+     * Sistema ao qual esta raça pertence
+     */
     public function sistema()
     {
         return $this->belongsTo(Sistema::class);
+    }
+
+    /**
+     * Personagens que usam esta raça
+     */
+    public function personagens()
+    {
+        return $this->hasMany(Personagem::class);
     }
 }

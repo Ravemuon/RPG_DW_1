@@ -7,7 +7,9 @@ use Database\Seeders\UsersTableSeeder;
 use Database\Seeders\SistemasTableSeeder;
 use Database\Seeders\ClassesTableSeeder;
 use Database\Seeders\RacasTableSeeder;
+use Database\Seeders\RacasTableSeederOutros;
 use Database\Seeders\OrigensTableSeeder;
+use Database\Seeders\OrigensTableSeederOutros;
 use Database\Seeders\PericiasTableSeeder;
 use Database\Seeders\SistemaClasseTableSeeder;
 use Database\Seeders\SistemaRacaTableSeeder;
@@ -30,10 +32,11 @@ class RPGSeeder extends Seeder
             SistemasTableSeeder::class,
             ClassesTableSeeder::class,
             RacasTableSeeder::class,
+            RacasTableSeederOutros::class,
             OrigensTableSeeder::class,
+            OrigensTableSeederOutros::class,
             PericiasTableSeeder::class,
             CampanhasTableSeeder::class,
-            PersonagemSeeder::class,
         ]);
 
         $this->command->info('=== RPGSeeder concluído com sucesso! ===');

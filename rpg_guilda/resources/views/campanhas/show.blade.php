@@ -187,7 +187,10 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 text-highlight">🧙 Personagens</h5>
                     @auth
-                        <a href="{{ route('personagens.create', ['campanha' => $campanha->id]) }}" class="btn btn-outline-warning btn-sm rounded-pill">Novo Personagem</a>
+                        <a href="{{ route('personagens.create') }}?campanha={{ $campanha->id }}"
+                           class="btn btn-outline-secondary btn-sm rounded-pill">
+                            Criar
+                        </a>
                     @endauth
                 </div>
                 <div class="card-body">

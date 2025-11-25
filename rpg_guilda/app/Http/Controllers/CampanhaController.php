@@ -57,16 +57,31 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Todas campanhas públicas e privadas (acesso controlado)
+     * Todas campanhas públicas (e privadas que o usuário participa/é mestre)
+     * NOTA: O filtro de privacidade pode ser melhorado com Scopes no Model.
      */
     public function todas(Request $request)
     {
+        $user = Auth::user();
         $query = Campanha::with(['criador', 'sistema', 'jogadores']);
+
+        // Filtro de privacidade: só mostra públicas OU privadas que o usuário participa/é mestre
+        $query->where(function ($q) use ($user) {
+            $q->where('privada', false); // Campanhas Públicas
+
+            if ($user) {
+                $q->orWhere('criador_id', $user->id) // Ou campanhas do mestre (usuário logado)
+                  ->orWhereHas('jogadores', fn($q2) => $q2->where('user_id', $user->id)); // Ou campanhas que o usuário participa
+            }
+        });
+
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('nome', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('nome', 'like', "%{$search}%")
                   ->orWhere('descricao', 'like', "%{$search}%");
+            });
         }
 
         $todasCampanhas = $query->orderBy('created_at', 'desc')->paginate(12);
@@ -124,20 +139,37 @@ class CampanhaController extends Controller
             'descricao' => 'nullable|string',
             'privada' => 'nullable|boolean',
             'status' => 'required|in:ativa,inativa',
+            // O código de convite é opcional, mas deve ser único
             'codigo_convite' => 'nullable|string|max:10|unique:campanhas',
         ]);
+
+        $isPrivate = $request->boolean('privada');
+        $inviteCode = $request->codigo_convite;
+
+        // Se for privada e nenhum código for fornecido, gera um código aleatório (6 caracteres maiúsculos)
+        if ($isPrivate && empty($inviteCode)) {
+            $inviteCode = Str::upper(Str::random(6));
+            // Garante que o código gerado é único (para evitar colisões)
+            while (Campanha::where('codigo_convite', $inviteCode)->exists()) {
+                 $inviteCode = Str::upper(Str::random(6));
+            }
+        } elseif (!$isPrivate) {
+            // Se for pública, garante que o código seja nulo
+            $inviteCode = null;
+        }
 
         $campanha = Campanha::create([
             'nome' => $request->nome,
             'sistema_id' => $request->sistema_id,
             'criador_id' => auth()->id(),
             'descricao' => $request->descricao,
-            'privada' => $request->boolean('privada'),
+            'privada' => $isPrivate, // Recebe o booleano diretamente
             'status' => $request->status,
-            'codigo_convite' => $request->codigo_convite ?: ($request->boolean('privada') ? strtoupper(Str::random(6)) : null),
+            'codigo_convite' => $inviteCode,
         ]);
 
-        $campanha->jogadores()->attach(auth()->id(), ['status' => 'ativo']);
+        // Mestre é automaticamente anexado como 'ativo'
+        $campanha->jogadores()->attach(auth()->id(), ['status' => 'mestre']);
 
         Notificacao::create([
             'usuario_id' => auth()->id(),
@@ -146,10 +178,10 @@ class CampanhaController extends Controller
         ]);
 
         return redirect()->route('campanhas.show', $campanha->id)
-                         ->with('success', 'Campanha criada com sucesso!');
+                            ->with('success', 'Campanha criada com sucesso!');
     }
 
-     public function edit(Campanha $campanha)
+      public function edit(Campanha $campanha)
     {
         // Apenas o criador ou admin pode editar
         if(auth()->id() !== $campanha->criador_id && auth()->user()->tipo !== 'administrador') {
@@ -176,20 +208,36 @@ class CampanhaController extends Controller
             'descricao' => 'nullable|string',
             'privada' => 'nullable|boolean',
             'status' => 'required|in:ativa,inativa',
+            // O código de convite é opcional, mas deve ser único (exceto para a campanha atual)
             'codigo_convite' => 'nullable|string|max:10|unique:campanhas,codigo_convite,'.$campanha->id,
         ]);
+
+        $isPrivate = $request->boolean('privada');
+        $inviteCode = $request->codigo_convite;
+
+        // Se for privada e nenhum código for fornecido, gera um código aleatório (6 caracteres maiúsculos)
+        if ($isPrivate && empty($inviteCode)) {
+            $inviteCode = Str::upper(Str::random(6));
+             // Garante que o código gerado é único (para evitar colisões)
+            while (Campanha::where('codigo_convite', $inviteCode)->exists()) {
+                 $inviteCode = Str::upper(Str::random(6));
+            }
+        } elseif (!$isPrivate) {
+            // Se for pública, garante que o código seja nulo
+            $inviteCode = null;
+        }
 
         $campanha->update([
             'nome' => $request->nome,
             'sistema_id' => $request->sistema_id,
             'descricao' => $request->descricao,
-            'privada' => $request->boolean('privada'),
+            'privada' => $isPrivate, // Recebe o booleano
             'status' => $request->status,
-            'codigo_convite' => $request->codigo_convite ?: ($request->boolean('privada') ? strtoupper(Str::random(6)) : null),
+            'codigo_convite' => $inviteCode,
         ]);
 
         return redirect()->route('campanhas.show', $campanha->id)
-                         ->with('success', 'Campanha atualizada com sucesso!');
+                            ->with('success', 'Campanha atualizada com sucesso!');
     }
 
     /**
@@ -202,7 +250,8 @@ class CampanhaController extends Controller
         $statusPivot = $user ? $campanha->jogadores()->where('user_id', $user->id)->first()?->pivot->status : null;
 
         // Controle de acesso para campanha privada
-        if ($campanha->privada && (!$user || (!$isMestre && $statusPivot !== 'ativo'))) {
+        // Permite acesso se for pública, ou se o usuário for mestre/jogador ativo/admin.
+        if ($campanha->privada && (!$user || (!$isMestre && $statusPivot !== 'ativo' && $user->tipo !== 'administrador'))) {
             return redirect()->route($user ? 'campanhas.todas' : 'login')
                              ->with('error', 'Acesso negado. Esta é uma campanha privada.');
         }
@@ -232,7 +281,7 @@ class CampanhaController extends Controller
         $jaParticipa = $campanha->jogadores()->where('user_id', $user->id)->exists();
         if ($jaParticipa) {
             return redirect()->route('campanhas.show', $campanha->id)
-                            ->with('info', 'Você já possui uma solicitação ou participa desta campanha.');
+                             ->with('info', 'Você já possui uma solicitação ou participa desta campanha.');
         }
 
         // Cria a solicitação com status pendente
@@ -251,9 +300,55 @@ class CampanhaController extends Controller
         ]);
 
         return redirect()->route('campanhas.show', $campanha->id)
-                        ->with('success', 'Solicitação enviada! Aguarde aprovação do mestre.');
+                         ->with('success', 'Solicitação enviada! Aguarde aprovação do mestre.');
     }
 
+    /**
+     * Entrar em campanha privada usando um código de convite
+     */
+    public function entrarComCodigo(Request $request)
+    {
+        $request->validate([
+            'codigo' => 'required|string|max:10',
+        ]);
+
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Você precisa estar logado para entrar na campanha.');
+        }
+
+        // Busca a campanha pelo código de convite, garantindo que seja uma campanha privada
+        $campanha = Campanha::where('codigo_convite', Str::upper($request->codigo))
+                            ->where('privada', true)
+                            ->first();
+
+        if (!$campanha) {
+            return redirect()->back()->with('error', 'Código de convite inválido ou campanha não encontrada.');
+        }
+
+        // Checa se o usuário já participa da campanha
+        $jaParticipa = $campanha->jogadores()->where('user_id', $user->id)->exists();
+        if ($jaParticipa) {
+            return redirect()->route('campanhas.show', $campanha->id)->with('info', 'Você já está associado a esta campanha.');
+        }
+
+        // Anexa o usuário diretamente como 'ativo' (o código é a aprovação)
+        $campanha->jogadores()->attach($user->id, ['status' => 'ativo']);
+
+        // Notificação para o mestre
+        Notificacao::create([
+            'usuario_id' => $campanha->criador_id,
+            'mensagem' => "🎉 O jogador **{$user->nome}** entrou na campanha **{$campanha->nome}** usando o código de convite.",
+        ]);
+
+        // Notificação para o jogador
+        Notificacao::create([
+            'usuario_id' => $user->id,
+            'mensagem' => "✅ Você entrou na campanha privada **{$campanha->nome}** usando o código de convite.",
+        ]);
+
+        return redirect()->route('campanhas.show', $campanha->id)->with('success', 'Você entrou na campanha com sucesso!');
+    }
 
     /**
      * Aprovar ou rejeitar jogador

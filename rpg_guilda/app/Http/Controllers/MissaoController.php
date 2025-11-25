@@ -5,17 +5,36 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Missao;
 use App\Models\Campanha;
-use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class MissaoController extends Controller
 {
-    public function index(Campanha $campanha)
+    public function index(Request $request, Campanha $campanha)
     {
         $this->authorize('view', $campanha);
-        $missoes = $campanha->missoes()->latest()->get();
 
-        return view('missoes.index', compact('campanha', 'missoes'));
+        $search = $request->search ?? null;
+        $prioridade = $request->prioridade ?? null;
+
+        $missoes = $campanha->missoes()
+            ->when($search, fn($q) =>
+                $q->where('titulo', 'LIKE', "%$search%")
+                  ->orWhere('descricao', 'LIKE', "%$search%"))
+            ->when($prioridade, fn($q) =>
+                $q->where('prioridade', $prioridade))
+            ->orderByDesc('id')
+            ->get();
+
+        $dashboard = [
+            'pendentes'  => $missoes->where('status', 'pendente')->count(),
+            'andamento'  => $missoes->where('status', 'em_andamento')->count(),
+            'concluidas' => $missoes->where('status', 'concluida')->count(),
+            'canceladas' => $missoes->where('status', 'cancelada')->count(),
+        ];
+
+        return view('missoes.index', compact(
+            'campanha', 'missoes', 'dashboard', 'search', 'prioridade'
+        ));
     }
 
     public function create(Campanha $campanha)
@@ -28,25 +47,21 @@ class MissaoController extends Controller
     {
         $this->authorize('update', $campanha);
 
-        $request->validate([
-            'titulo' => 'required|string|max:255',
-            'descricao' => 'nullable|string',
-            'recompensa' => 'nullable|string',
-            'prioridade' => 'nullable|in:baixa,media,alta',
-            'status' => 'nullable|in:pendente,em_andamento,concluida,cancelada'
+        $data = $request->validate([
+            'titulo'      => 'required|string|max:255',
+            'descricao'   => 'nullable|string|max:5000',
+            'recompensa'  => 'nullable|string|max:1000',
+            'prioridade'  => 'required|in:baixa,media,alta',
+            'status'      => 'required|in:pendente,em_andamento,concluida,cancelada'
         ]);
 
-        $campanha->missoes()->create([
-            'user_id' => Auth::id(),
-            'titulo' => $request->titulo,
-            'descricao' => $request->descricao,
-            'recompensa' => $request->recompensa,
-            'prioridade' => $request->prioridade ?? 'media',
-            'status' => $request->status ?? 'pendente',
-        ]);
+        $data['user_id'] = auth()->id();
 
-        return redirect()->route('missoes.index', $campanha->id)
-                         ->with('success', 'Missão criada com sucesso!');
+        $campanha->missoes()->create($data);
+
+        return redirect()
+            ->route('missoes.index', $campanha->id)
+            ->with('success', 'Missão criada com sucesso!');
     }
 
     public function show(Campanha $campanha, Missao $missao)
@@ -65,27 +80,30 @@ class MissaoController extends Controller
     {
         $this->authorize('update', $campanha);
 
-        $request->validate([
-            'titulo' => 'required|string|max:255',
-            'descricao' => 'nullable|string',
-            'recompensa' => 'nullable|string',
-            'prioridade' => 'nullable|in:baixa,media,alta',
-            'status' => 'nullable|in:pendente,em_andamento,concluida,cancelada'
+        $data = $request->validate([
+            'titulo'      => 'required|string|max:255',
+            'descricao'   => 'nullable|string|max:5000',
+            'recompensa'  => 'nullable|string|max:1000',
+            'prioridade'  => 'required|in:baixa,media,alta',
+            'status'      => 'required|in:pendente,em_andamento,concluida,cancelada'
         ]);
 
-        $missao->update($request->only('titulo', 'descricao', 'recompensa', 'prioridade', 'status'));
+        $missao->update($data);
 
-        return redirect()->route('missoes.show', [$campanha->id, $missao->id])
-                         ->with('success', 'Missão atualizada com sucesso!');
+        return redirect()
+            ->route('missoes.show', [$campanha->id, $missao->id])
+            ->with('success', 'Missão atualizada!');
     }
 
     public function destroy(Campanha $campanha, Missao $missao)
     {
         $this->authorize('delete', $campanha);
+
         $missao->delete();
 
-        return redirect()->route('missoes.index', $campanha->id)
-                         ->with('success', 'Missão deletada com sucesso!');
+        return redirect()
+            ->route('missoes.index', $campanha->id)
+            ->with('success', 'Missão removida!');
     }
 
     public function exportarPdf(Campanha $campanha, Missao $missao)
@@ -93,7 +111,7 @@ class MissaoController extends Controller
         $this->authorize('view', $campanha);
 
         $pdf = Pdf::loadView('missoes.relatorio', compact('campanha', 'missao'))
-                  ->setPaper('a4', 'portrait');
+            ->setPaper('a4', 'portrait');
 
         return $pdf->download("missao_{$missao->id}.pdf");
     }

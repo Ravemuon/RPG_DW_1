@@ -26,12 +26,14 @@
                 <form action="{{ route('campanhas.store') }}" method="POST">
                     @csrf
 
+                    {{-- Nome da Campanha --}}
                     <div class="mb-3">
                         <label class="form-label">Nome da Campanha</label>
                         <input type="text" name="nome" class="form-control" maxlength="100"
                                value="{{ old('nome') }}" required placeholder="Ex: Aventura Épica">
                     </div>
 
+                    {{-- Sistema RPG --}}
                     <div class="mb-3">
                         <label class="form-label">Sistema RPG</label>
                         <select name="sistema_id" class="form-select" required>
@@ -44,22 +46,44 @@
                         </select>
                     </div>
 
+                    {{-- Descrição --}}
                     <div class="mb-3">
                         <label class="form-label">Descrição</label>
                         <textarea name="descricao" class="form-control" rows="4"
-                                  placeholder="Opcional">{{ old('descricao') }}</textarea>
+                                    placeholder="Opcional">{{ old('descricao') }}</textarea>
                     </div>
 
+                    {{-- Campo Hidden para 'privada' (fallback para 0) --}}
+                    <input type="hidden" name="privada" value="0">
+
+                    {{-- Switch: Campanha Privada --}}
                     <div class="mb-3 form-check form-switch">
-                        <input type="checkbox" name="privada" class="form-check-input" id="privada"
-                               {{ old('privada') ? 'checked' : '' }}>
-                        <label class="form-check-label" for="privada">Campanha Privada</label>
+                        <input type="checkbox" name="privada" class="form-check-input" id="privada_checkbox"
+                            value="1"
+                            {{ old('privada') ? 'checked' : '' }}> {{-- CORREÇÃO APLICADA AQUI --}}
+                        <label class="form-check-label" for="privada_checkbox">Campanha Privada</label>
+                        <div class="form-text text-muted">
+                            Se ativado, jogadores precisarão de um código para entrar ou solicitar entrada.
+                        </div>
                     </div>
 
+                    {{-- Campo: Código de Convite (Condicional) --}}
+                    @php
+                        // Determina se o campo deve estar visível por padrão (se o old('privada') estiver marcado)
+                        $showCodeField = old('privada') ? 'block' : 'none';
+                    @endphp
+                    <div class="mb-3" id="codigoConviteGroup" style="display: {{ $showCodeField }};">
+                        <label class="form-label">Código de Convite (Opcional)</label>
+                        <input type="text" name="codigo_convite" class="form-control" maxlength="10"
+                            value="{{ old('codigo_convite') }}" placeholder="Deixe em branco para gerar automaticamente">
+                        <div class="form-text text-light-50">O código deve ter até 10 caracteres. Se for deixado em branco, um código será gerado automaticamente.</div>
+                    </div>
+
+                    {{-- Status --}}
                     <div class="mb-3">
                         <label class="form-label">Status</label>
                         <select name="status" class="form-select" required>
-                            <option value="ativa" {{ old('status') == 'ativa' ? 'selected' : '' }}>Ativa</option>
+                            <option value="ativa" {{ old('status', 'ativa') == 'ativa' ? 'selected' : '' }}>Ativa</option>
                             <option value="inativa" {{ old('status') == 'inativa' ? 'selected' : '' }}>Inativa</option>
                         </select>
                     </div>
@@ -79,4 +103,26 @@
     color: var(--btn-bg, #ffc107);
 }
 </style>
+
+{{-- Script para toggle do campo Código de Convite --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const privadaCheckbox = document.getElementById('privada_checkbox');
+        const codigoConviteGroup = document.getElementById('codigoConviteGroup');
+
+        function toggleCodigoConvite() {
+            if (privadaCheckbox.checked) {
+                codigoConviteGroup.style.display = 'block';
+            } else {
+                codigoConviteGroup.style.display = 'none';
+            }
+        }
+
+        // Adiciona o listener para mudança no checkbox
+        privadaCheckbox.addEventListener('change', toggleCodigoConvite);
+
+        // Garante o estado inicial (importante para o carregamento da página)
+        toggleCodigoConvite();
+    });
+</script>
 @endsection

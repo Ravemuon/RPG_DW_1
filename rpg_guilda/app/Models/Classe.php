@@ -92,7 +92,7 @@ class Classe extends Model
             'stunts'  => $this->stunts ? json_decode($this->stunts, true) : [],   // Decodifica o campo 'stunts' (caso haja JSON)
             'poderes' => $this->poderes ? json_decode($this->poderes, true) : [], // Decodifica o campo 'poderes' (caso haja JSON)
         ];
-    }   
+    }
 
         public function pericias()
     {

@@ -11,16 +11,10 @@ return new class extends Migration {
             $table->string('nome');
             $table->foreignId('sistema_id')->constrained('sistemas')->onDelete('cascade');
             $table->text('descricao')->nullable();
+            $table->json('modificadores_atributos')->nullable()->comment('Bônus de atributos da raça, mapeados pelos nomes internos dos atributos do sistema.');
 
-            $table->integer('forca_bonus')->default(0);
-            $table->integer('destreza_bonus')->default(0);
-            $table->integer('constituicao_bonus')->default(0);
-            $table->integer('inteligencia_bonus')->default(0);
-            $table->integer('sabedoria_bonus')->default(0);
-            $table->integer('carisma_bonus')->default(0);
+            // Mantendo os campos genéricos
             $table->enum('tipo_bonus', ['flat', 'multiplicador', 'escolha'])->default('flat');
-
-            // Bônus extra genérico (caso o sistema peça)
             $table->integer('bonus_livre')->default(0);
 
             // Página / referência

@@ -14,7 +14,8 @@ class SessaoController extends Controller
     public function index(Campanha $campanha)
     {
         $this->authorize('view', $campanha);
-        $sessoes = $campanha->sessoes()->with('personagens')->get();
+        // Carrega as presenças para uso futuro ou exibição opcional no índice
+        $sessoes = $campanha->sessoes()->with(['personagens', 'presencas'])->get();
 
         return view('sessoes.index', compact('campanha', 'sessoes'));
     }
@@ -46,12 +47,25 @@ class SessaoController extends Controller
                          ->with('success', 'Sessão criada com sucesso!');
     }
 
+    /**
+     * Exibe os detalhes da sessão, verificando a presença do usuário logado.
+     */
     public function show(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('view', $campanha);
-        $sessao->load('personagens', 'campanha');
+        $user = Auth::user();
 
-        return view('sessoes.show', compact('campanha', 'sessao'));
+        // Carrega o relacionamento 'presencas' para verificar se o usuário já marcou.
+        $sessao->load(['personagens', 'campanha', 'presencas']);
+
+        $jaMarqueiPresenca = false;
+
+        if ($user) {
+            // Verifica se o usuário logado existe no relacionamento 'presencas'
+            $jaMarqueiPresenca = $sessao->presencas()->where('jogador_id', $user->id)->exists();
+        }
+
+        return view('sessoes.show', compact('campanha', 'sessao', 'jaMarqueiPresenca'));
     }
 
     public function edit(Campanha $campanha, Sessao $sessao)
@@ -73,6 +87,7 @@ class SessaoController extends Controller
 
         $sessao->update($request->only('titulo', 'data_hora', 'resumo', 'status'));
 
+        // Se o status for concluída, exporta o PDF
         if ($request->status === 'concluida') {
             return $this->exportarPdf($campanha, $sessao);
         }
@@ -90,30 +105,35 @@ class SessaoController extends Controller
                          ->with('success', 'Sessão deletada com sucesso!');
     }
 
-    public function confirmarPersonagem(Request $request, Campanha $campanha, Sessao $sessao)
+    public function marcarPresenca(Campanha $campanha, Sessao $sessao)
     {
-        $request->validate(['personagem_id' => 'required|exists:personagens,id']);
-        $personagem = $request->user()->personagens()
-            ->where('id', $request->personagem_id)
-            ->where('campanha_id', $campanha->id)
-            ->firstOrFail();
+        $user = Auth::user();
 
-        $sessao->personagens()->syncWithoutDetaching([$personagem->id => ['presente' => true]]);
-        return back()->with('success', "Presença confirmada para '{$personagem->nome}'!");
-    }
+        if (!$user) {
+            return back()->with('error', 'Você precisa estar logado para marcar presença.');
+        }
 
-    public function atualizarPersonagem(Request $request, Campanha $campanha, Sessao $sessao, Personagem $personagem)
-    {
-        $this->authorize('update', $campanha);
+        // 1. Verificar se o usuário é o Mestre (Criador da Campanha)
+        if ($user->id === $campanha->criador_id) {
+            return back()->with('error', 'O Mestre não marca presença, ele gerencia.');
+        }
 
-        $request->validate(['presente' => 'nullable|boolean', 'resultado' => 'nullable|array']);
+        // 2. Tentar registrar a Presença
+        try {
 
-        $sessao->personagens()->updateExistingPivot($personagem->id, [
-            'presente' => $request->boolean('presente'),
-            'resultado' => $request->resultado
-        ]);
+            $sessao->presencas()->attach($user->id, [
+                'confirmou_presenca' => true,
+            ]);
 
-        return back()->with('success', 'Status do personagem atualizado!');
+            return back()->with('success', '✅ Presença marcada com sucesso! Nos vemos na sessão.');
+
+        } catch (\Illuminate\Database\QueryException $e) {
+
+            if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'Integrity constraint violation')) {
+                 return back()->with('error', '⚠️ Sua presença já está confirmada nesta sessão.');
+            }
+            return back()->with('error', 'Erro ao registrar presença. Tente novamente.');
+        }
     }
 
     public function exportarPdf(Campanha $campanha, Sessao $sessao)

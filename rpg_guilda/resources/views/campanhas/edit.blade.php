@@ -5,7 +5,7 @@
 @section('content')
 <div class="container py-5 text-light">
     <div class="text-center mb-5">
-        <h1 class="fw-bold text-highlight">✏️ Editar Campanha</h1>
+        <h1 class="fw-bold text-highlight">✏️ Editar Campanha: {{ $campanha->nome }}</h1>
         <p class="text-muted">Altere os dados da campanha conforme necessário.</p>
     </div>
 
@@ -50,11 +50,33 @@
                         <textarea name="descricao" class="form-control" rows="4">{{ old('descricao', $campanha->descricao) }}</textarea>
                     </div>
 
+                    {{-- Este input hidden garante que 'privada' será '0' se o checkbox não for marcado --}}
+                    <input type="hidden" name="privada" value="0">
+
                     <div class="mb-3 form-check form-switch">
-                        <input type="checkbox" name="privada" class="form-check-input" id="privada"
-                               {{ old('privada', $campanha->privada) ? 'checked' : '' }}>
-                        <label class="form-check-label" for="privada">Campanha Privada</label>
+                        <input type="checkbox" name="privada" class="form-check-input" id="privada_checkbox"
+                            value="1"
+                            {{ old('privada', $campanha->privada) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="privada_checkbox">Campanha Privada</label>
+                        <div class="form-text text-muted">
+                            Se ativado, jogadores precisarão de um código para entrar ou solicitar entrada.
+                        </div>
                     </div>
+
+                    {{-- NOVO CAMPO: Código de Convite (Visível apenas se for privada) --}}
+                    @php
+                        // Prioriza o valor do 'old', senão usa o valor atual da campanha
+                        $currentCode = old('codigo_convite', $campanha->codigo_convite);
+                        // Determina se o campo deve estar visível por padrão (se o checkbox estiver marcado)
+                        $showCodeField = old('privada', $campanha->privada) ? 'block' : 'none';
+                    @endphp
+                    <div class="mb-3" id="codigoConviteGroup" style="display: {{ $showCodeField }};">
+                        <label class="form-label">Código de Convite (Opcional)</label>
+                        <input type="text" name="codigo_convite" class="form-control" maxlength="10"
+                            value="{{ $currentCode }}" placeholder="Deixe em branco para gerar automaticamente">
+                        <div class="form-text text-light-50">O código deve ter até 10 caracteres. Se for removido e a campanha for privada, um novo código será gerado ao salvar.</div>
+                    </div>
+
 
                     <div class="mb-3">
                         <label class="form-label">Status</label>
@@ -79,4 +101,28 @@
     color: var(--btn-bg, #ffc107);
 }
 </style>
+
+{{-- Script para toggle do campo Código de Convite --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const privadaCheckbox = document.getElementById('privada_checkbox');
+        const codigoConviteGroup = document.getElementById('codigoConviteGroup');
+
+        function toggleCodigoConvite() {
+            if (privadaCheckbox.checked) {
+                // Se a campanha for marcada como privada, mostra o campo de código
+                codigoConviteGroup.style.display = 'block';
+            } else {
+                // Se for marcada como pública, esconde o campo de código
+                codigoConviteGroup.style.display = 'none';
+            }
+        }
+
+        // Adiciona o listener para mudança no checkbox
+        privadaCheckbox.addEventListener('change', toggleCodigoConvite);
+
+        // Garante o estado inicial (importante para o carregamento da página)
+        toggleCodigoConvite();
+    });
+</script>
 @endsection

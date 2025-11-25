@@ -4,104 +4,56 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Raca;
+use App\Models\Sistema;
 
 class RacasTableSeeder extends Seeder
 {
     public function run(): void
     {
-        $sistemaId = 1;
+        $sistema = Sistema::where('nome', 'D&D 5e')->first();
+
+        if (!$sistema) {
+            $this->command->error("Sistema D&D 5e não encontrado.");
+            return;
+        }
+
+        // Atributos padrão do sistema
+        $atributos = ['forca', 'destreza', 'constituicao', 'inteligencia', 'sabedoria', 'carisma'];
+
         $racas = [
-            [
-                'nome' => 'Humano',
-                'descricao' => 'Versáteis e adaptáveis, humanos recebem bônus equilibrados.',
-                'forca_bonus' => 1,
-                'destreza_bonus' => 1,
-                'constituicao_bonus' => 1,
-                'inteligencia_bonus' => 1,
-                'sabedoria_bonus' => 1,
-                'carisma_bonus' => 1,
-                'tipo_bonus' => 'flat',
-                'bonus_livre' => 0,
-                'pagina' => 'PHB 29',
-                'sistema_id' => $sistemaId,
-            ],
-            [
-                'nome' => 'Elfo',
-                'descricao' => 'Conhecidos por sua graça, agilidade e forte conexão mística.',
-                'forca_bonus' => 0,
-                'destreza_bonus' => 2,
-                'constituicao_bonus' => 0,
-                'inteligencia_bonus' => 1,
-                'sabedoria_bonus' => 0,
-                'carisma_bonus' => 0,
-                'tipo_bonus' => 'flat',
-                'bonus_livre' => 0,
-                'pagina' => 'PHB 21',
-                'sistema_id' => $sistemaId,
-            ],
-            [
-                'nome' => 'Anão',
-                'descricao' => 'Robustos, resistentes e com uma longa tradição guerreira.',
-                'forca_bonus' => 0,
-                'destreza_bonus' => 0,
-                'constituicao_bonus' => 2,
-                'inteligencia_bonus' => 0,
-                'sabedoria_bonus' => 1,
-                'carisma_bonus' => 0,
-                'tipo_bonus' => 'flat',
-                'bonus_livre' => 0,
-                'pagina' => 'PHB 17',
-                'sistema_id' => $sistemaId,
-            ],
-            [
-                'nome' => 'Tiefling',
-                'descricao' => 'Descendentes de linhagens infernais, dotados de carisma e magia.',
-                'forca_bonus' => 0,
-                'destreza_bonus' => 0,
-                'constituicao_bonus' => 0,
-                'inteligencia_bonus' => 1,
-                'sabedoria_bonus' => 0,
-                'carisma_bonus' => 2,
-                'tipo_bonus' => 'flat',
-                'bonus_livre' => 0,
-                'pagina' => 'PHB 42',
-                'sistema_id' => $sistemaId,
-            ],
-            [
-                'nome' => 'Meio-Orc',
-                'descricao' => 'Fortes, intimidadoras e incríveis em combate corpo a corpo.',
-                'forca_bonus' => 2,
-                'destreza_bonus' => 0,
-                'constituicao_bonus' => 1,
-                'inteligencia_bonus' => 0,
-                'sabedoria_bonus' => 0,
-                'carisma_bonus' => 0,
-                'tipo_bonus' => 'flat',
-                'bonus_livre' => 0,
-                'pagina' => 'PHB 41',
-                'sistema_id' => $sistemaId,
-            ],
-            [
-                'nome' => 'Personalizada',
-                'descricao' => 'Raça customizada para sistemas que permitem escolhas livres.',
-                'forca_bonus' => 0,
-                'destreza_bonus' => 0,
-                'constituicao_bonus' => 0,
-                'inteligencia_bonus' => 0,
-                'sabedoria_bonus' => 0,
-                'carisma_bonus' => 0,
-                'tipo_bonus' => 'escolha',
-                'bonus_livre' => 2,
-                'pagina' => null,
-                'sistema_id' => $sistemaId,
-            ],
+            ['nome' => 'Humano', 'descricao' => 'Versáteis e adaptáveis.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 29', 'modificadores' => ['forca'=>1,'destreza'=>1,'constituicao'=>1,'inteligencia'=>1,'sabedoria'=>1,'carisma'=>1]],
+            ['nome' => 'Elfo', 'descricao' => 'Ágeis e místicos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2]],
+            ['nome' => 'Elfo Alto', 'descricao' => 'Inteligentes e talentosos em magia.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 22', 'modificadores' => ['destreza'=>2,'inteligencia'=>1]],
+            ['nome' => 'Elfo da Floresta', 'descricao' => 'Ágeis e conectados com a natureza.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 22', 'modificadores' => ['destreza'=>2,'sabedoria'=>1]],
+            ['nome' => 'Anão', 'descricao' => 'Robustos e resistentes.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 17', 'modificadores' => ['constituicao'=>2]],
+            ['nome' => 'Anão da Colina', 'descricao' => 'Resistentes e com sabedoria.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 18', 'modificadores' => ['constituicao'=>2,'sabedoria'=>1]],
+            ['nome' => 'Anão da Montanha', 'descricao' => 'Fortes e resistentes.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 18', 'modificadores' => ['constituicao'=>2,'forca'=>2]],
+            ['nome' => 'Halfling', 'descricao' => 'Pequenos e sortudos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2]],
+            ['nome' => 'Halfling Leve', 'descricao' => 'Ágeis e sorrateiros.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2]],
+            ['nome' => 'Halfling Robusto', 'descricao' => 'Fortes para sua estatura.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2,'constituicao'=>1]],
+            ['nome' => 'Meio-Orc', 'descricao' => 'Fortes e intimidadoras.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 41', 'modificadores' => ['forca'=>2,'constituicao'=>1]],
+            ['nome' => 'Tiefling', 'descricao' => 'Descendentes de linhagens infernais.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 42', 'modificadores' => ['inteligencia'=>1,'carisma'=>2]],
+            ['nome' => 'Gnomo', 'descricao' => 'Curiosos e inventivos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 35', 'modificadores' => ['inteligencia'=>2]],
+            ['nome' => 'Gnomo da Floresta', 'descricao' => 'Astutos e discretos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 35', 'modificadores' => ['inteligencia'=>2,'destreza'=>1]],
+            ['nome' => 'Gnomo das Rochas', 'descricao' => 'Inteligentes e resistentes.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 35', 'modificadores' => ['inteligencia'=>2,'constituicao'=>1]],
+            ['nome' => 'Dragonato', 'descricao' => 'Orgulhosos e poderosos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 32', 'modificadores' => ['forca'=>2,'carisma'=>1]],
+            ['nome' => 'Firbolg', 'descricao' => 'Conectados com a natureza e fortes.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'VGtM 15', 'modificadores' => ['forca'=>1,'sabedoria'=>2]],
+            ['nome' => 'Tabaxi', 'descricao' => 'Felinos ágeis e curiosos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'VGtM 21', 'modificadores' => ['destreza'=>2,'carisma'=>1]],
         ];
 
         foreach ($racas as $raca) {
+            $raca['sistema_id'] = $sistema->id;
+            $raca['modificadores_atributos'] = json_encode($raca['modificadores']);
+
+            // Remove o campo temporário
+            unset($raca['modificadores']);
+
             Raca::updateOrCreate(
-                ['nome' => $raca['nome'], 'sistema_id' => $sistemaId],
+                ['nome' => $raca['nome'], 'sistema_id' => $sistema->id],
                 $raca
             );
         }
+
+        $this->command->info('Raças D&D 5e populadas com modificadores de atributos!');
     }
 }

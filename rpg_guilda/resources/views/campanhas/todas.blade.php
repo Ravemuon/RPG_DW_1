@@ -34,7 +34,16 @@
         @forelse($todasCampanhas as $campanha)
             @php
                 $user = auth()->user();
-                $participa = $user && ($user->id === $campanha->criador_id || $campanha->jogadores->pluck('id')->contains($user->id));
+
+                // Verifica se o usuário participa
+                $participa = $user && (
+                    $user->id === $campanha->criador_id ||
+                    $campanha->jogadores->pluck('id')->contains($user->id)
+                );
+
+                // Recupera pivot com segurança (sem erro caso não exista)
+                $jogador = $campanha->jogadores->where('id', auth()->id())->first();
+                $pivot = $jogador?->pivot;
             @endphp
 
             <div class="col-md-6 col-lg-4">
@@ -87,9 +96,23 @@
                                             🤝 Solicitar Participação
                                         </button>
                                     </form>
-                                @elseif($participa && $campanha->jogadores->where('id', auth()->id())->first()->pivot->status === 'pendente')
+
+                                {{-- Solicitação pendente --}}
+                                @elseif($pivot && $pivot->status === 'pendente')
                                     <button class="btn btn-warning btn-sm rounded-pill fw-bold w-100" disabled>
                                         ⏳ Solicitação Pendente
+                                    </button>
+
+                                {{-- Solicitação aprovada --}}
+                                @elseif($pivot && $pivot->status === 'aprovado')
+                                    <button class="btn btn-success btn-sm rounded-pill fw-bold w-100" disabled>
+                                        ✔ Você Participa
+                                    </button>
+
+                                {{-- Recusada --}}
+                                @elseif($pivot && $pivot->status === 'recusado')
+                                    <button class="btn btn-danger btn-sm rounded-pill fw-bold w-100" disabled>
+                                        ❌ Solicitação Recusada
                                     </button>
                                 @endif
 

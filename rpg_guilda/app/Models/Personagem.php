@@ -16,9 +16,9 @@ class Personagem extends Model
         'user_id',
         'campanha_id',
         'raca_id',
-        'classe',
-        'origem',
-        'sistema_rpg',
+        'classe_id',
+        'origem_id',
+        'sistema_id',
         'atributos',
         'descricao',
         'ativo',
@@ -29,9 +29,13 @@ class Personagem extends Model
         'inventario',
     ];
 
+
     protected $casts = [
         'atributos' => 'array',
         'ativo' => 'boolean',
+        'inventario' => 'array',       // <- RECOMENDADO
+        'personalidade' => 'array',    // <- SE FOR JSON
+        'historia' => 'string',        // <- TEXTO LONGO
     ];
 
     // Relação com usuário
@@ -47,6 +51,21 @@ class Personagem extends Model
     // Relação com raça
     public function raca() {
         return $this->belongsTo(Raca::class);
+    }
+
+    // Relação com classe
+    public function classe() {
+        return $this->belongsTo(Classe::class);
+    }
+
+    // Relação com origem
+    public function origem() {
+        return $this->belongsTo(Origem::class);
+    }
+
+    // Relação com sistema
+    public function sistema() {
+        return $this->belongsTo(Sistema::class);
     }
 
     // Relação com perícias

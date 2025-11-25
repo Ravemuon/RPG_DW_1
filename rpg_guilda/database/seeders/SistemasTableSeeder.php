@@ -30,7 +30,7 @@ class SistemasTableSeeder extends Seeder
                 'usa_sanidade' => false,
                 'formula_pontos_vida' => 'dado_da_classe + modificador_constituicao',
 
-                'recursos' => [
+                'recursos' => [ 
                     ['nome' => 'Inspiração', 'max' => 1]
                 ],
 

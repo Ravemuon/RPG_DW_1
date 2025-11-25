@@ -9,24 +9,22 @@ class Pericia extends Model
 {
     use HasFactory;
 
-    protected $table = 'pericias';
+    /**
+     * Os atributos que podem ser atribuídos em massa.
+     * @var array<int, string>
+     */
     protected $fillable = [
         'nome',
-        'sistemaRPG',
-        'automatica',
-        'formula',
+        'sistema_id',
+        'atributo_relacionado',
+        'descricao',
     ];
 
-    protected $casts = [
-        'automatica' => 'boolean',
-        'formula' => 'array',
-    ];
-
-    // Relação com personagens via pivot
-    public function personagens()
+    /**
+     * Define o relacionamento com o modelo Sistema.
+     */
+    public function sistema()
     {
-        return $this->belongsToMany(Personagem::class, 'personagem_pericias')
-                    ->withPivot('valor', 'definida')
-                    ->withTimestamps();
+        return $this->belongsTo(Sistema::class);
     }
 }

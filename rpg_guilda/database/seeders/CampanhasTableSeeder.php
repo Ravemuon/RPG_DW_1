@@ -15,7 +15,6 @@ class CampanhasTableSeeder extends Seeder
      */
     public function run(): void
     {
-        // Verifica se existem usuários e sistemas
         $usuarios = User::all();
         $sistemas = Sistema::all();
 
@@ -24,18 +23,28 @@ class CampanhasTableSeeder extends Seeder
             return;
         }
 
-        // Criar 10 campanhas de teste
-        for ($i = 1; $i <= 10; $i++) {
+        // Lista de nomes criativos
+        $nomes = [
+            'A Sombra do Dragão',
+            'Mistérios de Arkham',
+            'O Legado dos Heróis',
+            'A Guerra das Dimensões',
+            'Crônicas da Ordem Perdida',
+            'Os Segredos de Avalon',
+            'O Último Mago',
+            'A Rebelião dos Mortos',
+            'Expedição ao Desconhecido',
+            'O Portal Proibido'
+        ];
 
-            // Escolhe usuário e sistema aleatórios
+        for ($i = 0; $i < 10; $i++) {
             $criador = $usuarios->random();
             $sistema = $sistemas->random();
-
             $privada = rand(0, 1) === 1;
 
             $campanha = Campanha::create([
-                'nome' => "Campanha de Teste #$i",
-                'descricao' => "Esta é a descrição da campanha de teste número $i.",
+                'nome' => $nomes[$i],
+                'descricao' => "Descrição da campanha '{$nomes[$i]}', criada para aventuras épicas e desafios emocionantes.",
                 'sistema_id' => $sistema->id,
                 'criador_id' => $criador->id,
                 'status' => rand(0, 1) ? 'ativa' : 'inativa',
@@ -44,7 +53,6 @@ class CampanhasTableSeeder extends Seeder
                 'pagina' => null,
             ]);
 
-            // Exibe feedback no console
             $this->command->info("Campanha '{$campanha->nome}' criada: " . ($privada ? 'Privada' : 'Pública'));
         }
     }
