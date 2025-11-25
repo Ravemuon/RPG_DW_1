@@ -8,18 +8,20 @@ use App\Models\Sistema;
 
 class RacasTableSeeder extends Seeder
 {
+    /**
+     * Popula a tabela de raças com dados do D&D 5e.
+     */
     public function run(): void
     {
+        // 1. Encontra o sistema alvo (D&D 5e)
         $sistema = Sistema::where('nome', 'D&D 5e')->first();
 
         if (!$sistema) {
-            $this->command->error("Sistema D&D 5e não encontrado.");
+            $this->command->error("Sistema D&D 5e não encontrado. Execute o seeder de sistemas primeiro.");
             return;
         }
 
-        // Atributos padrão do sistema
-        $atributos = ['forca', 'destreza', 'constituicao', 'inteligencia', 'sabedoria', 'carisma'];
-
+        // 2. Definição dos dados das Raças
         $racas = [
             ['nome' => 'Humano', 'descricao' => 'Versáteis e adaptáveis.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 29', 'modificadores' => ['forca'=>1,'destreza'=>1,'constituicao'=>1,'inteligencia'=>1,'sabedoria'=>1,'carisma'=>1]],
             ['nome' => 'Elfo', 'descricao' => 'Ágeis e místicos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2]],
@@ -29,7 +31,7 @@ class RacasTableSeeder extends Seeder
             ['nome' => 'Anão da Colina', 'descricao' => 'Resistentes e com sabedoria.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 18', 'modificadores' => ['constituicao'=>2,'sabedoria'=>1]],
             ['nome' => 'Anão da Montanha', 'descricao' => 'Fortes e resistentes.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 18', 'modificadores' => ['constituicao'=>2,'forca'=>2]],
             ['nome' => 'Halfling', 'descricao' => 'Pequenos e sortudos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2]],
-            ['nome' => 'Halfling Leve', 'descricao' => 'Ágeis e sorrateiros.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2]],
+            ['nome' => 'Halfling Leve', 'descricao' => 'Ágeis e sorrateiros.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2,'carisma'=>1]],
             ['nome' => 'Halfling Robusto', 'descricao' => 'Fortes para sua estatura.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 21', 'modificadores' => ['destreza'=>2,'constituicao'=>1]],
             ['nome' => 'Meio-Orc', 'descricao' => 'Fortes e intimidadoras.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 41', 'modificadores' => ['forca'=>2,'constituicao'=>1]],
             ['nome' => 'Tiefling', 'descricao' => 'Descendentes de linhagens infernais.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 42', 'modificadores' => ['inteligencia'=>1,'carisma'=>2]],
@@ -39,18 +41,23 @@ class RacasTableSeeder extends Seeder
             ['nome' => 'Dragonato', 'descricao' => 'Orgulhosos e poderosos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'PHB 32', 'modificadores' => ['forca'=>2,'carisma'=>1]],
             ['nome' => 'Firbolg', 'descricao' => 'Conectados com a natureza e fortes.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'VGtM 15', 'modificadores' => ['forca'=>1,'sabedoria'=>2]],
             ['nome' => 'Tabaxi', 'descricao' => 'Felinos ágeis e curiosos.', 'tipo_bonus' => 'flat', 'bonus_livre' => 0, 'pagina' => 'VGtM 21', 'modificadores' => ['destreza'=>2,'carisma'=>1]],
+
         ];
 
-        foreach ($racas as $raca) {
-            $raca['sistema_id'] = $sistema->id;
-            $raca['modificadores_atributos'] = json_encode($raca['modificadores']);
+        // 3. Processamento e inserção dos dados
+        foreach ($racas as $racaData) {
+            $racaData['sistema_id'] = $sistema->id;
 
-            // Remove o campo temporário
-            unset($raca['modificadores']);
+           
+            $racaData['modificadores_atributos'] = json_encode($racaData['modificadores']);
 
+            // Remove o campo temporário 'modificadores' que não existe no modelo.
+            unset($racaData['modificadores']);
+
+            // Insere ou atualiza o registro
             Raca::updateOrCreate(
-                ['nome' => $raca['nome'], 'sistema_id' => $sistema->id],
-                $raca
+                ['nome' => $racaData['nome'], 'sistema_id' => $sistema->id],
+                $racaData
             );
         }
 

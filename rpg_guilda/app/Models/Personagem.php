@@ -21,57 +21,33 @@ class Personagem extends Model
         'sistema_id',
         'atributos',
         'descricao',
-        'ativo',
-        'pagina',
-        'imagem',
         'historia',
         'personalidade',
         'inventario',
+        'imagem',
+        'ativo',
+        'pagina',
+        // campos auxiliares salvos como JSON
+        'selected_skills',
+        'selected_equipment',
+        'race_choices',
+        'rolled_hp',
     ];
-
 
     protected $casts = [
         'atributos' => 'array',
-        'ativo' => 'boolean',
-        'inventario' => 'array',       // <- RECOMENDADO
-        'personalidade' => 'array',    // <- SE FOR JSON
-        'historia' => 'string',        // <- TEXTO LONGO
+        'selected_skills' => 'array',
+        'selected_equipment' => 'array',
+        'race_choices' => 'array',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    // Relação com usuário
-    public function user() {
-        return $this->belongsTo(User::class);
-    }
-
-    // Relação com campanha
-    public function campanha() {
-        return $this->belongsTo(Campanha::class);
-    }
-
-    // Relação com raça
-    public function raca() {
-        return $this->belongsTo(Raca::class);
-    }
-
-    // Relação com classe
-    public function classe() {
-        return $this->belongsTo(Classe::class);
-    }
-
-    // Relação com origem
-    public function origem() {
-        return $this->belongsTo(Origem::class);
-    }
-
-    // Relação com sistema
-    public function sistema() {
-        return $this->belongsTo(Sistema::class);
-    }
-
-    // Relação com perícias
-    public function pericias() {
-        return $this->belongsToMany(Pericia::class, 'personagem_pericia')
-                    ->withPivot('nivel', 'proficiente')
-                    ->withTimestamps();
-    }
+    // relacionamentos básicos (opcionais)
+    public function user() { return $this->belongsTo(\App\Models\User::class); }
+    public function campanha() { return $this->belongsTo(\App\Models\Campanha::class); }
+    public function raca() { return $this->belongsTo(\App\Models\Raca::class); }
+    public function classe() { return $this->belongsTo(\App\Models\Classe::class); }
+    public function origem() { return $this->belongsTo(\App\Models\Origem::class); }
+    public function sistema() { return $this->belongsTo(\App\Models\Sistema::class); }
 }
