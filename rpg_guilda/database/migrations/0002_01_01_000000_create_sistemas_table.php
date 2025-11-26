@@ -14,17 +14,13 @@ return new class extends Migration {
             $table->string('mecanica_principal', 50)->nullable();
             $table->string('complexidade', 50)->nullable();
 
-            // Atributos variáveis por sistema
             $table->json('atributos')->nullable()
                   ->comment('Atributos do sistema em forma de chave => nome');
 
-            // Sistema usa sanidade?
             $table->boolean('usa_sanidade')->default(false);
 
-            // Fórmula dos pontos de vida
             $table->string('formula_pontos_vida', 200)->nullable();
 
-            // Recursos especiais (inspiração, bennies, nex, sorte…)
             $table->json('recursos')->nullable();
 
             $table->json('regras_opcionais')->nullable();

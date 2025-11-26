@@ -22,21 +22,32 @@ class Sessao extends Model
         'resumo' => 'string',
     ];
 
-    // --- RELACIONAMENTOS ---
+    // ============================================================
+    // RELACIONAMENTOS
+    // ============================================================
 
+    /**
+     * A sessão pertence a uma campanha.
+     */
     public function campanha()
     {
         return $this->belongsTo(Campanha::class);
     }
 
+    /**
+     * Usuário que criou a sessão.
+     */
     public function criador()
     {
         return $this->belongsTo(User::class, 'criado_por');
     }
 
     /**
-     * Relacionamento N:N com Personagens.
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * Relacionamento N:N com personagens que participaram da sessão.
+     * Tabela pivot: sessoes_personagens
+     *
+     * pivot:
+     * - resultado (campo customizado do jogador na sessão, ex: XP, notas, etc.)
      */
     public function personagens()
     {
@@ -46,9 +57,11 @@ class Sessao extends Model
     }
 
     /**
-     * Relacionamento N:N com Usuários/Jogadores para rastrear PRESENÇA.
-     * Usa a tabela pivot 'sessao_jogador_presenca'.
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * Relacionamento N:N com Usuários para controlar presença na sessão.
+     * Tabela pivot: sessao_jogador_presenca
+     *
+     * pivot:
+     * - confirmou_presenca (boolean)
      */
     public function presencas()
     {
@@ -57,7 +70,9 @@ class Sessao extends Model
                     ->withTimestamps();
     }
 
-    // --- SCOPES ---
+    // ============================================================
+    // SCOPES — filtros prontos
+    // ============================================================
 
     public function scopeAgendadas($query)
     {

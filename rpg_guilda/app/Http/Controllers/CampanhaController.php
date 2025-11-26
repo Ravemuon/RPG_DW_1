@@ -35,7 +35,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Minhas campanhas (criado ou participa).
+     * Exibe as campanhas do usuário logado (criadas ou que ele participa).
      */
     public function minhas()
     {
@@ -59,8 +59,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Todas campanhas públicas (e privadas que o usuário participa/é mestre).
-     * NOTA: O filtro de privacidade pode ser melhorado com Scopes no Model.
+     * Exibe todas as campanhas públicas e as privadas do usuário.
      */
     public function todas(Request $request)
     {
@@ -91,7 +90,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Área do mestre.
+     * Exibe a área de gerenciamento da campanha para o mestre.
      */
     public function mestre($id)
     {
@@ -105,7 +104,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Deletar campanha.
+     * Deleta uma campanha.
      */
     public function destroy($id)
     {
@@ -121,7 +120,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Tela criar campanha.
+     * Exibe o formulário para criar uma nova campanha.
      */
     public function create()
     {
@@ -130,7 +129,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Salvar campanha.
+     * Salva uma nova campanha no banco de dados.
      */
     public function store(Request $request)
     {
@@ -182,6 +181,9 @@ class CampanhaController extends Controller
                             ->with('success', 'Campanha criada com sucesso!');
     }
 
+    /**
+     * Exibe o formulário para edição de uma campanha.
+     */
     public function edit(Campanha $campanha)
     {
         // Apenas o criador ou admin pode editar
@@ -194,7 +196,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Atualizar campanha.
+     * Atualiza as informações de uma campanha.
      */
     public function update(Request $request, Campanha $campanha)
     {
@@ -242,7 +244,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Visualizar campanha.
+     * Exibe a tela de visualização de uma campanha.
      */
     public function show(Campanha $campanha)
     {
@@ -271,7 +273,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Solicitar entrada em campanha.
+     * Envia uma solicitação de entrada para o mestre da campanha.
      */
     public function solicitarEntrada(Campanha $campanha)
     {
@@ -307,7 +309,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Entrar em campanha privada usando um código de convite.
+     * Permite que um usuário entre em uma campanha privada usando um código de convite.
      */
     public function entrarComCodigo(Request $request)
     {
@@ -354,7 +356,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Aprovar ou rejeitar jogador.
+     * O mestre aprova, rejeita ou remove um jogador da campanha.
      */
     public function aprovarUsuario(Request $request, Campanha $campanha)
     {
@@ -390,9 +392,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Gerenciar usuário (Método adicionado/mantido para cobrir a rota campanhas.gerenciar).
-     * Nota: O método aprovarUsuario já trata a aprovação/rejeição/remoção; este método deve ser
-     * usado para qualquer outra lógica de gerenciamento ou, se necessário, unificado.
+     * Gerencia ações de usuário (aprovação, rejeição, remoção) na área do mestre.
      */
     public function gerenciarUsuario(Request $request, Campanha $campanha)
     {
@@ -412,7 +412,7 @@ class CampanhaController extends Controller
     }
 
     /**
-     * Adicionar Amigo por convite (Método adicionado/mantido para cobrir a rota campanhas.adicionar).
+     * Adiciona um amigo do mestre à campanha como jogador ativo.
      */
     public function adicionarAmigo(Request $request, Campanha $campanha)
     {

@@ -56,7 +56,6 @@ class MissaoController extends Controller
         ]);
 
         $data['user_id'] = auth()->id();
-
         $campanha->missoes()->create($data);
 
         return redirect()

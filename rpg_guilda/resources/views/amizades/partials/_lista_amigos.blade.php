@@ -4,14 +4,12 @@
             <div class="card text-light shadow-lg border-0 h-100 overflow-hidden position-relative amigo-card"
                  style="background: linear-gradient(145deg, #1a1a1a, #222); border-radius: 15px; transition: transform .2s ease, box-shadow .2s ease;">
 
-                {{-- Banner no topo --}}
                 <div class="position-relative">
                     <div class="w-100" style="height: 90px; background: url('{{ $amigo->banner_url }}') center/cover no-repeat; filter: brightness(0.8);"></div>
                     <div class="position-absolute top-0 start-0 w-100 h-100"
                          style="background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent 60%);"></div>
                 </div>
 
-                {{-- Avatar centralizado sobre o banner --}}
                 <div class="text-center mt-n5">
                     <img src="{{ $amigo->avatar_url }}"
                          alt="Avatar de {{ $amigo->nome }}"
@@ -20,11 +18,9 @@
                 </div>
 
                 <div class="card-body text-center px-3 pb-4">
-                    {{-- Nome e username --}}
                     <h6 class="fw-bold mt-2 mb-0 text-highlight">{{ $amigo->nome }}</h6>
                     <p class="text-muted small">@ {{ $amigo->username }}</p>
 
-                    {{-- Estatísticas resumidas --}}
                     <div class="d-flex justify-content-center gap-4 mb-3">
                         <div>
                             <small class="text-muted d-block">🎭 Personagens</small>
@@ -36,7 +32,6 @@
                         </div>
                     </div>
 
-                    {{-- Botões --}}
                     <div class="d-flex flex-column gap-2">
                         <a href="{{ route('amizades.perfilpublico', $amigo->id) }}"
                            class="btn btn-outline-light btn-sm w-100 fw-bold rounded-pill"
@@ -44,24 +39,21 @@
                             👁️ Ver Perfil
                         </a>
 
-                        {{-- Remover Amigo --}}
                         <form action="{{ route('amizades.remover', $amigo->id) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button type="submit"
-                                    class="btn btn-danger btn-sm w-100 fw-bold rounded-pill"
-                                    style="border: none;">
+                            <button class="btn btn-danger btn-sm w-100 fw-bold rounded-pill" style="border: none;">
                                 ❌ Remover
                             </button>
                         </form>
                     </div>
                 </div>
+
             </div>
         </div>
     @endforeach
 </div>
 
-{{-- Hover effect --}}
 <style>
 .amigo-card:hover {
     transform: translateY(-6px);

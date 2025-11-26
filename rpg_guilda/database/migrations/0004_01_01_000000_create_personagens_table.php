@@ -43,20 +43,32 @@ return new class extends Migration {
                 ->constrained('sistemas')
                 ->nullOnDelete();
 
-            // Outras informações
-            $table->json('atributos')->nullable();
-            $table->text('descricao')->nullable();
-            $table->text('historia')->nullable();
-            $table->text('personalidade')->nullable();
-            $table->text('inventario')->nullable();
-            $table->string('imagem')->nullable();
-            $table->boolean('ativo')->default(true);
-            $table->string('pagina', 50)->nullable();
+            // --- NOVOS CAMPOS ADICIONADOS ---
+
+            // Sistema de nível e experiência
+            $table->integer('nivel')->default(1);
+            $table->integer('xp')->default(0);
+            $table->integer('bonus_proficiencia')->default(2);
+
+            // Atributos especiais
+            $table->integer('sanidade')->nullable()->comment('Pontuação de sanidade mental');
+            $table->integer('sorte')->nullable()->comment('Pontuação de sorte ou destino');
+
+                // Outras informações
+                $table->json('atributos')->nullable();
+                $table->text('descricao')->nullable();
+                $table->text('historia')->nullable();
+                $table->text('personalidade')->nullable();
+                $table->text('inventario')->nullable();
+                $table->string('imagem')->nullable();
+                $table->boolean('ativo')->default(true);
+                $table->string('pagina', 50)->nullable();
 
             $table->timestamps();
 
             // Indexes melhorados
             $table->index(['nome', 'raca_id', 'classe_id', 'origem_id']);
+            $table->index(['nivel', 'xp']); // Novo index para buscas por nível
         });
     }
 

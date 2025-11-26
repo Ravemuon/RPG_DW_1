@@ -2,116 +2,114 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sistema;
 use App\Models\Pericia;
+use App\Models\Sistema;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PericiaController extends Controller
 {
     /**
-     * Exibe todas as perícias de um sistema específico.
-     * @param Sistema $sistema
-     * @return \Illuminate\View\View
+     * LISTAGEM DE PERÍCIAS
      */
-    public function index(Sistema $sistema)
+    public function index()
     {
-        // Garante que a lista de perícias do sistema é usada, geralmente via relacionamento.
-        $pericias = $sistema->pericias()->orderBy('nome')->get();
-        return view('sistemas.pericias.index', compact('sistema', 'pericias'));
+        $pericias = Pericia::with('sistema')
+            ->orderBy('nome')
+            ->paginate(15);
+
+        return view('pericias.index', compact('pericias'));
     }
 
     /**
-     * Exibe o formulário para criar uma nova perícia para o sistema.
-     * @param Sistema $sistema
-     * @return \Illuminate\View\View
+     * FORMULÁRIO DE CRIAÇÃO
      */
-    public function create(Sistema $sistema)
+    public function create()
     {
-        return view('sistemas.pericias.create', compact('sistema'));
+        $sistemas = Sistema::pluck('nome', 'id');
+        return view('pericias.create', compact('sistemas'));
     }
 
     /**
-     * Armazena a nova perícia no banco de dados.
-     * @param Request $request
-     * @param Sistema $sistema
-     * @return \Illuminate\Http\RedirectResponse
+     * SALVAR NOVA PERÍCIA
      */
-    public function store(Request $request, Sistema $sistema)
+    public function store(Request $request)
     {
-        $request->validate([
-            'nome' => 'required|string|max:100|unique:pericias,nome,NULL,id,sistema_id,' . $sistema->id, // Validação de unicidade por sistema
-            'atributo_relacionado' => 'required|string|max:50',
-            'descricao' => 'nullable|string',
+        $validated = $request->validate([
+            'nome' => ['required', 'string', 'max:255'],
+            'sistema_id' => [
+                'required',
+                'exists:sistemas,id',
+                Rule::unique('pericias')->where(fn ($q) =>
+                    $q->where('nome', $request->nome)
+                ),
+            ],
+            'atributo_relacionado' => ['required', 'string', 'max:255'],
+            'atributo_nome' => ['nullable', 'string', 'max:255'],
+            'descricao' => ['nullable', 'string'],
+            'modificador' => ['nullable', 'integer'],
         ]);
 
-        $pericia = new Pericia();
-        $pericia->nome = $request->nome;
-        $pericia->descricao = $request->descricao;
-        $pericia->atributo_relacionado = $request->atributo_relacionado;
-        // O atributo_nome e modificador podem ser definidos aqui com base na lógica do sistema,
-        // mas é mais comum que sejam preenchidos automaticamente.
-        $pericia->sistema_id = $sistema->id;
-        $pericia->save();
+        Pericia::create($validated);
 
-        return redirect()->route('sistemas.pericias.index', $sistema->id)
-                         ->with('success', 'Perícia criada com sucesso!');
+        return redirect()->route('pericias.index')
+            ->with('success', 'Perícia criada com sucesso!');
     }
 
     /**
-     * Exibe o formulário para editar uma perícia.
-     * @param Sistema $sistema
-     * @param Pericia $pericia
-     * @return \Illuminate\View\View
+     * DETALHES DA PERÍCIA
      */
-    public function edit(Sistema $sistema, Pericia $pericia)
+    public function show(Pericia $pericia)
     {
-        // O Route Model Binding garante que $pericia pertence a $sistema, mas uma verificação extra é sempre boa.
-        if ($pericia->sistema_id !== $sistema->id) {
-            abort(404, 'Perícia não pertence a este sistema.');
-        }
-
-        return view('sistemas.pericias.edit', compact('sistema', 'pericia'));
+        $pericia->load('sistema');
+        return view('pericias.show', compact('pericia'));
     }
 
     /**
-     * Atualiza a perícia no banco de dados.
-     * @param Request $request
-     * @param Sistema $sistema
-     * @param Pericia $pericia
-     * @return \Illuminate\Http\RedirectResponse
+     * FORMULÁRIO DE EDIÇÃO
      */
-    public function update(Request $request, Sistema $sistema, Pericia $pericia)
+    public function edit(Pericia $pericia)
     {
-        $request->validate([
-            'nome' => 'required|string|max:100|unique:pericias,nome,' . $pericia->id . ',id,sistema_id,' . $sistema->id,
-            'atributo_relacionado' => 'required|string|max:50',
-            'descricao' => 'nullable|string',
+        $sistemas = Sistema::pluck('nome', 'id');
+        return view('pericias.edit', compact('pericia', 'sistemas'));
+    }
+
+    /**
+     * ATUALIZAR PERÍCIA
+     */
+    public function update(Request $request, Pericia $pericia)
+    {
+        $validated = $request->validate([
+            'nome' => ['required', 'string', 'max:255'],
+            'sistema_id' => [
+                'required',
+                'exists:sistemas,id',
+                Rule::unique('pericias')
+                    ->ignore($pericia->id)
+                    ->where(fn ($q) =>
+                        $q->where('nome', $request->nome)
+                    ),
+            ],
+            'atributo_relacionado' => ['required', 'string', 'max:255'],
+            'atributo_nome' => ['nullable', 'string', 'max:255'],
+            'descricao' => ['nullable', 'string'],
+            'modificador' => ['nullable', 'integer'],
         ]);
 
-        $pericia->nome = $request->nome;
-        $pericia->descricao = $request->descricao;
-        $pericia->atributo_relacionado = $request->atributo_relacionado;
-        $pericia->save();
+        $pericia->update($validated);
 
-        return redirect()->route('sistemas.pericias.index', $sistema->id)
-                         ->with('success', 'Perícia atualizada com sucesso!');
+        return redirect()->route('pericias.index')
+            ->with('success', 'Perícia atualizada com sucesso!');
     }
 
     /**
-     * Deleta uma perícia.
-     * @param Sistema $sistema
-     * @param Pericia $pericia
-     * @return \Illuminate\Http\RedirectResponse
+     * EXCLUIR PERÍCIA
      */
-    public function destroy(Sistema $sistema, Pericia $pericia)
+    public function destroy(Pericia $pericia)
     {
-        if ($pericia->sistema_id !== $sistema->id) {
-            abort(404, 'Perícia não pertence a este sistema.');
-        }
-
         $pericia->delete();
 
-        return redirect()->route('sistemas.pericias.index', $sistema->id)
-                         ->with('success', 'Perícia deletada com sucesso!');
+        return redirect()->route('pericias.index')
+            ->with('success', 'Perícia excluída com sucesso!');
     }
 }

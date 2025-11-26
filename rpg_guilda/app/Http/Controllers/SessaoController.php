@@ -12,106 +12,141 @@ use Illuminate\Support\Facades\Log;
 
 class SessaoController extends Controller
 {
+    /**
+     * Lista todas as sessões de uma campanha.
+     */
     public function index(Campanha $campanha)
     {
         $this->authorize('view', $campanha);
-        // Carrega as presenças para uso futuro ou exibição opcional no índice
-        $sessoes = $campanha->sessoes()->with(['personagens', 'presencas'])->get();
+
+        $sessoes = $campanha->sessoes()
+            ->with(['personagens', 'presencas'])
+            ->orderBy('data_hora', 'asc')
+            ->get();
 
         return view('sessoes.index', compact('campanha', 'sessoes'));
     }
 
+
+    /**
+     * Formulário de criação de sessão.
+     */
     public function create(Campanha $campanha)
     {
         $this->authorize('update', $campanha);
+
         return view('sessoes.create', compact('campanha'));
     }
 
+
+    /**
+     * Armazena uma nova sessão.
+     */
     public function store(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
 
         $request->validate([
-            'titulo' => 'required|string|max:150',
-            'data_hora' => 'required|date',
-            'resumo' => 'nullable|string'
+            'titulo'       => 'required|string|max:150',
+            'data_hora'    => 'required|date',
+            'resumo'       => 'nullable|string'
         ]);
 
-        $sessao = $campanha->sessoes()->create([
+        $campanha->sessoes()->create([
             'criado_por' => Auth::id(),
-            'titulo' => $request->titulo,
-            'data_hora' => $request->data_hora,
-            'resumo' => $request->resumo
+            'titulo'     => $request->titulo,
+            'data_hora'  => $request->data_hora,
+            'resumo'     => $request->resumo
         ]);
 
-        return redirect()->route('sessoes.index', $campanha->id)
-                         ->with('success', 'Sessão criada com sucesso!');
+        return redirect()
+            ->route('sessoes.index', $campanha->id)
+            ->with('success', 'Sessão criada com sucesso!');
     }
 
+
     /**
-     * Exibe os detalhes da sessão, verificando a presença do usuário logado.
+     * Exibe os detalhes da sessão.
      */
     public function show(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('view', $campanha);
+
         $user = Auth::user();
 
-        // Carrega o relacionamento 'presencas' para verificar se o usuário já marcou.
         $sessao->load(['personagens', 'campanha', 'presencas']);
 
-        $jaMarqueiPresenca = false;
-
-        if ($user) {
-            // Verifica se o usuário logado existe no relacionamento 'presencas'
-            // Mantendo 'jogador_id' como você definiu, assumindo que esta é a coluna na tabela pivot.
-            $jaMarqueiPresenca = $sessao->presencas()->where('jogador_id', $user->id)->exists();
-        }
+        // Verifica se o jogador já marcou presença
+        $jaMarqueiPresenca = $user
+            ? $sessao->presencas()->where('jogador_id', $user->id)->exists()
+            : false;
 
         return view('sessoes.show', compact('campanha', 'sessao', 'jaMarqueiPresenca'));
     }
 
+
+    /**
+     * Formulário de edição da sessão.
+     */
     public function edit(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('update', $campanha);
+
         return view('sessoes.edit', compact('campanha', 'sessao'));
     }
 
+
+    /**
+     * Atualiza uma sessão.
+     */
     public function update(Request $request, Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('update', $campanha);
 
         $request->validate([
-            'titulo' => 'required|string|max:150',
-            'data_hora' => 'required|date',
-            'resumo' => 'nullable|string',
-            'descricao_detalhada' => 'nullable|string', // Adicionado para permitir atualização no formulário
-            'status' => 'required|in:agendada,em_andamento,concluida,cancelada'
+            'titulo'              => 'required|string|max:150',
+            'data_hora'           => 'required|date',
+            'resumo'              => 'nullable|string',
+            'descricao_detalhada' => 'nullable|string',
+            'status'              => 'required|in:agendada,em_andamento,concluida,cancelada'
         ]);
 
-        // Incluindo 'descricao_detalhada' na atualização
-        $sessao->update($request->only('titulo', 'data_hora', 'resumo', 'status', 'descricao_detalhada'));
+        $sessao->update([
+            'titulo'              => $request->titulo,
+            'data_hora'           => $request->data_hora,
+            'resumo'              => $request->resumo,
+            'status'              => $request->status,
+            'descricao_detalhada' => $request->descricao_detalhada
+        ]);
 
-        // Se o status for concluída, exporta o PDF
+        // Se for concluída → gerar PDF
         if ($request->status === 'concluida') {
             return $this->exportarPdf($campanha, $sessao);
         }
 
-        return redirect()->route('sessoes.show', [$campanha->id, $sessao->id])
-                         ->with('success', 'Sessão atualizada com sucesso!');
+        return redirect()
+            ->route('sessoes.show', [$campanha->id, $sessao->id])
+            ->with('success', 'Sessão atualizada com sucesso!');
     }
 
+
+    /**
+     * Remove uma sessão.
+     */
     public function destroy(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('delete', $campanha);
+
         $sessao->delete();
 
-        return redirect()->route('sessoes.index', $campanha->id)
-                         ->with('success', 'Sessão deletada com sucesso!');
+        return redirect()
+            ->route('sessoes.index', $campanha->id)
+            ->with('success', 'Sessão deletada com sucesso!');
     }
 
+
     /**
-     * Marca a presença de um jogador em uma sessão.
-     * Corrigido para injetar Request.
+     * Marca presença de um jogador.
      */
     public function marcarPresenca(Request $request, Campanha $campanha, Sessao $sessao)
     {
@@ -121,45 +156,56 @@ class SessaoController extends Controller
             return back()->with('error', 'Você precisa estar logado para marcar presença.');
         }
 
-        // 1. Verificar se o usuário é o Mestre (Criador da Campanha)
+        // O Mestre não marca presença
         if ($user->id === $campanha->criador_id) {
-            return back()->with('error', 'O Mestre não marca presença, ele gerencia.');
+            return back()->with('error', 'O Mestre não marca presença.');
         }
 
-        // 2. Tentar registrar a Presença
         try {
-
             $sessao->presencas()->attach($user->id, [
                 'confirmou_presenca' => true,
             ]);
 
-            return back()->with('success', '✅ Presença marcada com sucesso! Nos vemos na sessão.');
+            return back()->with('success', 'Presença marcada com sucesso!');
 
         } catch (\Illuminate\Database\QueryException $e) {
 
-            // Loga o erro completo para debug, mas mostra uma mensagem amigável ao usuário
-            Log::error("Erro ao marcar presença para user {$user->id} na sessão {$sessao->id}: " . $e->getMessage());
+            Log::error("Erro ao marcar presença (user {$user->id}, sessão {$sessao->id}): ".$e->getMessage());
 
-            if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'Integrity constraint violation')) {
-                 return back()->with('error', '⚠️ Sua presença já está confirmada nesta sessão.');
+            // Tentativa de marcar presença mais de uma vez
+            if (str_contains($e->getMessage(), 'Duplicate entry') ||
+                str_contains($e->getMessage(), 'Integrity constraint violation')) {
+
+                return back()->with('error', 'Você já marcou presença nesta sessão.');
             }
+
             return back()->with('error', 'Erro ao registrar presença. Tente novamente.');
         }
     }
 
-    // Métodos stubs (corpos vazios) para rotas que não foram fornecidas no Controller
-    public function adicionarPersonagem(Request $request, Campanha $campanha, Sessao $sessao) {
+
+    /**
+     * Métodos placeholders.
+     */
+    public function adicionarPersonagem(Request $request, Campanha $campanha, Sessao $sessao)
+    {
         return back()->with('error', 'Função de adicionar personagem ainda não implementada.');
     }
 
-    public function confirmarPersonagem(Request $request, Campanha $campanha, Sessao $sessao) {
+    public function confirmarPersonagem(Request $request, Campanha $campanha, Sessao $sessao)
+    {
         return back()->with('error', 'Função de confirmar personagem ainda não implementada.');
     }
 
-    public function atualizarPersonagem(Request $request, Campanha $campanha, Sessao $sessao, Personagem $personagem) {
+    public function atualizarPersonagem(Request $request, Campanha $campanha, Sessao $sessao, Personagem $personagem)
+    {
         return back()->with('error', 'Função de atualizar personagem ainda não implementada.');
     }
 
+
+    /**
+     * Exporta o relatório da sessão para PDF.
+     */
     public function exportarPdf(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('view', $campanha);
@@ -167,7 +213,7 @@ class SessaoController extends Controller
         $sessao->load(['personagens', 'campanha']);
 
         $pdf = Pdf::loadView('sessoes.relatorio', compact('sessao'))
-                  ->setPaper('a4', 'portrait');
+            ->setPaper('a4', 'portrait');
 
         return $pdf->download("sessao_{$sessao->id}.pdf");
     }

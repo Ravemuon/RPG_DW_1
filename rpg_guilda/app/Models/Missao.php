@@ -6,22 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class Missao extends Model
 {
-    // Definindo o nome da tabela associada ao modelo
+    /**
+     * Nome da tabela explícita (opcional se seguir padrão, mas aqui está correto).
+     */
     protected $table = 'missoes';
 
-    // Atributos que podem ser atribuídos em massa
+    /**
+     * Campos permitidos para atribuição em massa.
+     */
     protected $fillable = [
-        'campanha_id',   // ID da campanha à qual a missão pertence
-        'user_id',       // ID do usuário (mestre) que criou a missão
-        'titulo',        // Título da missão
-        'descricao',     // Descrição detalhada da missão
-        'recompensa',    // Recompensa oferecida ao completar a missão
-        'status',        // Status da missão (pendente, em andamento, concluída)
+        'campanha_id',
+        'user_id',      // Mestre que criou a missão
+        'titulo',
+        'descricao',
+        'recompensa',
+        'status',       // pendente | em_andamento | concluida
     ];
 
     /**
-     * Define a relação de "Missao" com "Campanha".
-     * Uma missão pertence a uma campanha específica.
+     * ---------------------------
+     * RELACIONAMENTOS
+     * ---------------------------
+     */
+
+    /**
+     * Cada missão pertence a uma campanha.
      */
     public function campanha()
     {
@@ -29,18 +38,21 @@ class Missao extends Model
     }
 
     /**
-     * Define a relação de "Missao" com o "User" (mestre).
-     * Uma missão é criada por um mestre (usuário).
+     * Cada missão é criada por um mestre (usuário).
      */
     public function mestre()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * ---------------------------
+     *    ESCOPOS PERSONALIZADOS
+     * ---------------------------
+     */
 
     /**
-     * Escopo para buscar missões concluídas.
-     * Filtra as missões que têm o status "concluida".
+     * Missões concluídas.
      */
     public function scopeConcluidas($query)
     {
@@ -48,8 +60,7 @@ class Missao extends Model
     }
 
     /**
-     * Escopo para buscar missões em andamento.
-     * Filtra as missões que têm o status "em_andamento".
+     * Missões em andamento.
      */
     public function scopeEmAndamento($query)
     {
@@ -57,11 +68,55 @@ class Missao extends Model
     }
 
     /**
-     * Escopo para buscar missões pendentes.
-     * Filtra as missões que têm o status "pendente".
+     * Missões pendentes.
      */
     public function scopePendentes($query)
     {
         return $query->where('status', 'pendente');
+    }
+
+    /**
+     * ---------------------------
+     *   MÉTODOS ÚTEIS (EXTRA)
+     * ---------------------------
+     */
+
+    /**
+     * Atualiza o status da missão com validação simples.
+     */
+    public function atualizarStatus($novoStatus)
+    {
+        $statusValidos = ['pendente', 'em_andamento', 'concluida'];
+
+        if (!in_array($novoStatus, $statusValidos)) {
+            throw new \InvalidArgumentException("Status inválido: $novoStatus");
+        }
+
+        $this->status = $novoStatus;
+        $this->save();
+    }
+
+    /**
+     * Retorna true se a missão estiver concluída.
+     */
+    public function estaConcluida()
+    {
+        return $this->status === 'concluida';
+    }
+
+    /**
+     * Retorna true se estiver em andamento.
+     */
+    public function estaEmAndamento()
+    {
+        return $this->status === 'em_andamento';
+    }
+
+    /**
+     * Retorna true se estiver pendente.
+     */
+    public function estaPendente()
+    {
+        return $this->status === 'pendente';
     }
 }

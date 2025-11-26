@@ -13,10 +13,9 @@ return new class extends Migration {
             $table->text('descricao')->nullable();
             $table->json('modificadores_atributos')->nullable()->comment('Bônus de atributos da raça, mapeados pelos nomes internos dos atributos do sistema.');
 
-            // Mantendo os campos genéricos
             $table->enum('tipo_bonus', ['flat', 'multiplicador', 'escolha'])->default('flat');
+            $table->integer('bonus_livre')->default(0)->after('tipo_bonus');
 
-            // Página / referência
             $table->string('pagina', 50)->nullable();
 
             $table->timestamps();

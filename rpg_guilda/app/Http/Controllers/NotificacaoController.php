@@ -13,7 +13,6 @@ class NotificacaoController extends Controller
         $this->middleware('auth');
     }
 
-    // Lista todas as notificações do usuário logado
     public function index()
     {
         $usuario = Auth::user();
@@ -25,7 +24,6 @@ class NotificacaoController extends Controller
         return view('notificacoes.index', compact('notificacoes'));
     }
 
-    // Marca uma notificação como lida
     public function marcarComoLida($id)
     {
         $usuario = Auth::user();
@@ -43,7 +41,6 @@ class NotificacaoController extends Controller
         return redirect()->back()->with('success', 'Notificação marcada como lida.');
     }
 
-    // Marca todas as notificações como lidas
     public function marcarTodasComoLidas()
     {
         Notificacao::where('usuario_id', Auth::id())
@@ -53,7 +50,6 @@ class NotificacaoController extends Controller
         return redirect()->back()->with('success', 'Todas as notificações marcadas como lidas.');
     }
 
-    // Deleta uma notificação
     public function destroy($id)
     {
         $usuario = Auth::user();
@@ -71,7 +67,6 @@ class NotificacaoController extends Controller
         return redirect()->back()->with('success', 'Notificação deletada com sucesso.');
     }
 
-    // Cria notificações de forma genérica (pública)
     public static function criarNotificacao($usuarioId, $mensagem, $tipo = 'geral', $sessaoId = null)
     {
         try {
@@ -102,10 +97,10 @@ class NotificacaoController extends Controller
 
         if ($usuario) {
             $mensagem = match ($status) {
-                'ativo' => "🎉 Você foi aprovado para participar da campanha **{$campanha->nome}**!",
+                'ativo'     => "🎉 Você foi aprovado para participar da campanha **{$campanha->nome}**!",
                 'rejeitado' => "❌ Sua solicitação para entrar na campanha **{$campanha->nome}** foi rejeitada.",
-                'remover' => "🚫 Você foi removido da campanha **{$campanha->nome}**.",
-                default => null,
+                'remover'   => "🚫 Você foi removido da campanha **{$campanha->nome}**.",
+                default     => null,
             };
 
             if ($mensagem) {

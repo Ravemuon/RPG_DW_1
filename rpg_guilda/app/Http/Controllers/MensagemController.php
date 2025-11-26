@@ -3,48 +3,43 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mensagem;
+use App\Models\Campanha;
+use App\Models\Chat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class MensagemController extends Controller
 {
-    // MensagemController.php
-    public function index()
+    // Lista mensagens de uma campanha
+    public function index($campanhaId)
     {
-        // Lógica para exibir os chats ou mensagens de uma campanha
-        $mensagens = Mensagem::where('campanha_id', $campanhaId)->get();  // Ajuste conforme sua necessidade
-
+        $mensagens = Mensagem::where('campanha_id', $campanhaId)->get();
         return view('chat.campanha.index', compact('mensagens'));
     }
 
-    /**
-     * Armazenar uma nova mensagem.
-     */
+    // Salva uma nova mensagem
     public function store(Request $request)
     {
         $request->validate([
             'conteudo' => 'required|string',
-            'tipo' => 'required|in:privada,campanha,chat',
+            'tipo'    => 'required|in:privada,campanha,chat',
             'user_id' => 'required|exists:users,id',
-            'campanha_id' => 'nullable|required_if:tipo,campanha|exists:campanhas,id', // validação de campanha
-            'chat_id' => 'nullable|required_if:tipo,chat|exists:chats,id', // validação de chat
+            'campanha_id' => 'nullable|required_if:tipo,campanha|exists:campanhas,id',
+            'chat_id'     => 'nullable|required_if:tipo,chat|exists:chats,id',
         ]);
 
         $mensagem = Mensagem::create([
             'conteudo' => $request->conteudo,
             'tipo' => $request->tipo,
             'user_id' => $request->user_id,
-            'campanha_id' => $request->campanha_id, // se for uma mensagem de campanha
-            'chat_id' => $request->chat_id, // se for uma mensagem de chat
+            'campanha_id' => $request->campanha_id,
+            'chat_id' => $request->chat_id,
         ]);
 
-        return response()->json($mensagem, 201);  // Retorna a mensagem criada com status 201
+        return response()->json($mensagem, 201);
     }
 
-
-    /**
-     * Exibir as mensagens de uma campanha ou chat específico.
-     */
+    // Mostra mensagens de uma campanha ou chat
     public function show($id)
     {
         $campanha = Campanha::find($id);
@@ -62,10 +57,7 @@ class MensagemController extends Controller
         return response()->json($mensagens);
     }
 
-
-    /**
-     * Exibir todas as mensagens privadas do usuário logado.
-     */
+    // Lista mensagens privadas do usuário
     public function mensagensPrivadas()
     {
         $mensagens = Mensagem::where('tipo', 'privada')
@@ -79,9 +71,7 @@ class MensagemController extends Controller
         return response()->json($mensagens);
     }
 
-    /**
-     * Marcar uma mensagem privada como lida.
-     */
+    // Marca mensagem privada como lida
     public function marcarComoLida($id)
     {
         $mensagem = Mensagem::findOrFail($id);
@@ -90,16 +80,13 @@ class MensagemController extends Controller
             return response()->json(['error' => 'Somente mensagens privadas podem ser marcadas como lidas.'], 400);
         }
 
-        // Verifica se a mensagem já foi marcada como lida
         if ($mensagem->lida) {
             return response()->json(['message' => 'A mensagem já foi marcada como lida.']);
         }
 
-        // Marca a mensagem como lida
         $mensagem->lida = true;
         $mensagem->save();
 
         return response()->json(['message' => 'Mensagem marcada como lida.']);
     }
-
 }

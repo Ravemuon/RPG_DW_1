@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Storage;
 
 class ArquivoController extends Controller
 {
+    /**
+     * Retorna a lista de arquivos de uma entidade específica (usuário ou campanha).
+     */
     public function index(string $entidade, int $id)
     {
         $query = Arquivo::query();
@@ -24,6 +27,9 @@ class ArquivoController extends Controller
         );
     }
 
+    /**
+     * Faz o upload de um novo arquivo e o associa a uma entidade.
+     */
     public function upload(Request $request, string $entidade, int $id)
     {
         $request->validate([
@@ -35,6 +41,7 @@ class ArquivoController extends Controller
         $usuario_id = null;
         $campanha_id = null;
 
+        // Verifica a entidade e a permissão
         match ($entidade) {
             'usuario' => $id == Auth::id()
                 ? $usuario_id = $id
@@ -49,6 +56,7 @@ class ArquivoController extends Controller
         };
 
         $arquivo = $request->file('arquivo');
+        // Salva o arquivo no disco 'public' dentro da pasta da entidade
         $path = $arquivo->store($entidade, 'public');
 
         $novoArquivo = Arquivo::create([
@@ -66,8 +74,12 @@ class ArquivoController extends Controller
         ]);
     }
 
+    /**
+     * Faz o download de um arquivo.
+     */
     public function download(Arquivo $arquivo)
     {
+        // Verifica se o usuário é o proprietário ou um administrador
         if ($arquivo->usuario_id !== Auth::id() && !Auth::user()->isAdmin()) {
             abort(403, 'Não autorizado.');
         }
@@ -78,12 +90,17 @@ class ArquivoController extends Controller
         );
     }
 
+    /**
+     * Exclui um arquivo e o remove do storage.
+     */
     public function destroy(Arquivo $arquivo)
     {
+        // Verifica se o usuário é o proprietário ou um administrador
         if ($arquivo->usuario_id !== Auth::id() && !Auth::user()->isAdmin()) {
             abort(403, 'Não autorizado.');
         }
 
+        // Remove o arquivo do storage e o registro do banco de dados
         Storage::disk('public')->delete($arquivo->caminho);
         $arquivo->delete();
 

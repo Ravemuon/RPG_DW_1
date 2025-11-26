@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage; // Adicionado para manipulação de arquivos
 
 class UserController extends Controller
 {
@@ -100,9 +101,9 @@ class UserController extends Controller
         return redirect()->route('home')->with('success', 'Conta criada com sucesso.');
     }
 
-    // ===================================================
+    // ---------------------------------------------------
     // Perfil do Usuário
-    // ===================================================
+    // ---------------------------------------------------
 
     /**
      * Exibe o perfil do usuário.
@@ -145,7 +146,7 @@ class UserController extends Controller
         $request->validate([
             'nome' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'bio' => 'nullable|string|max:1000',
+            'biografia' => 'nullable|string|max:1000', // Assumindo 'biografia' no request e no DB
             'tema' => 'required|in:' . implode(',', User::TEMAS),
             'current_password' => 'nullable|required_with:new_password',
             'new_password' => 'nullable|min:6|confirmed',
@@ -158,7 +159,7 @@ class UserController extends Controller
         $user->update([
             'nome' => $request->nome,
             'email' => $request->email,
-            'bio' => $request->biografia,
+            'biografia' => $request->biografia, // Assumindo 'biografia'
             'tema' => $request->tema,
             'password' => $request->filled('new_password') ? Hash::make($request->new_password) : $user->password,
         ]);
@@ -166,9 +167,9 @@ class UserController extends Controller
         return redirect()->route('usuarios.perfil')->with('success', 'Perfil atualizado com sucesso.');
     }
 
-    // ===================================================
+    // ---------------------------------------------------
     // Alterar Tema
-    // ===================================================
+    // ---------------------------------------------------
 
     /**
      * Atualiza o tema do usuário.
@@ -187,9 +188,9 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'Tema atualizado com sucesso.');
     }
 
-    // ===================================================
+    // ---------------------------------------------------
     // Lista / Amigos
-    // ===================================================
+    // ---------------------------------------------------
 
     /**
      * Lista todos os usuários, exceto o logado.
@@ -214,7 +215,9 @@ class UserController extends Controller
      */
     public function friends()
     {
-        $friends = Auth::user()->todosAmigos();
+        // Certifique-se de que o método 'todosAmigos' no modelo User
+        // retorna apenas amigos aceitos, conforme a implementação original.
+        $friends = Auth::user()->todosAmigos()->get();
         return view('amizades.amigos', compact('friends'));
     }
 
@@ -223,13 +226,16 @@ class UserController extends Controller
      */
     public function pendingRequests()
     {
-        $pending = Auth::user()->receivedRequests()->where('status', 'pending')->get();
+        // O método 'receivedRequests()' deve ser implementado no modelo User
+        // ou você pode usar o método 'amizadesRecebidas()' se for o caso.
+        // Assumindo que 'amizadesRecebidas()' é o correto:
+        $pending = Auth::user()->amizadesRecebidas()->where('status', 'pendente')->get();
         return view('amizades.index', compact('pending'));
     }
 
-    // ===================================================
+    // ---------------------------------------------------
     // Notificações
-    // ===================================================
+    // ---------------------------------------------------
 
     /**
      * Exibe todas as notificações do usuário.
@@ -268,9 +274,9 @@ class UserController extends Controller
         return back()->with('success', 'Todas as notificações foram marcadas como lidas.');
     }
 
-    // ===================================================
+    // ---------------------------------------------------
     // Home
-    // ===================================================
+    // ---------------------------------------------------
 
     /**
      * Exibe a página inicial.
@@ -280,9 +286,9 @@ class UserController extends Controller
         return view('home.home');
     }
 
-    // ===================================================
+    // ---------------------------------------------------
     // Upload de imagem (avatar / banner)
-    // ===================================================
+    // ---------------------------------------------------
 
     /**
      * Realiza o upload de imagem (avatar ou banner).
@@ -292,18 +298,28 @@ class UserController extends Controller
         $user = auth()->user();
 
         if (!in_array($tipo, ['avatar', 'banner'])) {
-            abort(400, 'Tipo inválido.');
+            return back()->withErrors(['arquivo' => 'Tipo de upload inválido.'])->withInput();
         }
 
         $request->validate([
-            'arquivo' => 'required|image|max:2048',
+            'arquivo' => 'required|image|max:2048', // 2MB
         ]);
 
         $file = $request->file('arquivo');
-        $nomeArquivo = $tipo . '_' . $user->id . '.' . $file->getClientOriginalExtension();
 
-        // Salva o arquivo no storage
-        $caminho = $file->storeAs("users/{$tipo}s", $nomeArquivo, 'public');
+        // Determina o nome do arquivo para garantir que seja único para o usuário,
+        // mas com o mesmo nome para sobrescrever uploads antigos.
+        $nomeArquivo = $tipo . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+        $diretorio = "users/{$tipo}s";
+
+        // Deleta o arquivo antigo (se existir)
+        if ($user->$tipo && Storage::disk('public')->exists($user->$tipo)) {
+            Storage::disk('public')->delete($user->$tipo);
+        }
+
+        // Salva o novo arquivo no storage
+        // O Storage::putFileAs é mais robusto
+        $caminho = Storage::disk('public')->putFileAs($diretorio, $file, $nomeArquivo);
 
         // Atualiza o caminho no banco de dados
         $user->$tipo = $caminho;
@@ -312,9 +328,9 @@ class UserController extends Controller
         return back()->with('success', ucfirst($tipo) . ' atualizado com sucesso.');
     }
 
-    // ===================================================
+    // ---------------------------------------------------
     // Perfil público de outro usuário
-    // ===================================================
+    // ---------------------------------------------------
 
     /**
      * Exibe o perfil público de outro usuário.
@@ -323,6 +339,11 @@ class UserController extends Controller
     {
         $usuario = User::findOrFail($id);
         $user = auth()->user();
+
+        // Evita que o usuário veja o próprio perfil público (redireciona para o perfil editável)
+        if ($usuario->id === $user->id) {
+            return redirect()->route('usuarios.perfil');
+        }
 
         $amizade = \App\Models\Amizade::where(function ($q) use ($user, $usuario) {
             $q->where('user_id', $user->id)->where('friend_id', $usuario->id);
@@ -334,8 +355,9 @@ class UserController extends Controller
         $amizadeId = null;
 
         if ($amizade) {
-            if ($amizade->status === 'aceito') $status = 'amigo';
+            if ($amizade->status === 'aceita') $status = 'amigo';
             elseif ($amizade->status === 'pendente') {
+                // Checa se a requisição foi enviada por este usuário (pendente) ou se ele deve aceitar (aguardando)
                 $status = $amizade->friend_id === $user->id ? 'aguardando' : 'pendente';
                 $amizadeId = $amizade->id;
             }
@@ -344,9 +366,9 @@ class UserController extends Controller
         return view('amizades.perfilpublico', compact('usuario', 'status', 'amizadeId'));
     }
 
-    // ===================================================
+    // ---------------------------------------------------
     // Procurar usuários
-    // ===================================================
+    // ---------------------------------------------------
 
     /**
      * Realiza a busca por usuários.

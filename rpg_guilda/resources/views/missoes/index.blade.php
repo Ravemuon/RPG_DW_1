@@ -129,7 +129,7 @@
 
                         <h4 class="fw-bold text-truncate">{{ $missao->titulo }}</h4>
 
-                        <p class="text-muted small flex-grow-1">
+                        <p class="text-muted small grow">
                             {{ Str::limit($missao->descricao, 120) }}
                         </p>
 

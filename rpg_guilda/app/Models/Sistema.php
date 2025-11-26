@@ -17,26 +17,22 @@ class Sistema extends Model
         'foco',
         'mecanica_principal',
         'complexidade',
-        'atributos', // Coluna JSON da migration
-        'usa_sanidade', // Coluna boolean da migration
-        'formula_pontos_vida', // Coluna string da migration
-        'recursos', // Coluna JSON da migration
-        'regras_opcionais', // Coluna JSON da migration
-        // As colunas de atributos individuais (atributo1_nome, etc.) e max_atributos foram removidas
+        'atributos',
+        'usa_sanidade',
+        'formula_pontos_vida',
+        'recursos',
+        'regras_opcionais',
     ];
 
     protected $casts = [
         'atributos' => 'array',
         'recursos' => 'array',
         'regras_opcionais' => 'array',
-        'usa_sanidade' => 'boolean', // Conversão para boolean
+        'usa_sanidade' => 'boolean',
     ];
-
-    // --- Relações ---
 
     public function pericias()
     {
-        // Certifique-se de que a foreign key está correta. Assumindo 'sistema_id'.
         return $this->hasMany(Pericia::class, 'sistema_id');
     }
 
@@ -47,19 +43,16 @@ class Sistema extends Model
 
     public function racas()
     {
-        // Se a foreign key for 'sistema_id', use: $this->hasMany(Raca::class, 'sistema_id');
-        return $this->hasMany(Raca::class);
+        return $this->hasMany(Raca::class, 'sistema_id');
     }
 
     public function origens()
     {
-        // Se a foreign key for 'sistema_id', use: $this->hasMany(Origem::class, 'sistema_id');
-        return $this->hasMany(Origem::class);
+        return $this->hasMany(Origem::class, 'sistema_id');
     }
 
     public function personagens()
     {
-        // Assumindo que Personagem é um model relacionado
-        return $this->hasMany(Personagem::class);
+        return $this->hasMany(Personagem::class, 'sistema_id');
     }
 }

@@ -5,58 +5,95 @@
 @section('content')
 <div class="container mt-4">
 
+    {{-- ALERTAS --}}
     @include('amizades.partials._alertas')
 
-    {{-- CABEÇALHO / REDIRECIONAMENTOS --}}
+    {{-- ============================
+        RESUMO / REDIRECIONAMENTOS
+    ============================= --}}
     <div class="card mb-4 shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="mb-0 text-highlight">Gestão de Amizades</h4>
+            <h4 class="mb-0 text-highlight">Central de Amizades</h4>
             <small class="text-muted">Gerencie suas conexões e convites</small>
         </div>
 
         <div class="card-body text-center">
             <p class="text-muted mb-4">
-                Visualize seus amigos atuais, busque por usuários e mantenha suas conexões organizadas.
+                Acompanhe suas solicitações, encontre novos amigos ou visualize suas conexões atuais.
             </p>
 
-            {{-- BOTÕES DE NAVEGAÇÃO (iguais ao index) --}}
-            <div class="d-flex justify-content-center gap-3 flex-wrap mb-4">
-                <a href="{{ route('amizades.index') }}" class="btn btn-outline-light btn-lg rounded-pill px-4">
-                    🏠 Resumo
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="{{ route('amizades.amigos') }}" class="btn btn-outline-light btn-lg rounded-pill px-4">
+                    👥 Meus Amigos
                 </a>
+
                 <a href="{{ route('amizades.pendentes') }}" class="btn btn-outline-warning btn-lg rounded-pill px-4">
                     ⚡ Solicitações Pendentes
                 </a>
+
                 <a href="{{ route('amizades.procurar') }}" class="btn btn-outline-info btn-lg rounded-pill px-4">
                     🔍 Procurar Usuários
                 </a>
             </div>
-
-            {{-- CAMPO DE PESQUISA --}}
-            <form method="GET" action="{{ route('amizades.amigos') }}" class="d-flex justify-content-center mb-4">
-                <div class="input-group w-50">
-                    <input type="text" name="q" value="{{ request('q') }}" class="form-control rounded-start-pill"
-                        placeholder="🔎 Buscar amigo por nome ou usuário...">
-                    <button class="btn btn-outline-light rounded-end-pill px-4" type="submit">
-                        Buscar
-                    </button>
-                </div>
-            </form>
-
-            {{-- LISTA DE AMIGOS --}}
-            @if($amigos->count())
-                <div class="row g-4">
-                    @include('amizades.partials._lista_amigos', ['amigos' => $amigos])
-                </div>
-
-                <div class="mt-4">
-                    {{ $amigos->links() }}
-                </div>
-            @else
-                <p class="text-muted mb-0">Você ainda não tem amigos adicionados.</p>
-            @endif
         </div>
     </div>
+
+
+    {{-- ============================
+         SUGESTÕES DE AMIZADE
+    ============================= --}}
+    @if(isset($sugestoes) && $sugestoes->isNotEmpty())
+        <h5 class="mt-5 mb-3 text-highlight">⭐ Sugestões para Você</h5>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4 mb-5">
+            @foreach($sugestoes as $usuario)
+                <div class="col">
+                    {{-- card do usuário com botões de adicionar/pendente --}}
+                    @include('amizades.partials._card_usuario', ['usuario' => $usuario])
+                </div>
+            @endforeach
+        </div>
+
+        <hr>
+    @endif
+
+
+    {{-- ============================
+          AMIGOS ATUAIS
+    ============================= --}}
+    <h5 class="mt-4 mb-3 text-highlight">
+        🤝 Seus Amigos Atuais ({{ $amigos->total() ?? 0 }})
+    </h5>
+
+    @if(isset($amigos) && $amigos->count() > 0)
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
+
+            @foreach($amigos as $usuario)
+                <div class="col">
+                    {{-- reuso do card, porém com modo amigo desabilitando botão de adicionar --}}
+                    @include('amizades.partials._card_usuario', [
+                        'usuario' => $usuario,
+                        'is_friend' => true
+                    ])
+                </div>
+            @endforeach
+
+        </div>
+
+        {{-- paginação --}}
+        <div class="d-flex justify-content-center mt-4">
+            {{ $amigos->links('pagination::bootstrap-5') }}
+        </div>
+
+    @else
+        <div class="alert alert-secondary text-center mt-3">
+            Você ainda não tem amigos conectados.
+            <br>
+            <a href="{{ route('amizades.procurar') }}" class="text-decoration-underline">
+                Clique aqui para procurar novos usuários!
+            </a>
+        </div>
+    @endif
 
 </div>
 @endsection

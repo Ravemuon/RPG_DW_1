@@ -14,23 +14,27 @@ class Amizade extends Model
     protected $fillable = [
         'user_id',
         'friend_id',
-        'status'
+        'status',
     ];
 
-    // Relação com usuário que envia a solicitação
+    /**
+     * Usuário que enviou a solicitação.
+     */
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Relação com usuário que recebe a solicitação
+    /**
+     * Usuário que recebeu a solicitação.
+     */
     public function friend()
     {
         return $this->belongsTo(User::class, 'friend_id');
     }
 
     /**
-     * Scope para buscar amizades aceitas
+     * Scope: amizades já aceitas.
      */
     public function scopeAceitas($query)
     {
@@ -38,7 +42,7 @@ class Amizade extends Model
     }
 
     /**
-     * Scope para buscar solicitações pendentes recebidas
+     * Scope: solicitações pendentes recebidas pelo usuário.
      */
     public function scopePendentesRecebidas($query, $userId)
     {
@@ -47,7 +51,7 @@ class Amizade extends Model
     }
 
     /**
-     * Scope para buscar solicitações pendentes enviadas
+     * Scope: solicitações pendentes enviadas pelo usuário.
      */
     public function scopePendentesEnviadas($query, $userId)
     {
@@ -56,14 +60,18 @@ class Amizade extends Model
     }
 
     /**
-     * Verifica se existe amizade ou solicitação entre dois usuários
+     * Verifica se existe amizade ou solicitação entre dois usuários.
      */
-    public static function existeEntre($userId, $friendId)
+    public static function existeEntre($userId, $friendId): bool
     {
-        return self::where(function($q) use ($userId, $friendId) {
-            $q->where('user_id', $userId)->where('friend_id', $friendId);
-        })->orWhere(function($q) use ($userId, $friendId) {
-            $q->where('user_id', $friendId)->where('friend_id', $userId);
-        })->exists();
+        return self::where(function ($q) use ($userId, $friendId) {
+                $q->where('user_id', $userId)
+                  ->where('friend_id', $friendId);
+            })
+            ->orWhere(function ($q) use ($userId, $friendId) {
+                $q->where('user_id', $friendId)
+                  ->where('friend_id', $userId);
+            })
+            ->exists();
     }
 }

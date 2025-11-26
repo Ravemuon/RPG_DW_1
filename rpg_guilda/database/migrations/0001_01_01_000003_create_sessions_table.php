@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary(); // ID da sessão (varchar)
+            $table->string('id')->primary();
             $table->foreignId('user_id')
                   ->nullable()
                   ->constrained('users')
@@ -21,10 +21,10 @@ return new class extends Migration
 
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
-            $table->text('payload'); // dados serializados da sessão
+            $table->text('payload');
             $table->integer('last_activity')->index();
 
-            $table->timestamps(); // opcional, útil para auditoria
+            $table->timestamps(); 
         });
     }
 

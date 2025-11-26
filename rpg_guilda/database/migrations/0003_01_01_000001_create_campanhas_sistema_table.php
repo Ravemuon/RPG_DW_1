@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('campanhas', function (Blueprint $table) {
-            // Verifica se a coluna não existe antes de criar
             if (!Schema::hasColumn('campanhas', 'sistema_id')) {
                 $table->unsignedBigInteger('sistema_id')->nullable()->after('id')
                       ->comment('Referência ao sistema utilizado nesta campanha');

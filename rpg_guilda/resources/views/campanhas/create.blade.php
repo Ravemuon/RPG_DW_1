@@ -5,8 +5,8 @@
 @section('content')
 <div class="container py-5 text-light">
     <div class="text-center mb-5">
-        <h1 class="fw-bold text-highlight">➕ Criar Nova Campanha</h1>
-        <p class="text-muted">Preencha os dados da campanha para começar a aventura.</p>
+        <h1 class="fw-bold text-highlight">Criar Nova Campanha</h1>
+        <p class="text-muted">Preencha os dados da campanha.</p>
     </div>
 
     <div class="row justify-content-center">
@@ -17,7 +17,7 @@
                     <div class="alert alert-danger">
                         <ul class="mb-0">
                             @foreach ($errors->all() as $error)
-                                <li>⚠️ {{ $error }}</li>
+                                <li>{{ $error }}</li>
                             @endforeach
                         </ul>
                     </div>
@@ -33,7 +33,7 @@
                                value="{{ old('nome') }}" required placeholder="Ex: Aventura Épica">
                     </div>
 
-                    {{-- Sistema RPG --}}
+                    {{-- Sistema --}}
                     <div class="mb-3">
                         <label class="form-label">Sistema RPG</label>
                         <select name="sistema_id" class="form-select" required>
@@ -50,33 +50,32 @@
                     <div class="mb-3">
                         <label class="form-label">Descrição</label>
                         <textarea name="descricao" class="form-control" rows="4"
-                                    placeholder="Opcional">{{ old('descricao') }}</textarea>
+                                  placeholder="Opcional">{{ old('descricao') }}</textarea>
                     </div>
 
-                    {{-- Campo Hidden para 'privada' (fallback para 0) --}}
+                    {{-- Hidden para fallback --}}
                     <input type="hidden" name="privada" value="0">
 
                     {{-- Switch: Campanha Privada --}}
                     <div class="mb-3 form-check form-switch">
                         <input type="checkbox" name="privada" class="form-check-input" id="privada_checkbox"
-                            value="1"
-                            {{ old('privada') ? 'checked' : '' }}> {{-- CORREÇÃO APLICADA AQUI --}}
+                            value="1" {{ old('privada') ? 'checked' : '' }}>
                         <label class="form-check-label" for="privada_checkbox">Campanha Privada</label>
                         <div class="form-text text-muted">
-                            Se ativado, jogadores precisarão de um código para entrar ou solicitar entrada.
+                            Se ativado, jogadores precisarão de um código para entrar.
                         </div>
                     </div>
 
-                    {{-- Campo: Código de Convite (Condicional) --}}
+                    {{-- Código de Convite --}}
                     @php
-                        // Determina se o campo deve estar visível por padrão (se o old('privada') estiver marcado)
                         $showCodeField = old('privada') ? 'block' : 'none';
                     @endphp
                     <div class="mb-3" id="codigoConviteGroup" style="display: {{ $showCodeField }};">
                         <label class="form-label">Código de Convite (Opcional)</label>
                         <input type="text" name="codigo_convite" class="form-control" maxlength="10"
-                            value="{{ old('codigo_convite') }}" placeholder="Deixe em branco para gerar automaticamente">
-                        <div class="form-text text-light-50">O código deve ter até 10 caracteres. Se for deixado em branco, um código será gerado automaticamente.</div>
+                               value="{{ old('codigo_convite') }}"
+                               placeholder="Deixe vazio para gerar automaticamente">
+                        <div class="form-text text-light-50">Máximo de 10 caracteres.</div>
                     </div>
 
                     {{-- Status --}}
@@ -104,24 +103,16 @@
 }
 </style>
 
-{{-- Script para toggle do campo Código de Convite --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const privadaCheckbox = document.getElementById('privada_checkbox');
         const codigoConviteGroup = document.getElementById('codigoConviteGroup');
 
         function toggleCodigoConvite() {
-            if (privadaCheckbox.checked) {
-                codigoConviteGroup.style.display = 'block';
-            } else {
-                codigoConviteGroup.style.display = 'none';
-            }
+            codigoConviteGroup.style.display = privadaCheckbox.checked ? 'block' : 'none';
         }
 
-        // Adiciona o listener para mudança no checkbox
         privadaCheckbox.addEventListener('change', toggleCodigoConvite);
-
-        // Garante o estado inicial (importante para o carregamento da página)
         toggleCodigoConvite();
     });
 </script>

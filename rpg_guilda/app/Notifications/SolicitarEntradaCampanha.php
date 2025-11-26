@@ -19,7 +19,7 @@ class SolicitarEntradaCampanha extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];  // Utilizando o banco para armazenamento das notificações
+        return ['database'];
     }
 
     public function toDatabase($notifiable)
@@ -28,7 +28,7 @@ class SolicitarEntradaCampanha extends Notification
             'user_id' => $this->user->id,
             'campanha_id' => $this->campanha->id,
             'message' => "{$this->user->nome} solicitou entrar na campanha: {$this->campanha->nome}.",
-            'url' => route('campanhas.show', $this->campanha->id),  // Link para a campanha
+            'url' => route('campanhas.show', $this->campanha->id),  
         ];
     }
 }
