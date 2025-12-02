@@ -22,6 +22,14 @@ use App\Http\Controllers\{
     RacaController,
     ChatPrivadoController
 };
+use ConsoleTVs\Charts\Charts;
+use App\Charts\MissoesStatusChart;
+use App\Charts\SessaoPresencasChart;
+
+Charts::routes();
+
+Route::get('/chart/missoes-status', [MissoesStatusChart::class, 'handler'])->name('chart.missoes');
+Route::get('/chart/sessoes-presencas', [SessaoPresencasChart::class, 'handler'])->name('chart.sessoes');
 
 // Página inicial
 Route::get('/', [HomeController::class, 'index'])->name('home')->middleware('auth');

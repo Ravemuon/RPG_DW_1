@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Missao;
 use App\Models\Campanha;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Charts\MissoesStatusChart;
 
 class MissaoController extends Controller
 {
@@ -25,6 +26,7 @@ class MissaoController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        // Cálculo do dashboard
         $dashboard = [
             'pendentes'  => $missoes->where('status', 'pendente')->count(),
             'andamento'  => $missoes->where('status', 'em_andamento')->count(),
@@ -32,8 +34,16 @@ class MissaoController extends Controller
             'canceladas' => $missoes->where('status', 'cancelada')->count(),
         ];
 
+        // Gráfico usando o Chart.js
+        $chartStatus = new MissoesStatusChart($dashboard);
+
         return view('missoes.index', compact(
-            'campanha', 'missoes', 'dashboard', 'search', 'prioridade'
+            'campanha',
+            'missoes',
+            'dashboard',
+            'search',
+            'prioridade',
+            'chartStatus'
         ));
     }
 
@@ -56,6 +66,7 @@ class MissaoController extends Controller
         ]);
 
         $data['user_id'] = auth()->id();
+
         $campanha->missoes()->create($data);
 
         return redirect()

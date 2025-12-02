@@ -31,11 +31,11 @@ class RPGSeeder extends Seeder
             UsersTableSeeder::class,
             SistemasTableSeeder::class,
             ClassesTableSeeder::class,
+            PericiasTableSeeder::class,
             RacasTableSeeder::class,
             RacasTableSeederOutros::class,
             OrigensTableSeeder::class,
             OrigensTableSeederOutros::class,
-            PericiasTableSeeder::class,
             CampanhasTableSeeder::class,
         ]);
 

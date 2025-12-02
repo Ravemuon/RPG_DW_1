@@ -486,8 +486,8 @@ class ClassesTableSeeder extends Seeder
                     'dado_vida'=>$c['dado_vida'] ?? null,
                     'pericias_iniciais'=>json_encode($c['pericias_iniciais'] ?? []),
                     'equipamento_inicial'=>json_encode($c['equipamento_inicial'] ?? []),
-                    'poderes' => json_encode($c['poderes'] ?? []), // Novo campo
-                    'pagina' => $c['pagina'] ?? null, // Novo campo
+                    'poderes' => json_encode($c['poderes'] ?? []),
+                    'pagina' => $c['pagina'] ?? null,
                 ]
             );
 

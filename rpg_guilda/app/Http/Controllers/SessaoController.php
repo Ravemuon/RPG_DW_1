@@ -10,21 +10,31 @@ use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 
+// IMPORTAÇÃO DO CHART
+use App\Charts\SessaoPresencasChart;
+
 class SessaoController extends Controller
 {
     /**
      * Lista todas as sessões de uma campanha.
      */
-    public function index(Campanha $campanha)
+    public function index(Campanha $campanha, SessaoPresencasChart $chart)
     {
         $this->authorize('view', $campanha);
 
         $sessoes = $campanha->sessoes()
             ->with(['personagens', 'presencas'])
-            ->orderBy('data_hora', 'asc')
+            ->orderBy('data_hora')
             ->get();
 
-        return view('sessoes.index', compact('campanha', 'sessoes'));
+        // GERA O CHART
+        $presencasChart = $chart->handler();
+
+        return view('sessoes.index', [
+            'campanha' => $campanha,
+            'sessoes' => $sessoes,
+            'presencasChart' => $presencasChart
+        ]);
     }
 
 
@@ -34,7 +44,6 @@ class SessaoController extends Controller
     public function create(Campanha $campanha)
     {
         $this->authorize('update', $campanha);
-
         return view('sessoes.create', compact('campanha'));
     }
 
@@ -47,9 +56,9 @@ class SessaoController extends Controller
         $this->authorize('update', $campanha);
 
         $request->validate([
-            'titulo'       => 'required|string|max:150',
-            'data_hora'    => 'required|date',
-            'resumo'       => 'nullable|string'
+            'titulo'    => 'required|string|max:150',
+            'data_hora' => 'required|date',
+            'resumo'    => 'nullable|string'
         ]);
 
         $campanha->sessoes()->create([
@@ -66,7 +75,7 @@ class SessaoController extends Controller
 
 
     /**
-     * Exibe os detalhes da sessão.
+     * Exibe detalhes da sessão.
      */
     public function show(Campanha $campanha, Sessao $sessao)
     {
@@ -76,7 +85,6 @@ class SessaoController extends Controller
 
         $sessao->load(['personagens', 'campanha', 'presencas']);
 
-        // Verifica se o jogador já marcou presença
         $jaMarqueiPresenca = $user
             ? $sessao->presencas()->where('jogador_id', $user->id)->exists()
             : false;
@@ -86,18 +94,17 @@ class SessaoController extends Controller
 
 
     /**
-     * Formulário de edição da sessão.
+     * Formulário de edição.
      */
     public function edit(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('update', $campanha);
-
         return view('sessoes.edit', compact('campanha', 'sessao'));
     }
 
 
     /**
-     * Atualiza uma sessão.
+     * Atualiza sessão.
      */
     public function update(Request $request, Campanha $campanha, Sessao $sessao)
     {
@@ -119,7 +126,6 @@ class SessaoController extends Controller
             'descricao_detalhada' => $request->descricao_detalhada
         ]);
 
-        // Se for concluída → gerar PDF
         if ($request->status === 'concluida') {
             return $this->exportarPdf($campanha, $sessao);
         }
@@ -131,7 +137,7 @@ class SessaoController extends Controller
 
 
     /**
-     * Remove uma sessão.
+     * Exclui sessão.
      */
     public function destroy(Campanha $campanha, Sessao $sessao)
     {
@@ -146,7 +152,7 @@ class SessaoController extends Controller
 
 
     /**
-     * Marca presença de um jogador.
+     * Marca presença do jogador.
      */
     public function marcarPresenca(Request $request, Campanha $campanha, Sessao $sessao)
     {
@@ -156,7 +162,6 @@ class SessaoController extends Controller
             return back()->with('error', 'Você precisa estar logado para marcar presença.');
         }
 
-        // O Mestre não marca presença
         if ($user->id === $campanha->criador_id) {
             return back()->with('error', 'O Mestre não marca presença.');
         }
@@ -172,10 +177,8 @@ class SessaoController extends Controller
 
             Log::error("Erro ao marcar presença (user {$user->id}, sessão {$sessao->id}): ".$e->getMessage());
 
-            // Tentativa de marcar presença mais de uma vez
             if (str_contains($e->getMessage(), 'Duplicate entry') ||
                 str_contains($e->getMessage(), 'Integrity constraint violation')) {
-
                 return back()->with('error', 'Você já marcou presença nesta sessão.');
             }
 
@@ -184,9 +187,6 @@ class SessaoController extends Controller
     }
 
 
-    /**
-     * Métodos placeholders.
-     */
     public function adicionarPersonagem(Request $request, Campanha $campanha, Sessao $sessao)
     {
         return back()->with('error', 'Função de adicionar personagem ainda não implementada.');
@@ -204,7 +204,7 @@ class SessaoController extends Controller
 
 
     /**
-     * Exporta o relatório da sessão para PDF.
+     * Exporta relatório da sessão em PDF.
      */
     public function exportarPdf(Campanha $campanha, Sessao $sessao)
     {

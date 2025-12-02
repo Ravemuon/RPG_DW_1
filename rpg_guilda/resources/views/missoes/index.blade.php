@@ -11,9 +11,9 @@
     function get_status_badge($status) {
         return [
             'pendente'     => ['cor' => 'secondary', 'icone' => 'hourglass-split', 'texto' => 'Pendente'],
-            'em_andamento' => ['cor' => 'info', 'icone' => 'arrow-repeat', 'texto' => 'Em Andamento'],
-            'concluida'    => ['cor' => 'success', 'icone' => 'check-circle-fill', 'texto' => 'Concluída'],
-            'cancelada'    => ['cor' => 'danger', 'icone' => 'x-circle-fill', 'texto' => 'Cancelada'],
+            'em_andamento' => ['cor' => 'info',      'icone' => 'arrow-repeat',      'texto' => 'Em Andamento'],
+            'concluida'    => ['cor' => 'success',   'icone' => 'check-circle-fill', 'texto' => 'Concluída'],
+            'cancelada'    => ['cor' => 'danger',    'icone' => 'x-circle-fill',     'texto' => 'Cancelada'],
         ][$status] ?? ['cor' => 'light', 'icone' => 'question-circle-fill', 'texto' => 'Desconhecido'];
     }
 
@@ -100,7 +100,8 @@
         <h5 class="fw-bold mb-3 text-primary">
             <i class="bi bi-graph-up"></i> Visão Geral de Status
         </h5>
-        <canvas id="chartStatus" style="max-height: 260px;"></canvas>
+
+        {!! $chart->container() !!}
     </div>
 
     {{-- LISTA --}}
@@ -184,26 +185,8 @@
 
 </div>
 
+{{-- Scripts necessários --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    new Chart(
-        document.getElementById('chartStatus'),
-        {
-            type: 'doughnut',
-            data: {
-                labels: ['Pendentes', 'Em Andamento', 'Concluídas', 'Canceladas'],
-                datasets: [{
-                    data: [
-                        {{ $dashboard['pendentes'] }},
-                        {{ $dashboard['andamento'] }},
-                        {{ $dashboard['concluidas'] }},
-                        {{ $dashboard['canceladas'] }},
-                    ]
-                }]
-            },
-            options: { responsive: true }
-        }
-    );
-</script>
+{!! $chart->script() !!}
 
 @endsection
