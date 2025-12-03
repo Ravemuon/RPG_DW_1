@@ -15,9 +15,19 @@ use Illuminate\Database\QueryException;
 // IMPORTAÇÃO DA CLASSE DO CHART
 use App\Charts\SessaoPresencasChart;
 
+// IMPORTAÇÃO DO CHART
+use App\Charts\SessaoPresencasChart;
+
 class SessaoController extends Controller
 {
+<<<<<<< HEAD
     public function index(Campanha $campanha, SessaoPresencasChart $chart, Request $request)
+=======
+    /**
+     * Lista todas as sessões de uma campanha.
+     */
+    public function index(Campanha $campanha, SessaoPresencasChart $chart)
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
     {
         $this->authorize('view', $campanha);
 
@@ -33,6 +43,7 @@ class SessaoController extends Controller
         // ----------------------------
         $sessoesQuery = $campanha->sessoes()
             ->with(['personagens', 'presencas'])
+<<<<<<< HEAD
             ->orderBy('data_hora', 'desc');
 
         // ----------------------------
@@ -110,6 +121,19 @@ class SessaoController extends Controller
             'dateSearch',
             'statusFilter'
         ));
+=======
+            ->orderBy('data_hora')
+            ->get();
+
+        // GERA O CHART
+        $presencasChart = $chart->handler();
+
+        return view('sessoes.index', [
+            'campanha' => $campanha,
+            'sessoes' => $sessoes,
+            'presencasChart' => $presencasChart
+        ]);
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
     }
 
     /**
@@ -129,7 +153,11 @@ class SessaoController extends Controller
     {
         $this->authorize('update', $campanha);
 
+<<<<<<< HEAD
         $data = $request->validate([
+=======
+        $request->validate([
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
             'titulo'    => 'required|string|max:150',
             'data_hora' => 'required|date',
             'resumo'    => 'nullable|string'
@@ -146,7 +174,11 @@ class SessaoController extends Controller
 
 
     /**
+<<<<<<< HEAD
      * Exibe detalhes da sessão E GERA O GRÁFICO (Gráfico de Donut).
+=======
+     * Exibe detalhes da sessão.
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
      */
     public function show(Campanha $campanha, Sessao $sessao, SessaoPresencasChart $chart)
     {
@@ -159,9 +191,12 @@ class SessaoController extends Controller
 
         $sessao->load(['personagens', 'campanha', 'presencas']);
 
+<<<<<<< HEAD
         // GERA O GRÁFICO (Gráfico de Donut, chamando o handler com a Sessão única)
         $presencaChart = $chart->handler($campanha, $sessao);
 
+=======
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
         $jaMarqueiPresenca = $user
             ? $sessao->presencas()->where('jogador_id', $user->id)->exists()
             : false;
@@ -176,9 +211,12 @@ class SessaoController extends Controller
     public function edit(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('update', $campanha);
+<<<<<<< HEAD
         if ($sessao->campanha_id !== $campanha->id) {
             abort(404, 'Sessão não encontrada nesta campanha.');
         }
+=======
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
         return view('sessoes.edit', compact('campanha', 'sessao'));
     }
 
@@ -203,7 +241,10 @@ class SessaoController extends Controller
 
         $sessao->update($data);
 
+<<<<<<< HEAD
         // Se o status for alterado para 'concluida', exporta o PDF
+=======
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
         if ($request->status === 'concluida') {
             return $this->exportarPdf($campanha, $sessao);
         }
@@ -238,9 +279,20 @@ class SessaoController extends Controller
     public function marcarPresenca(Request $request, Campanha $campanha, Sessao $sessao)
     {
         $user = Auth::user();
+<<<<<<< HEAD
         if (!$user) { return back()->with('error', 'Você precisa estar logado para marcar presença.'); }
         if ($user->id === $campanha->criador_id) { return back()->with('error', 'O Mestre não marca presença.'); }
         if ($sessao->campanha_id !== $campanha->id) { return back()->with('error', 'Sessão inválida para esta campanha.'); }
+=======
+
+        if (!$user) {
+            return back()->with('error', 'Você precisa estar logado para marcar presença.');
+        }
+
+        if ($user->id === $campanha->criador_id) {
+            return back()->with('error', 'O Mestre não marca presença.');
+        }
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
 
         try {
             $sessao->presencas()->attach($user->id, [
@@ -251,9 +303,19 @@ class SessaoController extends Controller
 
             return back()->with('success', 'Presença marcada com sucesso!');
 
+<<<<<<< HEAD
         } catch (QueryException $e) {
             if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'Duplicate entry')) {
                  return back()->with('error', 'Você já marcou presença nesta sessão.');
+=======
+        } catch (\Illuminate\Database\QueryException $e) {
+
+            Log::error("Erro ao marcar presença (user {$user->id}, sessão {$sessao->id}): ".$e->getMessage());
+
+            if (str_contains($e->getMessage(), 'Duplicate entry') ||
+                str_contains($e->getMessage(), 'Integrity constraint violation')) {
+                return back()->with('error', 'Você já marcou presença nesta sessão.');
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
             }
             Log::error("Erro ao marcar presença (user {$user->id}, sessão {$sessao->id}): ".$e->getMessage());
             return back()->with('error', 'Erro ao registrar presença. Tente novamente.');
@@ -261,8 +323,29 @@ class SessaoController extends Controller
     }
 
 
+<<<<<<< HEAD
     /**
      * Exporta relatório da sessão em PDF usando DomPDF.
+=======
+    public function adicionarPersonagem(Request $request, Campanha $campanha, Sessao $sessao)
+    {
+        return back()->with('error', 'Função de adicionar personagem ainda não implementada.');
+    }
+
+    public function confirmarPersonagem(Request $request, Campanha $campanha, Sessao $sessao)
+    {
+        return back()->with('error', 'Função de confirmar personagem ainda não implementada.');
+    }
+
+    public function atualizarPersonagem(Request $request, Campanha $campanha, Sessao $sessao, Personagem $personagem)
+    {
+        return back()->with('error', 'Função de atualizar personagem ainda não implementada.');
+    }
+
+
+    /**
+     * Exporta relatório da sessão em PDF.
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
      */
     public function exportarPdf(Campanha $campanha, Sessao $sessao)
     {

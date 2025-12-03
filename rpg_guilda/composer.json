@@ -7,9 +7,15 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+<<<<<<< HEAD
         "arielmejiadev/larapex-charts": "^2.1",
         "barryvdh/laravel-dompdf": "^3.1",
         "consoletvs/charts": "^6.8",
+=======
+        "arielmejiadev/larapex-charts": "*",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "consoletvs/charts": "*",
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "pusher/pusher-php-server": "^7.2"

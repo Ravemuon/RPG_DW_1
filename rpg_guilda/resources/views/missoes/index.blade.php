@@ -11,11 +11,19 @@
     // Funções auxiliares para badges - Usando Font Awesome para padronizar com o primeiro arquivo
     function get_status_badge_fa($status) {
         return [
+<<<<<<< HEAD
             'pendente'     => ['cor' => 'secondary', 'icone' => 'hourglass-half', 'texto' => 'Pendente'],
             'em_andamento' => ['cor' => 'info', 'icone' => 'sync-alt', 'texto' => 'Em Andamento'],
             'concluida'    => ['cor' => 'success', 'icone' => 'check-circle', 'texto' => 'Concluída'],
             'cancelada'    => ['cor' => 'danger', 'icone' => 'times-circle', 'texto' => 'Cancelada'],
         ][$status] ?? ['cor' => 'light', 'icone' => 'question-circle', 'texto' => 'Desconhecido'];
+=======
+            'pendente'     => ['cor' => 'secondary', 'icone' => 'hourglass-split', 'texto' => 'Pendente'],
+            'em_andamento' => ['cor' => 'info',      'icone' => 'arrow-repeat',      'texto' => 'Em Andamento'],
+            'concluida'    => ['cor' => 'success',   'icone' => 'check-circle-fill', 'texto' => 'Concluída'],
+            'cancelada'    => ['cor' => 'danger',    'icone' => 'x-circle-fill',     'texto' => 'Cancelada'],
+        ][$status] ?? ['cor' => 'light', 'icone' => 'question-circle-fill', 'texto' => 'Desconhecido'];
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
     }
 
     function get_prioridade_badge_fa($prioridade) {
@@ -92,6 +100,7 @@
         </form>
     </div>
 
+<<<<<<< HEAD
     {{-- ÁREA DOS GRÁFICOS --}}
     @if(isset($statusChart) && isset($prioridadeChart) && $missoes->count() > 0)
     <h2 class="h4 text-warning mb-3"><i class="fas fa-chart-pie me-2"></i>Estatísticas de Missões</h2>
@@ -108,6 +117,16 @@
                 </div>
             </div>
         </div>
+=======
+    {{-- GRÁFICO --}}
+    <div class="card shadow-sm p-4 mb-5 rounded-4 border-0">
+        <h5 class="fw-bold mb-3 text-primary">
+            <i class="bi bi-graph-up"></i> Visão Geral de Status
+        </h5>
+
+        {!! $chart->container() !!}
+    </div>
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
 
         <div class="col-lg-6">
             <div class="card bg-secondary border-0 rounded-4 shadow-lg h-100">
@@ -201,9 +220,15 @@
 
 </div>
 
+<<<<<<< HEAD
 {{-- SCRIPTS DOS GRÁFICOS --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js" charset="utf-8"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+=======
+{{-- Scripts necessários --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{!! $chart->script() !!}
+>>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
 
 {{-- Renderização dos Scripts dos Gráficos --}}
 @if(isset($statusChart) && isset($prioridadeChart) && $missoes->count() > 0)
