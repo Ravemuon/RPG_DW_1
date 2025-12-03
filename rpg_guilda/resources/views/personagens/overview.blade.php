@@ -104,7 +104,7 @@
                             <div class="mb-3">
                                 <strong>Nome:</strong> {{ $personagem->nome }}<br>
                                 <strong>Descrição:</strong> {{ Str::limit($personagem->descricao ?? 'Não definida', 50) }}<br>
-                                <strong>História:</strong> {{ Str::limit($personagem->historia ?? 'Não definida', 50) }}
+                                    <strong>História:</strong> {{ Str::limit($personagem->historia ?? 'Não definida', 50) }}
                             </div>
                             <a href="{{ route('personagens.edit', $personagem->id) }}" class="btn btn-outline-primary">
                                 <i class="fas fa-edit me-2"></i>Editar Básico

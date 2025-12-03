@@ -12,30 +12,24 @@ class Origem extends Model
         'nome',
         'sistema_id',
         'descricao',
-        'bonus_pericias',
-        'recursos_adicionais',
+        'pericias_iniciais',     // <-- correto
+        'recursos_adicionais',   // <-- correto
         'pagina',
     ];
 
     protected $casts = [
-        'bonus_pericias' => 'array',
+        'pericias_iniciais' => 'array',     // <-- FALTAVA
         'recursos_adicionais' => 'array',
     ];
 
-    /**
-     * Relação: Uma origem pertence a um sistema.
-     */
     public function sistema()
     {
         return $this->belongsTo(Sistema::class);
     }
 
-    /**
-     * Retorna as perícias afetadas por esta origem (opcional)
-     * Caso o nome das perícias no JSON coincida com a tabela pericias.
-     */
     public function pericias()
     {
-        return Pericia::whereIn('nome', array_keys($this->bonus_pericias ?? []))->get();
+        return $this->belongsToMany(Pericia::class, 'origem_pericia')
+                    ->withPivot('bonus');
     }
 }

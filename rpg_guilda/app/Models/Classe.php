@@ -48,4 +48,10 @@ class Classe extends Model
     {
         return $this->belongsTo(Sistema::class, 'sistema_id');
     }
+
+    public function pericias()
+    {
+        return $this->belongsToMany(Pericia::class, 'classe_pericia', 'classe_id', 'pericia_id');
+    }
+
 }

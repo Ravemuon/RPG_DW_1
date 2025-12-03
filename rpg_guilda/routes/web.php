@@ -10,6 +10,7 @@ use App\Http\Controllers\{
     PersonagemController,
     PersonagemOrigemController,
     PersonagemPericiaController,
+    PersonagemCreatorController,
     ClasseController,
     OrigemController,
     PericiaController,
@@ -73,9 +74,8 @@ Route::middleware(['auth'])->group(function () {
     });
 
     /*-------------------------------
-    | Campanhas e Missões
-    -------------------------------*/
-
+    | Campanhas, Missões e Sessões
+    |-------------------------------*/
     Route::prefix('campanhas')->group(function () {
         Route::get('/', [CampanhaController::class, 'index'])->name('campanhas.index');
         Route::get('/todas', [CampanhaController::class, 'todas'])->name('campanhas.todas');
@@ -110,6 +110,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('{missao}/pdf', [MissaoController::class, 'exportarPdf'])->name('exportarPdf');
         });
 
+        // Sessões
         Route::prefix('{campanha}/sessoes')->name('sessoes.')->group(function () {
             Route::get('/', [SessaoController::class, 'index'])->name('index');
             Route::get('/criar', [SessaoController::class, 'create'])->name('create');
@@ -125,82 +126,119 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{sessao}/personagem/{personagem}', [SessaoController::class, 'atualizarPersonagem'])->name('atualizar-personagem');
             Route::get('/{sessao}/exportar-pdf', [SessaoController::class, 'exportarPdf'])->name('exportar-pdf');
 
-            // CORREÇÃO: Usando o nome 'marcar_presenca' e o método correto 'marcarPresenca' do controller
             Route::post('/{sessao}/marcar-presenca', [SessaoController::class, 'marcarPresenca'])->name('marcar_presenca');
 
-            // Removi a rota duplicada:
-            // Route::post('/{sessao}/confirmar-presenca', [SessaoController::class, 'adicionarPersonagem'])->name('confirmar-presenca');
         });
 
+    }); // Fim do prefixo 'campanhas'
 
 
-    });
+    /*--------------------------------------------------------------------------
+    | Rotas do Módulo de Personagens
+    |--------------------------------------------------------------------------
+    | Organizado por prefixo 'personagens' e nome de rota 'personagens.'
+    */
 
-    /*------------------------------------
-    | Personagens - SISTEMA DE CRIAÇÃO EM STEPS
-    ------------------------------------*/
-    Route::prefix('personagens')->group(function () {
-        // Listagem e CRUD básico
-        Route::get('/', [PersonagemController::class, 'index'])->name('personagens.index');
-        Route::get('/{personagem}', [PersonagemController::class, 'show'])->name('personagens.show');
-        Route::get('/{personagem}/edit', [PersonagemController::class, 'edit'])->name('personagens.edit');
-        Route::put('/{personagem}', [PersonagemController::class, 'update'])->name('personagens.update');
-        Route::delete('/{personagem}', [PersonagemController::class, 'destroy'])->name('personagens.destroy');
+    Route::prefix('personagens')->name('personagens.')->group(function () {
 
-        // Sistema de criação em steps
-        Route::get('/create/step1', [PersonagemController::class, 'create'])->name('personagens.create');
-        Route::post('/store/step1', [PersonagemController::class, 'storeStep1'])->name('personagens.store.step1');
+        // 1. LISTAGEM (INDEX)
+        Route::get('/', [PersonagemController::class, 'index'])->name('index');
 
-        // Overview (menu principal de criação)
-        Route::get('/{id}/overview', [PersonagemController::class, 'overview'])->name('personagens.overview');
+        // 2. FLUXO DE CRIAÇÃO (Baseado em SESSÃO - SEM {personagem} na URI)
 
-        // Steps de criação
-        Route::get('/{id}/step2', [PersonagemController::class, 'step2'])->name('personagens.step2');
-        Route::post('/{id}/store/step2', [PersonagemController::class, 'storeStep2'])->name('personagens.store.step2');
+        // Passo 1
+        // VIEW de criação (Início do fluxo - nome: 'personagens.create')
+        Route::get('/create/step1', [PersonagemCreatorController::class, 'create'])->name('create');
+        // Submissão do Passo 1
+        Route::post('/store/step1', [PersonagemCreatorController::class, 'storeStep1'])->name('store.step1');
 
-        Route::get('/{id}/step3', [PersonagemController::class, 'step3'])->name('personagens.step3');
-        Route::post('/{id}/store/step3', [PersonagemController::class, 'storeStep3'])->name('personagens.store.step3');
+        // Passos 2 a 5 (VIEW e STORE - Criança)
+        Route::get('/step2', [PersonagemCreatorController::class, 'step2'])->name('step2');
+        Route::post('/store/step2', [PersonagemCreatorController::class, 'storeStep2'])->name('store.step2');
 
-        Route::get('/{id}/step4', [PersonagemController::class, 'step4'])->name('personagens.step4');
-        Route::post('/{id}/store/step4', [PersonagemController::class, 'storeStep4'])->name('personagens.store.step4');
+        Route::get('/step3', [PersonagemCreatorController::class, 'step3'])->name('step3');
+        Route::post('/store/step3', [PersonagemCreatorController::class, 'storeStep3'])->name('store.step3');
 
-        Route::get('/{id}/step5', [PersonagemController::class, 'step5'])->name('personagens.step5');
-        Route::post('/{id}/store/step5', [PersonagemController::class, 'storeStep5'])->name('personagens.store.step5');
+        Route::get('/step4', [PersonagemCreatorController::class, 'step4'])->name('step4');
+        Route::post('/store/step4', [PersonagemCreatorController::class, 'storeStep4'])->name('store.step4');
 
-        Route::get('/{id}/final', [PersonagemController::class, 'final'])->name('personagens.final');
+        Route::get('/step5', [PersonagemCreatorController::class, 'step5'])->name('step5');
+        Route::post('/store/step5', [PersonagemCreatorController::class, 'storeStep5'])->name('store.step5');
 
-        // Sortear atributos e vida
-        Route::post('/{id}/sortear-atributos', [PersonagemController::class, 'sortearAtributos'])->name('personagens.sortear.atributos');
-        Route::post('/{id}/sortear-vida', [PersonagemController::class, 'sortearVida'])->name('personagens.sortear.vida');
+        // Revisão Final e Salvamento no DB
+        Route::get('/final', [PersonagemCreatorController::class, 'final'])->name('final');
+        Route::post('/store/final', [PersonagemCreatorController::class, 'storeFinal'])->name('store.final');
 
-            // Rotas extras para origens e perícias
+
+        // 3. ROTAS QUE DEPENDEM DO ID DO PERSONAGEM ({personagem})
+        // Todas as rotas abaixo usam o parâmetro {personagem} na URL
         Route::prefix('{personagem}')->group(function () {
-            // Origens
-            Route::post('/origens/add', [PersonagemOrigemController::class, 'store'])
-                ->name('personagens.origens.add');
-            Route::delete('/origens/{origem}', [PersonagemOrigemController::class, 'destroy'])
-                ->name('personagens.origens.remove');
 
-            // Perícias
-            Route::post('/pericias/add', [PersonagemPericiaController::class, 'store'])
-                ->name('personagens.pericias.add');
-            Route::delete('/pericias/{pericia}', [PersonagemPericiaController::class, 'destroy'])
-                ->name('personagens.pericias.remove');
+            // --- A. CRUD BÁSICO & VISUALIZAÇÃO (Mantido no PersonagemController) ---
+            // SHOW (Visualização de Detalhes - nome: 'personagens.show')
+            Route::get('/', [PersonagemController::class, 'show'])->name('show');
+            // UPDATE (Edição geral, não de passo - nome: 'personagens.update')
+            Route::put('/', [PersonagemController::class, 'update'])->name('update');
+            // DESTROY (Excluir - nome: 'personagens.destroy')
+            Route::delete('/', [PersonagemController::class, 'destroy'])->name('destroy');
+            // EDIT (VIEW do formulário de edição geral - nome: 'personagens.edit')
+            Route::get('/edit', [PersonagemController::class, 'edit'])->name('edit');
 
-            // Formulário de edição de perícias
-            Route::get('/pericias/edit', [PersonagemController::class, 'editPericias'])
-                ->name('personagens.pericias.edit');
-            Route::put('/pericias', [PersonagemController::class, 'updatePericias'])
-                ->name('personagens.pericias.update');
+
+            // --- B. FLUXO DE EDIÇÃO DE STEPS (Delegado ao CreatorController) ---
+            // Rotas VIEW: overview (Redireciona para show)
+            Route::get('/overview', [PersonagemCreatorController::class, 'overview'])->name('overview');
+
+            // Passo 1 (Dados Básicos)
+            Route::get('/edit/step1', [PersonagemCreatorController::class, 'editStep1'])->name('edit.step1');
+            Route::put('/update/step1', [PersonagemCreatorController::class, 'updateStep1'])->name('update.step1');
+
+            // Passo 2 (Raça, Classe, Origem)
+            Route::get('/edit/step2', [PersonagemCreatorController::class, 'editStep2'])->name('edit.step2');
+            Route::put('/update/step2', [PersonagemCreatorController::class, 'updateStep2'])->name('update.step2');
+
+            // Passo 3 (Atributos)
+            Route::get('/edit/step3', [PersonagemCreatorController::class, 'editStep3'])->name('edit.step3');
+            Route::put('/update/step3', [PersonagemCreatorController::class, 'updateStep3'])->name('update.step3');
+
+            // Passo 4 (Pontos e XP)
+            Route::get('/edit/step4', [PersonagemCreatorController::class, 'editStep4'])->name('edit.step4');
+            Route::put('/update/step4', [PersonagemCreatorController::class, 'updateStep4'])->name('update.step4');
+
+            // Passo 5 (Inventário, Imagem)
+            Route::get('/edit/step5', [PersonagemCreatorController::class, 'editStep5'])->name('edit.step5');
+            Route::put('/update/step5', [PersonagemCreatorController::class, 'updateStep5'])->name('update.step5');
+
+
+            // --- C. AÇÕES E UTILITÁRIOS (Sorteios - Delegado ao CreatorController) ---
+            Route::post('/sortear-atributos', [PersonagemCreatorController::class, 'sortearAtributos'])->name('sortear.atributos');
+            Route::post('/sortear-vida', [PersonagemCreatorController::class, 'sortearVida'])->name('sortear.vida');
+
+
+            // --- D. SUB-RECURSOS (Origens e Perícias) ---
+
+            // Rotas de relacionamento N:N para Origens
+            Route::post('/origens/add', [PersonagemOrigemController::class, 'store'])->name('origens.add');
+            Route::delete('/origens/{origem}', [PersonagemOrigemController::class, 'destroy'])->name('origens.remove');
+
+            // Rotas de relacionamento N:N para Perícias
+            // Edição/Atualização Massiva de Perícias (VIEW e UPDATE)
+            Route::get('/pericias/edit', [PersonagemCreatorController::class, 'editPericias'])->name('pericias.edit');
+            Route::put('/pericias', [PersonagemCreatorController::class, 'updatePericias'])->name('pericias.update');
+
+            // Ações CRUD Individuais (Se necessário)
+            // Route::post('/pericias/add', [PersonagemPericiaController::class, 'store'])->name('pericias.add');
+            // Route::delete('/pericias/{pericia}', [PersonagemPericiaController::class, 'destroy'])->name('pericias.remove');
         });
-    });
+    }); // Fim do prefixo 'personagens''
+
 
     // ============================================================================
     // SISTEMAS DE RPG
     // ============================================================================
 
     Route::prefix('sistemas')->name('sistemas.')->group(function () {
-        // Expx ortação em PDF
+        // Exportação em PDF
         Route::get('/exportar-pdf', [SistemaController::class, 'exportarPdf'])->name('exportar-pdf');
 
         // Página principal e CRUD do sistema
@@ -265,15 +303,16 @@ Route::middleware(['auth'])->group(function () {
             });
 
 
-    });
-
+    }); // Fim do prefixo 'sistemas'
 
 
     /*------------------------------------
     | Missões, Notificações, Rolagens, Arquivos
     ------------------------------------*/
+    // Missões (A rota resource original está OK aqui)
     Route::resource('missoes', MissaoController::class);
 
+    // Notificações
     Route::prefix('notificacoes')->middleware('auth')->group(function () {
         Route::get('/', [NotificacaoController::class, 'index'])->name('notificacoes.index');
         Route::post('/marcar/{id}', [NotificacaoController::class, 'marcarComoLida'])->name('notificacoes.marcar');
@@ -282,15 +321,18 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{id}', [NotificacaoController::class, 'destroy'])->name('notificacoes.destroy');
     });
 
+    // Rolagens
     Route::post('/rolagens', [RolagemController::class, 'store'])->name('rolagens.store');
     Route::get('/rolagens/historico', [RolagemController::class, 'index'])->name('rolagens.index');
 
+    // Arquivos
     Route::post('/arquivos/upload', [ArquivoController::class, 'upload'])->name('arquivos.upload');
     Route::get('/arquivos/{arquivo}', [ArquivoController::class, 'download'])->name('arquivos.download');
-});
 
-Route::middleware(['auth'])->group(function () {
 
+    /*------------------------------------
+    | Chat Privado
+    ------------------------------------*/
     // Exibe a lista de amigos e chats privados
     Route::get('/chat/privado', [ChatPrivadoController::class, 'index'])->name('chat.privado.index');
 
@@ -299,4 +341,5 @@ Route::middleware(['auth'])->group(function () {
 
     // Envia uma nova mensagem no chat privado
     Route::post('/chat-privado/{chat}/mensagem', [ChatPrivadoController::class, 'store'])->name('chat.privado.store');
-});
+
+}); // Fim do middleware 'auth'

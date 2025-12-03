@@ -36,6 +36,7 @@ class RacaController extends Controller
     public function store(Request $request, $sistemaId)
     {
         $request->validate([
+            // Regra unique: Garante que o nome seja único para o sistema_id específico.
             'nome' => 'required|unique:racas,nome,NULL,id,sistema_id,' . $sistemaId,
             'descricao' => 'nullable|string',
             'forca_bonus' => 'nullable|integer',
@@ -71,6 +72,7 @@ class RacaController extends Controller
      */
     public function show(Raca $raca)
     {
+        // O Laravel resolve a Raça automaticamente pela URL
         return view('sistemas.racas.show', compact('raca'));
     }
 
@@ -91,6 +93,7 @@ class RacaController extends Controller
      */
     public function update(Request $request, Raca $raca)
     {
+        // Regra unique ignorando a própria raça ($raca->id) e checando apenas no sistema correto.
         $request->validate([
             'nome' => 'required|unique:racas,nome,' . $raca->id . ',id,sistema_id,' . $raca->sistema_id,
             'descricao' => 'nullable|string',

@@ -15,11 +15,8 @@ return new class extends Migration
             $table->string('atributo_relacionado');
             $table->string('atributo_nome')->nullable()->comment('Nome legível do atributo conforme o sistema');
             $table->text('descricao')->nullable();
-
             $table->integer('modificador')->default(0);
-
             $table->timestamps();
-
             $table->unique(['nome', 'sistema_id']);
         });
     }

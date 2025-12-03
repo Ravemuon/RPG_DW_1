@@ -158,6 +158,128 @@ class UsersTableSeeder extends Seeder
                 'bio' => 'Aventureiro urbano amante de máquinas.',
                 'password' => Hash::make('senha123'),
             ],
+            // =====================
+            // PERSONAGENS DE ANIME
+            // =====================
+            [
+                'nome' => 'Goku',
+                'username' => 'goku_ssj',
+                'email' => 'goku@anime.com',
+                'papel' => 'jogador',
+                'tema' => 'fantasia',
+                'bio' => 'Saiyajin sempre buscando se superar.',
+                'password' => Hash::make('dragonball'),
+                'avatar' => '/imagens/anime/goku_avatar.png',
+                'banner' => '/imagens/anime/goku_banner.png',
+            ],
+            [
+                'nome' => 'Naruto Uzumaki',
+                'username' => 'naruto_ninja',
+                'email' => 'naruto@anime.com',
+                'papel' => 'jogador',
+                'tema' => 'fantasia',
+                'bio' => 'Ninja da Vila da Folha com sonhos grandes.',
+                'password' => Hash::make('naruto'),
+                'avatar' => '/imagens/anime/naruto_avatar.png',
+                'banner' => '/imagens/anime/naruto_banner.png',
+            ],
+            [
+                'nome' => 'Luffy',
+                'username' => 'luffy_pirata',
+                'email' => 'luffy@anime.com',
+                'papel' => 'jogador',
+                'tema' => 'oceano',
+                'bio' => 'Pirata que busca o tesouro mais grandioso.',
+                'password' => Hash::make('onepiece'),
+                'avatar' => '/imagens/anime/luffy_avatar.png',
+                'banner' => '/imagens/anime/luffy_banner.png',
+            ],
+
+            // =====================
+            // PERSONAGENS DE DESENHOS
+            // =====================
+            [
+                'nome' => 'Rick Sanchez',
+                'username' => 'rick_morty',
+                'email' => 'rick@desenho.com',
+                'papel' => 'jogador',
+                'tema' => 'cyberpunk',
+                'bio' => 'Cientista louco que viaja entre dimensões.',
+                'password' => Hash::make('rickandmorty'),
+                'avatar' => '/imagens/desenho/rick_avatar.png',
+                'banner' => '/imagens/desenho/rick_banner.png',
+            ],
+            [
+                'nome' => 'Morty Smith',
+                'username' => 'morty_nervoso',
+                'email' => 'morty@desenho.com',
+                'papel' => 'jogador',
+                'tema' => 'cyberpunk',
+                'bio' => 'Acompanhante relutante de aventuras perigosas.',
+                'password' => Hash::make('morty123'),
+                'avatar' => '/imagens/desenho/morty_avatar.png',
+                'banner' => '/imagens/desenho/morty_banner.png',
+            ],
+            [
+                'nome' => 'Finn',
+                'username' => 'finn_adventure',
+                'email' => 'finn@desenho.com',
+                'papel' => 'jogador',
+                'tema' => 'fantasia',
+                'bio' => 'Aventureiro corajoso do mundo de OOO.',
+                'password' => Hash::make('adventuretime'),
+                'avatar' => '/imagens/desenho/finn_avatar.png',
+                'banner' => '/imagens/desenho/finn_banner.png',
+            ],
+            [
+                'nome' => 'Jake',
+                'username' => 'jake_dog',
+                'email' => 'jake@desenho.com',
+                'papel' => 'jogador',
+                'tema' => 'fantasia',
+                'bio' => 'Cão com poderes elásticos, melhor amigo de Finn.',
+                'password' => Hash::make('adventuretime'),
+                'avatar' => '/imagens/desenho/jake_avatar.png',
+                'banner' => '/imagens/desenho/jake_banner.png',
+            ],
+
+            // =====================
+            // MEMES FAMOSOS
+            // =====================
+            [
+                'nome' => 'Doge',
+                'username' => 'doge_memes',
+                'email' => 'doge@memes.com',
+                'papel' => 'jogador',
+                'tema' => 'deserto',
+                'bio' => 'Muito wow, muito RPG, muito aventureiro.',
+                'password' => Hash::make('doge123'),
+                'avatar' => '/imagens/memes/doge_avatar.png',
+                'banner' => '/imagens/memes/doge_banner.png',
+            ],
+            [
+                'nome' => 'Pepe the Frog',
+                'username' => 'pepe_frog',
+                'email' => 'pepe@memes.com',
+                'papel' => 'jogador',
+                'tema' => 'floresta',
+                'bio' => 'Frog triste ou feliz, sempre com estilo.',
+                'password' => Hash::make('pepe123'),
+                'avatar' => '/imagens/memes/pepe_avatar.png',
+                'banner' => '/imagens/memes/pepe_banner.png',
+            ],
+            [
+                'nome' => 'Shrek',
+                'username' => 'shrek_ogro',
+                'email' => 'shrek@memes.com',
+                'papel' => 'jogador',
+                'tema' => 'floresta',
+                'bio' => 'O ogro favorito de todos, com temperamento forte.',
+                'password' => Hash::make('shrek123'),
+                'avatar' => '/imagens/memes/shrek_avatar.png',
+                'banner' => '/imagens/memes/shrek_banner.png',
+            ],
+
         ];
 
         // =====================

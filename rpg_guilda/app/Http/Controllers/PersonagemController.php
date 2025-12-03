@@ -3,589 +3,287 @@
 namespace App\Http\Controllers;
 
 use App\Models\Personagem;
-use App\Models\Campanha;
-use App\Models\Classe;
-use App\Models\Raca;
-use App\Models\Origem;
-use App\Models\Sistema;
-use App\Models\Pericia;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage; // Importação necessária para manipular arquivos
 
 class PersonagemController extends Controller
 {
     /**
-     * Listar todos os personagens do usuário
+     * Exibe uma listagem do recurso (Personagens).
      */
     public function index()
     {
-        $personagens = Personagem::with(['classe', 'raca', 'origem', 'campanha'])
-            ->where('user_id', auth()->id())
-            ->get();
+        // Exemplo: Buscar personagens do usuário logado e paginar
+        $personagens = Personagem::with(['campanha', 'raca', 'classe'])
+                                 ->where('user_id', Auth::id())
+                                 ->orderBy('nome')
+                                 ->paginate(15);
 
         return view('personagens.index', compact('personagens'));
     }
 
     /**
-     * Mostrar formulário de criação - Passo 1: Dados Básicos
+     * Mostra o formulário para criar um novo recurso.
      */
-    public function create(Request $request)
+    public function create()
     {
-        $campanha = null;
-        if ($request->has('campanha')) {
-            $campanha = Campanha::with('sistema')->findOrFail($request->campanha);
-        }
-
-        $campanhas = Campanha::where('user_id', auth()->id())->get();
-
-        return view('personagens.create', compact('campanha', 'campanhas'));
+        // Você precisará passar dados auxiliares para a view (raças, classes, etc.)
+        return view('personagens.create');
     }
 
     /**
-     * Processar criação - Passo 1: Dados Básicos
+     * Armazena um recurso recém-criado no armazenamento.
+     * Esta função será usada se o processo de criação for em uma única página.
+     * Se você usa createStep1/storeStep1, esta função deve ser adaptada.
+     */
+    public function store(Request $request)
+    {
+        $validatedData = $request->validate([
+            'nome' => ['required', 'string', 'max:100'],
+            'campanha_id' => ['required', 'exists:campanhas,id'],
+            'raca_id' => ['nullable', 'exists:racas,id'],
+            'classe_id' => ['nullable', 'exists:classes,id'],
+            'origem_id' => ['nullable', 'exists:origens,id'],
+            'sistema_id' => ['nullable', 'exists:sistemas,id'],
+            'nivel' => ['required', 'integer', 'min:1'],
+            'xp' => ['required', 'integer', 'min:0'],
+            'bonus_proficiencia' => ['required', 'integer', 'min:1'],
+            'sanidade' => ['nullable', 'integer', 'min:0'],
+            'sorte' => ['nullable', 'integer', 'min:0'],
+            'atributos' => ['nullable', 'json'],
+            'descricao' => ['nullable', 'string'],
+            'historia' => ['nullable', 'string'],
+            'personalidade' => ['nullable', 'string'],
+            'inventario' => ['nullable', 'string'],
+
+            // NOVO: Regras de validação para o arquivo de imagem
+            'imagem_upload' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'], // max 2MB
+
+            'ativo' => ['sometimes', 'boolean'],
+            'pagina' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $imagePath = null;
+
+        // 1. Lógica de Upload para Criação
+        if ($request->hasFile('imagem_upload')) {
+            // Salva o arquivo no disco 'public' dentro da pasta do usuário
+            $imagePath = $request->file('imagem_upload')->store('personagens/' . Auth::id(), 'public');
+        }
+
+        $personagem = Personagem::create([
+            'user_id' => Auth::id(), // Define o ID do usuário logado como proprietário
+            ...$validatedData,
+            'imagem' => $imagePath, // Armazena o path da imagem
+            // Certifica-se de que 'atributos' é tratado como JSON se presente
+            'atributos' => $request->has('atributos') ? json_decode($request->input('atributos'), true) : null,
+        ]);
+
+        return redirect()->route('personagens.show', $personagem)->with('success', 'Personagem criado com sucesso!');
+    }
+
+    /**
+     * Exibe o recurso especificado.
+     */
+    public function show(Personagem $personagem)
+    {
+        // Garante que o usuário logado pode visualizar este personagem (se necessário)
+        // abort_if($personagem->user_id !== Auth::id(), 403);
+
+        $personagem->load(['user', 'campanha', 'raca', 'classe', 'origem', 'sistema']);
+        return view('personagens.show', compact('personagem'));
+    }
+
+    /**
+     * Mostra o formulário para editar o recurso especificado.
+     */
+    public function edit(Personagem $personagem)
+    {
+        // Garante que o usuário logado pode editar (se necessário)
+        // abort_if($personagem->user_id !== Auth::id(), 403);
+
+        return view('personagens.edit', compact('personagem'));
+    }
+
+    /**
+     * Atualiza o recurso especificado no armazenamento, incluindo a imagem.
+     */
+    public function update(Request $request, Personagem $personagem)
+    {
+        // Garante que o usuário logado pode atualizar (se necessário)
+        // abort_if($personagem->user_id !== Auth::id(), 403);
+
+        $validatedData = $request->validate([
+            'nome' => ['required', 'string', 'max:100'],
+            'campanha_id' => ['required', 'exists:campanhas,id'],
+            'raca_id' => ['nullable', 'exists:racas,id'],
+            'classe_id' => ['nullable', 'exists:classes,id'],
+            'origem_id' => ['nullable', 'exists:origens,id'],
+            'sistema_id' => ['nullable', 'exists:sistemas,id'],
+            'nivel' => ['required', 'integer', 'min:1'],
+            'xp' => ['required', 'integer', 'min:0'],
+            'bonus_proficiencia' => ['required', 'integer', 'min:1'],
+            'sanidade' => ['nullable', 'integer', 'min:0'],
+            'sorte' => ['nullable', 'integer', 'min:0'],
+            'atributos' => ['nullable', 'json'],
+            'descricao' => ['nullable', 'string'],
+            'historia' => ['nullable', 'string'],
+            'personalidade' => ['nullable', 'string'],
+            'inventario' => ['nullable', 'string'],
+
+            // NOVO: A coluna 'imagem' no DB continua nullable
+            'imagem' => ['nullable', 'string', 'max:255'],
+            // NOVO: Adiciona a regra para o novo upload de arquivo
+            'imagem_upload' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            // NOVO: Campo opcional para indicar remoção da imagem
+            'remove_imagem' => ['nullable', 'boolean'],
+
+            'ativo' => ['sometimes', 'boolean'],
+            'pagina' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        // 2. Lógica de Manipulação da Imagem (Upload, Substituição e Remoção)
+        $oldImagePath = $personagem->imagem;
+        $imagePath = $oldImagePath; // Começa com o path atual
+
+        // Caso 1: Novo upload de imagem
+        if ($request->hasFile('imagem_upload')) {
+            // Salva o novo arquivo
+            $imagePath = $request->file('imagem_upload')->store('personagens/' . Auth::id(), 'public');
+
+            // Deleta o arquivo antigo, se existir
+            if ($oldImagePath && Storage::disk('public')->exists($oldImagePath)) {
+                Storage::disk('public')->delete($oldImagePath);
+            }
+
+        // Caso 2: Remoção explícita da imagem existente
+        } elseif ($request->boolean('remove_imagem') && $oldImagePath) {
+            // Define o path do DB como nulo
+            $imagePath = null;
+
+            // Deleta o arquivo do storage
+            if (Storage::disk('public')->exists($oldImagePath)) {
+                Storage::disk('public')->delete($oldImagePath);
+            }
+
+        // Caso 3: Não há novo upload nem remoção, mantém o path existente
+        } else {
+            // Se o campo 'imagem' foi enviado no request e é nulo (e não houve remove_imagem),
+            // isso geralmente significa que o campo de arquivo estava vazio e o campo de texto 'imagem' (se existisse) estava vazio.
+            // Aqui, mantemos o valor de $personagem->imagem (que é $oldImagePath) se nenhum dos casos acima for verdadeiro.
+            $imagePath = $oldImagePath;
+        }
+
+        // Atualiza o campo 'imagem' no validatedData com o path final
+        $validatedData['imagem'] = $imagePath;
+
+        // Remove a chave 'imagem_upload' e 'remove_imagem' antes de passar para o update
+        if (isset($validatedData['imagem_upload'])) {
+             unset($validatedData['imagem_upload']);
+        }
+        if (isset($validatedData['remove_imagem'])) {
+             unset($validatedData['remove_imagem']);
+        }
+
+        // 3. Atualização dos Dados
+        $personagem->update($validatedData);
+
+        // Atualiza 'atributos' manualmente se necessário
+        if ($request->has('atributos')) {
+            $personagem->atributos = json_decode($request->input('atributos'), true);
+            $personagem->save();
+        }
+
+        return redirect()->route('personagens.show', $personagem)->with('success', 'Personagem atualizado com sucesso!');
+    }
+
+
+    /**
+     * Processa e armazena os dados da Etapa 1 (mantido do arquivo anterior).
      */
     public function storeStep1(Request $request)
     {
-        $request->validate([
+        // 1. Validação dos Dados
+        $validatedData = $request->validate([
             'nome' => 'required|string|max:100',
+            'nivel' => 'required|integer|min:1|max:20',
+            'xp' => 'required|integer|min:0',
             'campanha_id' => 'required|exists:campanhas,id',
-            'descricao' => 'nullable|string',
+            'sistema_id' => 'required|exists:sistemas,id',
+            'descricao' => 'nullable|string|max:1000',
             'historia' => 'nullable|string',
-            'personalidade' => 'nullable|string',
+            'personalidade' => 'nullable|string|max:1000',
+            'pagina' => 'nullable|string|max:50',
+            'ativo' => 'boolean',
+
+            // Regras de validação para o arquivo de imagem
+            'imagem_upload' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // max 2MB
         ]);
 
-        $campanha = Campanha::with('sistema')->findOrFail($request->campanha_id);
+        // 2. Lógica de Upload da Imagem
+        if ($request->hasFile('imagem_upload')) {
+            $imageFile = $request->file('imagem_upload');
+            // Define o path de onde a imagem será salva
+            // Ex: personagens/1/imagem-personagem.png
+            $path = $imageFile->store('personagens/' . Auth::id(), 'public');
 
-        // Cria personagem com dados básicos
-        $personagem = Personagem::create([
-            'nome' => $request->nome,
-            'descricao' => $request->descricao,
-            'historia' => $request->historia,
-            'personalidade' => $request->personalidade,
-            'user_id' => auth()->id(),
-            'sistema_id' => $campanha->sistema_id,
-            'campanha_id' => $campanha->id,
-            'nivel' => 1,
-            'xp' => 0,
-            'bonus_proficiencia' => 2,
-            'ativo' => true
-        ]);
-
-        return redirect()->route('personagens.overview', $personagem->id);
-    }
-
-    /**
-     * Overview - Menu principal de criação com navegação livre
-     */
-    public function overview($id)
-    {
-        $personagem = Personagem::with(['sistema', 'campanha', 'raca', 'classe', 'origem'])->findOrFail($id);
-
-        // Verificar progresso
-        $progresso = $this->calcularProgresso($personagem);
-
-        return view('personagens.overview', compact('personagem', 'progresso'));
-    }
-
-    /**
-     * Step 2: Escolha de Classe, Raça e Origem com informações detalhadas
-     */
-    public function step2($id)
-    {
-        $personagem = Personagem::with(['sistema'])->findOrFail($id);
-
-        $classes = Classe::where('sistema_id', $personagem->sistema_id)->get();
-        $racas = Raca::where('sistema_id', $personagem->sistema_id)->get();
-        $origens = Origem::where('sistema_id', $personagem->sistema_id)->get();
-
-        return view('personagens.step2', compact('personagem', 'classes', 'racas', 'origens'));
-    }
-
-    /**
-     * Processar Step 2: Salvar Classe, Raça e Origem
-     */
-    public function storeStep2(Request $request, $id)
-    {
-        $personagem = Personagem::findOrFail($id);
-
-        $request->validate([
-            'classe_id' => 'required|exists:classes,id',
-            'raca_id' => 'required|exists:racas,id',
-            'origem_id' => 'nullable|exists:origens,id'
-        ]);
-
-        $personagem->update($request->only(['classe_id', 'raca_id', 'origem_id']));
-
-        return redirect()->route('personagens.overview', $personagem->id)
-            ->with('success', 'Raça, classe e origem definidas com sucesso!');
-    }
-
-    /**
-     * Step 3: Distribuição de Atributos do Sistema
-     */
-    public function step3($id)
-    {
-        $personagem = Personagem::with(['sistema', 'classe', 'raca', 'origem'])->findOrFail($id);
-        $atributosSistema = $personagem->sistema->atributos ?? [];
-
-        return view('personagens.step3', compact('personagem', 'atributosSistema'));
-    }
-
-    /**
-     * Processar Step 3: Salvar Atributos
-     */
-    public function storeStep3(Request $request, $id)
-    {
-        $personagem = Personagem::with(['sistema'])->findOrFail($id);
-
-        $atributosSistema = $personagem->sistema->atributos ?? [];
-        $rules = [];
-
-        // Regras para atributos do sistema
-        foreach ($atributosSistema as $key => $nome) {
-            $rules[$key] = 'required|integer|min:1|max:20';
+            // Adiciona o path (caminho) ao validatedData para salvar no banco
+            $validatedData['imagem'] = $path;
+        } else {
+            // Se não houver upload, garante que a coluna 'imagem' está presente como nula
+            $validatedData['imagem'] = null;
         }
 
-        // Regras para atributos especiais
-        if ($personagem->sistema->usa_sanidade) {
-            $rules['sanidade'] = 'required|integer|min:0|max:100';
-        }
-        if ($personagem->sistema->usa_sorte) {
-            $rules['sorte'] = 'required|integer|min:1|max:100';
-        }
+        // 3. Preparação dos Dados para a Próxima Etapa
 
-        $request->validate($rules);
-
-        // Preparar dados dos atributos
-        $atributos = [];
-        foreach ($atributosSistema as $key => $nome) {
-            $atributos[$key] = $request->$key;
+        // Remove 'imagem_upload' antes de armazenar na sessão
+        if (isset($validatedData['imagem_upload'])) {
+             unset($validatedData['imagem_upload']);
         }
 
-        $updateData = ['atributos' => $atributos];
+        // Adiciona o ID do usuário
+        $validatedData['user_id'] = Auth::id();
 
-        // Adicionar atributos especiais
-        if ($personagem->sistema->usa_sanidade) {
-            $updateData['sanidade'] = $request->sanidade;
-        }
-        if ($personagem->sistema->usa_sorte) {
-            $updateData['sorte'] = $request->sorte;
-        }
+        // Armazena os dados na sessão para a próxima etapa
+        session(['personagem_data' => $validatedData]);
 
-        $personagem->update($updateData);
-
-        return redirect()->route('personagens.overview', $personagem->id)
-            ->with('success', 'Atributos definidos com sucesso!');
+        // 4. Redirecionamento para a próxima etapa (Step 2)
+        return redirect()->route('personagens.create.step2');
     }
 
     /**
-     * Step 4: Vida e Equipamento Inicial
+     * Exibe o formulário da Etapa 1 (mantido do arquivo anterior).
      */
-    public function step4($id)
+    public function createStep1()
     {
-        $personagem = Personagem::with(['classe', 'sistema'])->findOrFail($id);
+        // Lógica para recuperar $data e $campanha da sessão ou do DB para edição
+        // ...
 
-        // Processar equipamento inicial
-        $equipamentoInicial = $this->processarEquipamentoClasse($personagem->classe);
+        // Exemplo de retorno, ajuste conforme sua lógica
+        $data = session('personagem_data', []);
+        // Simulando a recuperação da campanha
+        $campanha = (object)['id' => 1, 'nome' => 'Campanha de Exemplo', 'sistema_id' => 1];
 
-        // Calcular vida base
-        $vidaBase = $this->calcularVidaBase($personagem);
-
-        return view('personagens.step4', compact('personagem', 'equipamentoInicial', 'vidaBase'));
+        return view('personagens.create.step1', compact('data', 'campanha'));
     }
 
     /**
-     * Processar Step 4: Salvar Vida e Equipamento
+     * Remove o recurso especificado do armazenamento.
      */
-    public function storeStep4(Request $request, $id)
+    public function destroy(Personagem $personagem)
     {
-        $personagem = Personagem::findOrFail($id);
+        // Garante que o usuário logado pode deletar (se necessário)
+        // abort_if($personagem->user_id !== Auth::id(), 403);
 
-        $request->validate([
-            'vida' => 'required|integer|min:1',
-            'equipamento_escolhido' => 'nullable|array'
-        ]);
-
-        $updateData = [
-            'vida' => $request->vida,
-            'vida_maxima' => $request->vida
-        ];
-
-        // Salvar equipamento escolhido
-        if ($request->equipamento_escolhido) {
-            $inventario = [
-                'equipamento_inicial' => $request->equipamento_escolhido,
-                'itens_adicionais' => []
-            ];
-            $updateData['inventario'] = $inventario;
+        // Lógica para deletar o arquivo de imagem antes de deletar o registro no DB
+        if ($personagem->imagem && Storage::disk('public')->exists($personagem->imagem)) {
+            Storage::disk('public')->delete($personagem->imagem);
         }
 
-        $personagem->update($updateData);
-
-        return redirect()->route('personagens.overview', $personagem->id)
-            ->with('success', 'Vida e equipamento definidos com sucesso!');
-    }
-
-    /**
-     * Step 5: Perícias e Proficiências
-     */
-    public function step5($id)
-    {
-        $personagem = Personagem::with(['sistema', 'classe', 'raca', 'origem'])->findOrFail($id);
-
-        // Obter perícias do sistema
-        $periciasSistema = $this->getPericiasBySistema($personagem->sistema_id);
-
-        // Processar perícias da classe
-        $periciasClasse = $this->processarPericiasClasse($personagem->classe);
-
-        // Processar perícias da origem
-        $periciasOrigem = $this->processarPericiasOrigem($personagem->origem);
-
-        return view('personagens.step5', compact('personagem', 'periciasSistema', 'periciasClasse', 'periciasOrigem'));
-    }
-
-    /**
-     * Processar Step 5: Salvar Perícias
-     */
-    public function storeStep5(Request $request, $id)
-    {
-        $personagem = Personagem::findOrFail($id);
-
-        $request->validate([
-            'pericias_escolhidas' => 'nullable|array',
-            'pericias_escolhidas.*' => 'string'
-        ]);
-
-        $personagem->update([
-            'pericias' => $request->pericias_escolhidas ?? []
-        ]);
-
-        return redirect()->route('personagens.overview', $personagem->id)
-            ->with('success', 'Perícias definidas com sucesso!');
-    }
-
-    /**
-     * Final: Dashboard do Personagem com gráfico e análise
-     */
-    public function final($id)
-    {
-        $personagem = Personagem::with(['classe', 'raca', 'origem', 'sistema', 'campanha'])
-            ->findOrFail($id);
-
-        // Calcular todas as informações finais
-        $dadosCalculados = $this->calcularDadosFinais($personagem);
-
-        return view('personagens.final', compact('personagem', 'dadosCalculados'));
-    }
-
-    /**
-     * Mostrar personagem (View completa)
-     */
-    public function show($id)
-    {
-        $personagem = Personagem::with(['classe', 'raca', 'origem', 'sistema', 'campanha'])
-            ->findOrFail($id);
-
-        $dadosCalculados = $this->calcularDadosFinais($personagem);
-
-        return view('personagens.show', compact('personagem', 'dadosCalculados'));
-    }
-
-    /**
-     * Editar personagem
-     */
-    public function edit($id)
-    {
-        $personagem = Personagem::findOrFail($id);
-        $campanhas = Campanha::where('user_id', auth()->id())->get();
-        $classes = Classe::where('sistema_id', $personagem->sistema_id)->get();
-        $racas = Raca::where('sistema_id', $personagem->sistema_id)->get();
-        $origens = Origem::where('sistema_id', $personagem->sistema_id)->get();
-
-        return view('personagens.edit', compact('personagem', 'campanhas', 'classes', 'racas', 'origens'));
-    }
-
-    /**
-     * Atualizar personagem
-     */
-    public function update(Request $request, $id)
-    {
-        $personagem = Personagem::findOrFail($id);
-
-        $request->validate([
-            'nome' => 'required|string|max:100',
-            'campanha_id' => 'required|exists:campanhas,id',
-            'classe_id' => 'required|exists:classes,id',
-            'raca_id' => 'required|exists:racas,id',
-            'origem_id' => 'nullable|exists:origens,id',
-            'descricao' => 'nullable|string',
-            'historia' => 'nullable|string',
-            'personalidade' => 'nullable|string',
-        ]);
-
-        $personagem->update($request->all());
-
-        return redirect()->route('personagens.show', $personagem->id)
-            ->with('success', 'Personagem atualizado com sucesso!');
-    }
-
-    /**
-     * Deletar personagem
-     */
-    public function destroy($id)
-    {
-        $personagem = Personagem::findOrFail($id);
         $personagem->delete();
 
-        return redirect()->route('personagens.index')
-            ->with('success', 'Personagem deletado com sucesso!');
-    }
-
-    /**
-     * Sortear atributos via AJAX
-     */
-    public function sortearAtributos(Request $request, $id)
-    {
-        $personagem = Personagem::with(['sistema'])->findOrFail($id);
-        $atributosSistema = $personagem->sistema->atributos ?? [];
-
-        $valoresSorteados = [];
-        foreach ($atributosSistema as $key => $nome) {
-            $valoresSorteados[$key] = $this->rolar4d6();
-        }
-
-        // Sortear sorte se o sistema usar
-        if ($personagem->sistema->usa_sorte) {
-            $valoresSorteados['sorte'] = rand(1, 100);
-        }
-
-        // Sortear sanidade se o sistema usar
-        if ($personagem->sistema->usa_sanidade) {
-            $valoresSorteados['sanidade'] = rand(50, 100);
-        }
-
-        return response()->json($valoresSorteados);
-    }
-
-    /**
-     * Sortear vida via AJAX
-     */
-    public function sortearVida(Request $request, $id)
-    {
-        $personagem = Personagem::with(['classe'])->findOrFail($id);
-
-        if (!$personagem->classe) {
-            return response()->json(['error' => 'Classe não definida'], 400);
-        }
-
-        $dadoVida = $personagem->classe->dado_vida ?? 'd6';
-        $constituicao = $personagem->atributos['constituicao'] ?? 10;
-        $modificador = floor(($constituicao - 10) / 2);
-
-        $rolagem = $this->rolarDado($dadoVida);
-        $vidaTotal = max(1, $rolagem + $modificador);
-
-        return response()->json([
-            'rolagem' => $rolagem,
-            'modificador' => $modificador,
-            'total' => $vidaTotal
-        ]);
-    }
-
-    /**
-     * ============================================
-     * MÉTODOS PRIVADOS AUXILIARES
-     * ============================================
-     */
-
-    /**
-     * Calcular progresso da criação do personagem
-     */
-    private function calcularProgresso($personagem)
-    {
-        $progresso = [
-            'basico' => !empty($personagem->nome) && !empty($personagem->campanha_id),
-            'raca_classe' => !empty($personagem->raca_id) && !empty($personagem->classe_id),
-            'atributos' => !empty($personagem->atributos),
-            'vida_equipamento' => !empty($personagem->vida),
-            'pericias' => !empty($personagem->pericias)
-        ];
-
-        $progresso['completo'] = array_sum($progresso) === count($progresso);
-        $progresso['porcentagem'] = (array_sum($progresso) / count($progresso)) * 100;
-
-        return $progresso;
-    }
-
-    /**
-     * Processar equipamento inicial da classe
-     */
-    private function processarEquipamentoClasse($classe)
-    {
-        if (!$classe) return ['fixas' => [], 'opcoes' => []];
-
-        $equipamento = is_string($classe->equipamento_inicial) ?
-            json_decode($classe->equipamento_inicial, true) :
-            ($classe->equipamento_inicial ?? []);
-
-        return [
-            'fixas' => $equipamento['fixas'] ?? [],
-            'opcoes' => $equipamento['opcoes'] ?? []
-        ];
-    }
-
-    /**
-     * Processar perícias iniciais da classe
-     */
-    private function processarPericiasClasse($classe)
-    {
-        if (!$classe) return ['fixas' => [], 'lista' => [], 'escolha' => 0];
-
-        $pericias = is_string($classe->pericias_iniciais) ?
-            json_decode($classe->pericias_iniciais, true) :
-            ($classe->pericias_iniciais ?? []);
-
-        return [
-            'fixas' => $pericias['fixas'] ?? [],
-            'lista' => $pericias['lista'] ?? [],
-            'escolha' => $pericias['escolha'] ?? 0
-        ];
-    }
-
-    /**
-     * Processar perícias da origem
-     */
-    private function processarPericiasOrigem($origem)
-    {
-        if (!$origem) return [];
-
-        $pericias = is_string($origem->bonus_pericias) ?
-            json_decode($origem->bonus_pericias, true) :
-            ($origem->bonus_pericias ?? []);
-
-        return $pericias;
-    }
-
-    /**
-     * Calcular vida base do personagem
-     */
-    private function calcularVidaBase($personagem)
-    {
-        if (!$personagem->classe) return 0;
-
-        $dadoVida = $personagem->classe->dado_vida ?? 'd6';
-        $constituicao = $personagem->atributos['constituicao'] ?? 10;
-        $modificador = floor(($constituicao - 10) / 2);
-
-        // Valor médio do dado (metade + 1)
-        $valorDado = ceil((intval(str_replace('d', '', $dadoVida)) + 1) / 2);
-
-        return max(1, $valorDado + $modificador);
-    }
-
-    /**
-     * Obter perícias do sistema
-     */
-    private function getPericiasBySistema($sistema_id)
-    {
-        $sistema = Sistema::find($sistema_id);
-
-        // Buscar perícias do banco ou usar padrão
-        $pericias = Pericia::where('sistema_id', $sistema_id)->get();
-
-        if ($pericias->isEmpty()) {
-            // Fallback para perícias padrão D&D
-            return [
-                'Acrobacia' => 'destreza',
-                'Arcanismo' => 'inteligencia',
-                'Atletismo' => 'forca',
-                'Atuação' => 'carisma',
-                'Enganação' => 'carisma',
-                'Furtividade' => 'destreza',
-                'História' => 'inteligencia',
-                'Intimidação' => 'carisma',
-                'Intuição' => 'sabedoria',
-                'Investigação' => 'inteligencia',
-                'Lidar com Animais' => 'sabedoria',
-                'Medicina' => 'sabedoria',
-                'Natureza' => 'inteligencia',
-                'Percepção' => 'sabedoria',
-                'Persuasão' => 'carisma',
-                'Prestidigitação' => 'destreza',
-                'Religião' => 'inteligencia',
-                'Sobrevivência' => 'sabedoria'
-            ];
-        }
-
-        $periciasArray = [];
-        foreach ($pericias as $pericia) {
-            $periciasArray[$pericia->nome] = $pericia->atributo_relacionado;
-        }
-
-        return $periciasArray;
-    }
-
-    /**
-     * Calcular dados finais do personagem (modificadores e perícias)
-     */
-    private function calcularDadosFinais($personagem)
-    {
-        $atributos = $personagem->atributos ?? [];
-        $periciasSistema = $this->getPericiasBySistema($personagem->sistema_id);
-        $periciasPersonagem = $personagem->pericias ?? [];
-        $bonusProficiencia = $personagem->bonus_proficiencia ?? 2;
-
-        // Calcular modificadores de atributos
-        $modificadores = [];
-        foreach ($atributos as $atributo => $valor) {
-            $modificadores[$atributo] = floor(($valor - 10) / 2);
-        }
-
-        // Calcular perícias
-        $periciasCalculadas = [];
-        foreach ($periciasSistema as $pericia => $atributo) {
-            $modificador = $modificadores[$atributo] ?? 0;
-            $proficiente = in_array($pericia, $periciasPersonagem);
-            $bonus = $modificador + ($proficiente ? $bonusProficiencia : 0);
-
-            $periciasCalculadas[$pericia] = [
-                'atributo' => $atributo,
-                'modificador' => $modificador,
-                'proficiente' => $proficiente,
-                'bonus' => $bonus,
-                'bonus_display' => $bonus >= 0 ? "+{$bonus}" : $bonus
-            ];
-        }
-
-        return [
-            'modificadores' => $modificadores,
-            'pericias' => $periciasCalculadas,
-            'bonus_proficiencia' => $bonusProficiencia
-        ];
-    }
-
-    /**
-     * Rolagem 4d6 (descartar menor)
-     */
-    private function rolar4d6()
-    {
-        $dados = [rand(1, 6), rand(1, 6), rand(1, 6), rand(1, 6)];
-        sort($dados);
-        array_shift($dados); // Remove o menor
-        return array_sum($dados);
-    }
-
-    /**
-     * Rolagem de dado genérico
-     */
-    private function rolarDado($dado)
-    {
-        $match = [];
-        if (preg_match('/d(\d+)/i', $dado, $match)) {
-            return rand(1, intval($match[1]));
-        }
-        return 1;
+        return redirect()->route('personagens.index')->with('success', 'Personagem excluído com sucesso!');
     }
 }

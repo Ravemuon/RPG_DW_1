@@ -5,9 +5,17 @@
 @section('content')
 @php
     $sistema = $personagem->sistema;
-    $atributosSistema = $sistema->atributos ?? [];
+    $atributosSistema = json_decode($sistema->atributos, true) ?? [];
     $usaSanidade = $sistema->usa_sanidade ?? false;
-    $usaSorte = $sistema->usa_sorte ?? false;
+
+    // Assumimos que 'sorte' é um recurso, ou que a flag usa_sorte é definida no backend
+    // Aqui usamos o seeder de CoC: 'recursos' => [['nome' => 'Sorte', ...]]
+    $recursosSistema = json_decode($sistema->recursos, true) ?? [];
+    $usaSorte = collect($recursosSistema)->contains('nome', 'Sorte');
+
+    // **IMPORTANTE**: Assumimos que a fórmula do modificador foi adicionada ao modelo Sistema
+    // Exemplo D&D 5e: (valor - 10) / 2
+    $formulaModificador = $sistema->formula_modificador_atributo ?? '(valor - 10) / 2';
 @endphp
 
 <div class="container my-5">
@@ -36,7 +44,7 @@
                                 <h5 class="card-title">Método de Distribuição</h5>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="metodo_distribuicao" id="metodo_rolagem" value="rolagem" checked>
-                                    <label class="form-check-label" for="metodo_rolagem">Rolagem (4d6)</label>
+                                    <label class="form-check-label" for="metodo_rolagem">Rolagem (4d6k3)</label>
                                 </div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="metodo_distribuicao" id="metodo_pontos" value="pontos">
@@ -69,13 +77,14 @@
                                             <div class="card-body text-center">
                                                 <h6 class="card-title">{{ $nome }}</h6>
                                                 <input type="number"
-                                                       name="{{ $chave }}"
-                                                       id="atributo-{{ $chave }}"
-                                                       class="form-control form-control-lg text-center atributo-input"
-                                                       value="{{ old($chave, $personagem->atributos[$chave] ?? 10) }}"
-                                                       min="1" max="20"
-                                                       data-atributo="{{ $chave }}"
-                                                       required>
+                                                        name="{{ $chave }}"
+                                                        id="atributo-{{ $chave }}"
+                                                        class="form-control form-control-lg text-center atributo-input"
+                                                        value="{{ old($chave, $personagem->atributos[$chave] ?? 10) }}"
+                                                        min="1" max="20"
+                                                        data-atributo="{{ $chave }}"
+                                                        data-cost="0"
+                                                        required>
                                                 <div class="mt-2">
                                                     <small class="text-muted">Modificador: <span id="mod-{{ $chave }}">0</span></small>
                                                 </div>
@@ -92,7 +101,7 @@
                         </div>
                     </div>
 
-                    <!-- Atributos Especiais -->
+                    <!-- Atributos Especiais (Sanidade/Sorte) -->
                     @if($usaSanidade || $usaSorte)
                     <div class="col-lg-4">
                         <div class="card mb-4">
@@ -102,28 +111,28 @@
                             <div class="card-body">
                                 @if($usaSanidade)
                                 <div class="mb-3">
-                                    <label for="sanidade" class="form-label">Sanidade</label>
+                                    <label for="sanidade" class="form-label">Sanidade (Base)</label>
                                     <input type="number" name="sanidade" id="sanidade"
-                                           class="form-control"
-                                           value="{{ old('sanidade', $personagem->sanidade ?? 50) }}"
-                                           min="0" max="100">
-                                    <div class="form-text">Saúde mental do personagem</div>
+                                            class="form-control"
+                                            value="{{ old('sanidade', $personagem->sanidade ?? 50) }}"
+                                            min="0" max="100">
+                                    <div class="form-text">Saúde mental base do personagem.</div>
                                 </div>
                                 @endif
 
                                 @if($usaSorte)
                                 <div class="mb-3">
-                                    <label for="sorte" class="form-label">Sorte</label>
+                                    <label for="sorte" class="form-label">Sorte (Base)</label>
                                     <div class="input-group">
                                         <input type="number" name="sorte" id="sorte"
-                                               class="form-control"
-                                               value="{{ old('sorte', $personagem->sorte ?? 50) }}"
-                                               min="1" max="100">
+                                                class="form-control"
+                                                value="{{ old('sorte', $personagem->sorte ?? 50) }}"
+                                                min="1" max="100">
                                         <button type="button" class="btn btn-outline-secondary" id="sortear-sorte">
-                                            <i class="fas fa-dice"></i>
+                                            <i class="fas fa-dice me-1"></i> Sortear (3d6x5)
                                         </button>
                                     </div>
-                                    <div class="form-text">Sorte do personagem (1-100)</div>
+                                    <div class="form-text">Sorte do personagem (1-100), geralmente rolado.</div>
                                 </div>
                                 @endif
                             </div>
@@ -149,8 +158,9 @@
                                     </div>
                                     @endforeach
                                 </div>
-                                <div class="mt-3 text-center">
-                                    <strong>Total de Pontos: <span id="total-pontos">0</span></strong>
+                                <div class="mt-3 text-center d-none" id="point-buy-summary">
+                                    <strong>Pontos Restantes: <span id="pontos-restantes" class="text-success">27</span></strong>
+                                    (Custo Total: <span id="total-pontos">0</span>)
                                 </div>
                             </div>
                         </div>
@@ -172,11 +182,14 @@
     </div>
 </div>
 
-<script src="{{ asset('js/personagem-step3.js') }}"></script>
 <script>
-    const ATRIBUTOS_SISTEMA = @json($atributosSistema);
+    // Variáveis injetadas pelo Laravel para o script JS
+    const ATRIBUTOS_SISTEMA = @json(array_keys($atributosSistema));
     const USA_SANIDADE = @json($usaSanidade);
     const USA_SORTE = @json($usaSorte);
     const PERSONAGEM_ID = {{ $personagem->id }};
+    // FÓRMULA DE MODIFICADOR (Ex: "(valor - 10) / 2")
+    const FORMULA_MODIFICADOR = @json($formulaModificador);
 </script>
+<script src="{{ asset('js/personagem-step3.js') }}"></script>
 @endsection

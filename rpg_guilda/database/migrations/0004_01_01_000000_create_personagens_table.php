@@ -60,7 +60,10 @@ return new class extends Migration {
                 $table->text('historia')->nullable();
                 $table->text('personalidade')->nullable();
                 $table->text('inventario')->nullable();
+
+                // MANTIDO: 'string' é o tipo correto para armazenar o caminho do arquivo (path)
                 $table->string('imagem')->nullable();
+
                 $table->boolean('ativo')->default(true);
                 $table->string('pagina', 50)->nullable();
 

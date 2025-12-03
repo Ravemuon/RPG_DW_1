@@ -57,17 +57,21 @@ class PericiasTableSeeder extends Seeder
                 $this->command->error("Sistema não encontrado: {$nomeSistema}");
                 continue;
             }
+
             $atributosSistema = json_decode($sistema->atributos, true) ?? [];
 
             foreach ($pericias as $periciaData) {
                 $periciaData['sistema_id'] = $sistema->id;
 
-                // Calcula modificador base. Mantido o 'match' como estava.
-                $periciaData['modificador'] = match($nomeSistema) {
-                    'D&D 5e' => 0, // default
-                    'Ordem Paranormal' => 0,
-                    default => 0
-                };
+                // Calcula modificador automaticamente se for D&D 5e
+                if ($nomeSistema === 'D&D 5e') {
+                    $valorAtributo = intval($atributosSistema[$periciaData['atributo_relacionado']] ?? 10);
+                    $periciaData['modificador'] = intdiv($valorAtributo - 10, 2);
+                } else {
+                    $periciaData['modificador'] = 0;
+                }
+
+                // Define o nome legível do atributo (mantém string ou pega do array legível)
                 $periciaData['atributo_nome'] = $atributosSistema[$periciaData['atributo_relacionado']] ?? $periciaData['atributo_relacionado'];
 
                 Pericia::updateOrCreate(

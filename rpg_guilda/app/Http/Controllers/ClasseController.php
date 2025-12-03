@@ -107,4 +107,8 @@ class ClasseController extends Controller
             'pagina' => 'nullable|string|max:20',
         ];
     }
+        public function pericias()
+    {
+        return $this->belongsToMany(Pericia::class, 'classe_pericia', 'classe_id', 'pericia_id');
+    }
 }
