@@ -2,7 +2,6 @@
 
 namespace App\Charts;
 
-<<<<<<< HEAD
 use App\Models\Campanha;
 use App\Models\Sessao;
 use Illuminate\Support\Collection;
@@ -124,20 +123,5 @@ class SessaoPresencasChart
             ->setXAxis([''])
             ->setGrid()
             ->setHeight(350);
-=======
-use Chartisan\PHP\Chartisan;
-use ConsoleTVs\Charts\BaseChart;
-use App\Models\Sessao;
-
-class SessaoPresencasChart extends BaseChart
-{
-    public function handler(): Chartisan
-    {
-        $sessoes = Sessao::orderBy('data_hora', 'asc')->get();
-
-        return Chartisan::build()
-            ->labels($sessoes->pluck('titulo')->toArray())
-            ->dataset('Confirmados', $sessoes->map(fn($s) => $s->presencas->count())->toArray());
->>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
     }
 }

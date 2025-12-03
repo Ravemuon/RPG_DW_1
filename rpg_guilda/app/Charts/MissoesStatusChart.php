@@ -17,15 +17,12 @@ class MissoesStatusChart extends Chart
             $dashboard['andamento'],
             $dashboard['concluidas'],
             $dashboard['canceladas'],
-<<<<<<< HEAD
         ])
         ->backgroundColor([
             'rgb(108, 117, 125)', // secondary (pendentes)
             'rgb(13, 202, 240)',  // info (andamento)
             'rgb(25, 135, 84)',   // success (concluidas)
             'rgb(220, 53, 69)'    // danger (canceladas)
-=======
->>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
         ]);
     }
 }

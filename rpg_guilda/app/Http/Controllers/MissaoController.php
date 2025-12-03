@@ -6,11 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Missao;
 use App\Models\Campanha;
 use Barryvdh\DomPDF\Facade\Pdf;
-<<<<<<< HEAD
-// Importação das classes dos gráficos
 use App\Charts\MissoesPrioridadeChart;
-=======
->>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
 use App\Charts\MissoesStatusChart;
 
 class MissaoController extends Controller
@@ -31,11 +27,7 @@ class MissaoController extends Controller
             ->orderByDesc('id')
             ->get();
 
-<<<<<<< HEAD
         // Dados para o Dashboard (Status e Prioridade)
-=======
-        // Cálculo do dashboard
->>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
         $dashboard = [
             // Status
             'pendentes'  => $missoes->where('status', 'pendente')->count(),
@@ -48,27 +40,13 @@ class MissaoController extends Controller
             'alta'       => $missoes->where('prioridade', 'alta')->count(),
         ];
 
-<<<<<<< HEAD
         // Instanciação dos Gráficos
         $prioridadeChart = new MissoesPrioridadeChart($dashboard);
         $statusChart = new MissoesStatusChart($dashboard);
 
-
         return view('missoes.index', compact(
             'campanha', 'missoes', 'dashboard', 'search', 'prioridade',
-            'prioridadeChart', 'statusChart' // Variáveis de gráfico adicionadas
-=======
-        // Gráfico usando o Chart.js
-        $chartStatus = new MissoesStatusChart($dashboard);
-
-        return view('missoes.index', compact(
-            'campanha',
-            'missoes',
-            'dashboard',
-            'search',
-            'prioridade',
-            'chartStatus'
->>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
+            'prioridadeChart', 'statusChart'
         ));
     }
 
