@@ -5,16 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Sistema;   // ← obrigatório
+use App\Models\Pericia;   // ← obrigatório
 
 class Classe extends Model
 {
     use HasFactory;
 
-    /**
-     * Os atributos que são atribuíveis em massa.
-     *
-     * @var array<int, string>
-     */
+    protected $table = 'classes';
     protected $fillable = [
         'nome',
         'sistema_id',
@@ -28,11 +27,6 @@ class Classe extends Model
         'pagina',
     ];
 
-    /**
-     * Os atributos que devem ser convertidos para tipos nativos.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'usa_magia' => 'boolean',
         'pericias_iniciais' => 'array',
@@ -41,17 +35,15 @@ class Classe extends Model
         'poderes' => 'array',
     ];
 
-    /**
-     * Obtém o sistema ao qual a classe pertence.
-     */
+    /** Classe pertence a um sistema */
     public function sistema(): BelongsTo
     {
         return $this->belongsTo(Sistema::class, 'sistema_id');
     }
 
-    public function pericias()
+    /** Classe pode ter várias perícias */
+    public function pericias(): BelongsToMany
     {
         return $this->belongsToMany(Pericia::class, 'classe_pericia', 'classe_id', 'pericia_id');
     }
-
 }

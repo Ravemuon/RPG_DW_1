@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Raca;
 use App\Models\Sistema;
 
-class RacaController extends Controller
+class PersonagemRacaController extends Controller
 {
     /**
      * Listar todas as raças de um sistema

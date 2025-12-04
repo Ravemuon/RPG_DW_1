@@ -6,51 +6,29 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Classe;
+use App\Models\Sistema;
 
-class Classe extends Model
-{
+class Pericia extends Model
+{ 
     use HasFactory;
-
-    /**
-     * Os atributos que são atribuíveis em massa.
-     */
+    
+    protected $table = 'pericias';
     protected $fillable = [
         'nome',
         'sistema_id',
+        'atributo_relacionado',
+        'atributo_nome',
         'descricao',
-        'dado_vida',
-        'pericias_iniciais',
-        'equipamento_inicial',
-        'usa_magia',
-        'atributos_bonus',
-        'poderes',
-        'pagina',
+        'modificador',
     ];
 
     /**
-     * Os atributos que devem ser convertidos para tipos nativos.
-     */
-    protected $casts = [
-        'usa_magia' => 'boolean',
-        'pericias_iniciais' => 'array',
-        'equipamento_inicial' => 'array',
-        'atributos_bonus' => 'array',
-        'poderes' => 'array',
-    ];
-
-    /**
-     * Obtém o sistema ao qual a classe pertence.
+     * Relação com Sistema (N pericias → 1 sistema)
      */
     public function sistema(): BelongsTo
     {
         return $this->belongsTo(Sistema::class, 'sistema_id');
     }
 
-    /**
-     * Obtém as perícias que pertencem a esta classe (relacionamento Many-to-Many).
-     */
-    public function pericias(): BelongsToMany
-    {
-        return $this->belongsToMany(Pericia::class);
-    }
 }

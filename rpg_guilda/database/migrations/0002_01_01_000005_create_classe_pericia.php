@@ -18,6 +18,9 @@ return new class extends Migration
             $table->foreign('pericia_id')->references('id')->on('pericias')->onDelete('cascade');
 
             $table->timestamps();
+
+            // 🔥 impede duplicação de vínculos
+            $table->unique(['classe_id','pericia_id']);
         });
     }
 

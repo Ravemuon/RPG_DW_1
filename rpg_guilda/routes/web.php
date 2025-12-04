@@ -23,14 +23,17 @@ use App\Http\Controllers\{
     RacaController,
     ChatPrivadoController
 };
-use ConsoleTVs\Charts\Charts;
+
 use App\Charts\MissoesStatusChart;
 use App\Charts\SessaoPresencasChart;
 
-Charts::routes();
+Route::get('/chart/missoes-status', function (MissoesStatusChart $chart) {
+    return $chart->build();
+});
 
-Route::get('/chart/missoes-status', [MissoesStatusChart::class, 'handler'])->name('chart.missoes');
-Route::get('/chart/sessoes-presencas', [SessaoPresencasChart::class, 'handler'])->name('chart.sessoes');
+Route::get('/chart/sessoes-presencas', function (SessaoPresencasChart $chart) {
+    return $chart->build();
+});
 
 // Página inicial
 Route::get('/', [HomeController::class, 'index'])->name('home')->middleware('auth');
@@ -277,8 +280,8 @@ Route::middleware(['auth'])->group(function () {
         });
 
 
-    // ORIGENS
-        Route::prefix('sistemas/{sistema}/origens')->name('origens.')->group(function () {
+        // ORIGENS
+        Route::prefix('{sistema}/origens')->name('origens.')->group(function () {
             Route::get('/', [OrigemController::class, 'index'])->name('index');
             Route::get('/create', [OrigemController::class, 'create'])->name('create');
             Route::post('/', [OrigemController::class, 'store'])->name('store');
