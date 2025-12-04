@@ -10,19 +10,19 @@ class MissoesStatusChart extends Chart
     {
         parent::__construct();
 
-        $this->labels(['Pendentes', 'Em Andamento', 'Concluídas', 'Canceladas']);
+        $this->labels(['Pendente', 'Em Andamento', 'Concluída', 'Cancelada']);
 
-        $this->dataset('Status das Missões', 'doughnut', [
-            $dashboard['pendentes'],
-            $dashboard['andamento'],
-            $dashboard['concluidas'],
-            $dashboard['canceladas'],
+        $this->dataset('Status das Missões', 'bar', [
+            $dashboard['pendente'],
+            $dashboard['em_andamento'],
+            $dashboard['concluida'],
+            $dashboard['cancelada'],
         ])
         ->backgroundColor([
-            'rgb(108, 117, 125)', // secondary (pendentes)
-            'rgb(13, 202, 240)',  // info (andamento)
-            'rgb(25, 135, 84)',   // success (concluidas)
-            'rgb(220, 53, 69)'    // danger (canceladas)
+            'rgb(108, 117, 125)',  // secondary
+            'rgb(13, 110, 253)',   // info
+            'rgb(25, 135, 84)',    // success
+            'rgb(220, 53, 69)',    // danger
         ]);
     }
 }

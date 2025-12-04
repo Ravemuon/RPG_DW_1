@@ -18,35 +18,36 @@ class MissaoController extends Controller
         $search = $request->search ?? null;
         $prioridade = $request->prioridade ?? null;
 
+        // Busca e filtro
         $missoes = $campanha->missoes()
             ->when($search, fn($q) =>
                 $q->where('titulo', 'LIKE', "%$search%")
-                    ->orWhere('descricao', 'LIKE', "%$search%"))
+                  ->orWhere('descricao', 'LIKE', "%$search%"))
             ->when($prioridade, fn($q) =>
                 $q->where('prioridade', $prioridade))
             ->orderByDesc('id')
             ->get();
 
-        // Dados para o Dashboard (Status e Prioridade)
+        // Dashboard: Status e Prioridade
         $dashboard = [
             // Status
-            'pendentes'  => $missoes->where('status', 'pendente')->count(),
-            'andamento'  => $missoes->where('status', 'em_andamento')->count(),
-            'concluidas' => $missoes->where('status', 'concluida')->count(),
-            'canceladas' => $missoes->where('status', 'cancelada')->count(),
+            'pendente'     => $missoes->where('status', 'pendente')->count(),
+            'em_andamento' => $missoes->where('status', 'em_andamento')->count(),
+            'concluida'    => $missoes->where('status', 'concluida')->count(),
+            'cancelada'    => $missoes->where('status', 'cancelada')->count(),
             // Prioridade
-            'baixa'      => $missoes->where('prioridade', 'baixa')->count(),
-            'media'      => $missoes->where('prioridade', 'media')->count(),
-            'alta'       => $missoes->where('prioridade', 'alta')->count(),
+            'baixa'        => $missoes->where('prioridade', 'baixa')->count(),
+            'media'        => $missoes->where('prioridade', 'media')->count(),
+            'alta'         => $missoes->where('prioridade', 'alta')->count(),
         ];
 
-        // Instanciação dos Gráficos
-        $prioridadeChart = new MissoesPrioridadeChart($dashboard);
+        // Instanciação dos gráficos
         $statusChart = new MissoesStatusChart($dashboard);
+        $prioridadeChart = new MissoesPrioridadeChart($dashboard);
 
         return view('missoes.index', compact(
             'campanha', 'missoes', 'dashboard', 'search', 'prioridade',
-            'prioridadeChart', 'statusChart'
+            'statusChart', 'prioridadeChart'
         ));
     }
 

@@ -18,10 +18,9 @@ class MissoesPrioridadeChart extends Chart
             $dashboard['alta'],
         ])
         ->backgroundColor([
-            'rgb(25, 135, 84)', // success (baixa)
-            'rgb(255, 193, 7)',  // warning (media)
-            'rgb(220, 53, 69)',   // danger (alta)
+            'rgb(25, 135, 84)', // success
+            'rgb(255, 193, 7)', // warning
+            'rgb(220, 53, 69)', // danger
         ]);
-
     }
 }

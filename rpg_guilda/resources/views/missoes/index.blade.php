@@ -8,22 +8,14 @@
     $search = $search ?? '';
     $prioridade = $prioridade ?? '';
 
-    // Funções auxiliares para badges - Usando Font Awesome para padronizar com o primeiro arquivo
+    // Funções auxiliares para badges
     function get_status_badge_fa($status) {
         return [
-<<<<<<< HEAD
             'pendente'     => ['cor' => 'secondary', 'icone' => 'hourglass-half', 'texto' => 'Pendente'],
             'em_andamento' => ['cor' => 'info', 'icone' => 'sync-alt', 'texto' => 'Em Andamento'],
             'concluida'    => ['cor' => 'success', 'icone' => 'check-circle', 'texto' => 'Concluída'],
             'cancelada'    => ['cor' => 'danger', 'icone' => 'times-circle', 'texto' => 'Cancelada'],
         ][$status] ?? ['cor' => 'light', 'icone' => 'question-circle', 'texto' => 'Desconhecido'];
-=======
-            'pendente'     => ['cor' => 'secondary', 'icone' => 'hourglass-split', 'texto' => 'Pendente'],
-            'em_andamento' => ['cor' => 'info',      'icone' => 'arrow-repeat',      'texto' => 'Em Andamento'],
-            'concluida'    => ['cor' => 'success',   'icone' => 'check-circle-fill', 'texto' => 'Concluída'],
-            'cancelada'    => ['cor' => 'danger',    'icone' => 'x-circle-fill',     'texto' => 'Cancelada'],
-        ][$status] ?? ['cor' => 'light', 'icone' => 'question-circle-fill', 'texto' => 'Desconhecido'];
->>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
     }
 
     function get_prioridade_badge_fa($prioridade) {
@@ -59,7 +51,7 @@
         </div>
     </div>
 
-    {{-- FILTROS E BUSCA (Design unificado) --}}
+    {{-- FILTROS E BUSCA --}}
     <div class="card bg-secondary-subtle shadow-lg mb-5 p-4 rounded-4 border-0">
         <h4 class="text-info mb-3 fw-bold"><i class="fas fa-filter me-2"></i>Filtrar Missões</h4>
         <form method="GET" class="row g-3 align-items-end">
@@ -100,8 +92,7 @@
         </form>
     </div>
 
-<<<<<<< HEAD
-    {{-- ÁREA DOS GRÁFICOS --}}
+    {{-- GRÁFICOS --}}
     @if(isset($statusChart) && isset($prioridadeChart) && $missoes->count() > 0)
     <h2 class="h4 text-warning mb-3"><i class="fas fa-chart-pie me-2"></i>Estatísticas de Missões</h2>
     <div class="row mb-5 g-4">
@@ -117,16 +108,6 @@
                 </div>
             </div>
         </div>
-=======
-    {{-- GRÁFICO --}}
-    <div class="card shadow-sm p-4 mb-5 rounded-4 border-0">
-        <h5 class="fw-bold mb-3 text-primary">
-            <i class="bi bi-graph-up"></i> Visão Geral de Status
-        </h5>
-
-        {!! $chart->container() !!}
-    </div>
->>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
 
         <div class="col-lg-6">
             <div class="card bg-secondary border-0 rounded-4 shadow-lg h-100">
@@ -220,38 +201,26 @@
 
 </div>
 
-<<<<<<< HEAD
-{{-- SCRIPTS DOS GRÁFICOS --}}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js" charset="utf-8"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-=======
-{{-- Scripts necessários --}}
+{{-- Scripts do Chart.js --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{!! $chart->script() !!}
->>>>>>> 7d446f2343567dbc425c23c550ef5e589bd7d8f0
 
-{{-- Renderização dos Scripts dos Gráficos --}}
 @if(isset($statusChart) && isset($prioridadeChart) && $missoes->count() > 0)
     {!! $statusChart->script() !!}
     {!! $prioridadeChart->script() !!}
 @endif
 
 <style>
-    /* Estilos customizados para o Dark Theme (Replicados para padronizar) */
     body { background-color: #1a1e23; }
     .bg-dark { background-color: #1a1e23 !important; }
     .bg-secondary-subtle { background-color: #24292e !important; }
     .bg-secondary { background-color: #2d3748 !important; }
 
-    /* Cores de destaque padronizadas */
-    .text-primary { color: #81e6d9 !important; } /* Ciano/Aqua */
-    .text-info { color: #63b3ed !important; } /* Azul Claro */
-    .text-warning { color: #f6ad55 !important; } /* Laranja */
+    .text-primary { color: #81e6d9 !important; }
+    .text-info { color: #63b3ed !important; }
+    .text-warning { color: #f6ad55 !important; }
 
-    /* Sombras e Bordas */
-    .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important; }
+    .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.2) !important; }
 
-    /* Botões Primários */
     .btn-primary {
         background-color: #81e6d9;
         border-color: #81e6d9;
@@ -264,24 +233,23 @@
         color: #1a1e23;
     }
 
-    /* Campos de Formulário */
     .form-control, .form-select {
         color: #fff !important;
     }
     .form-control:focus, .form-select:focus {
-        box-shadow: 0 0 0 0.25rem rgba(129, 230, 217, 0.25); /* Sombra baseada na cor primária */
-        background-color: #1a1e23; /* Darker para o input */
+        box-shadow: 0 0 0 0.25rem rgba(129,230,217,0.25);
+        background-color: #1a1e23;
         border-color: #81e6d9 !important;
         color: #fff;
     }
 
-    /* Efeito de hover nas cards */
     .transition-hover {
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
     .transition-hover:hover {
         transform: translateY(-3px);
-        box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.6), 0 6px 10px -3px rgba(0, 0, 0, 0.3) !important;
+        box-shadow: 0 15px 25px -5px rgba(0,0,0,0.6), 0 6px 10px -3px rgba(0,0,0,0.3) !important;
     }
 </style>
+
 @endsection
