@@ -30,6 +30,7 @@ class Personagem extends Model
         'pericias',
         'equipamento',
         'inventario',
+        'vida', 
         'descricao',
         'historia',
         'personalidade',
@@ -40,31 +41,11 @@ class Personagem extends Model
 
     protected $casts = [
         'ativo' => 'boolean',
+        'atributos' => 'array',
+        'pericias' => 'array',
+        'equipamento' => 'array',
+        'inventario' => 'array',
     ];
-
-    public function getAtributosAttribute($value): array
-    {
-        $array = json_decode($value, true);
-        return is_array($array) ? $array : [];
-    }
-
-    public function getPericiasAttribute($value): array
-    {
-        $array = json_decode($value, true);
-        return is_array($array) ? $array : [];
-    }
-
-    public function getEquipamentoAttribute($value): array
-    {
-        $array = json_decode($value, true);
-        return is_array($array) ? $array : [];
-    }
-
-    public function getInventarioAttribute($value): array
-    {
-        $array = json_decode($value, true);
-        return is_array($array) ? $array : [];
-    }
 
     public function getImageUrlAttribute(): ?string
     {

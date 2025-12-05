@@ -200,21 +200,20 @@ class PersonagemCreatorController extends Controller
         ]);
     }
 
-    public function storeStep3(StoreStep3Request $request)
+    public function storeStep3(Request $request)
     {
         $sessionData = $this->checkSession();
         if (!is_array($sessionData)) return $sessionData;
 
-        $validatedData = $request->validated();
-
-        $personagemData = array_merge($sessionData,[
-            'atributos'=>$validatedData['atributos'],
+        $personagemData = array_merge($sessionData, [
+            'atributos' => $request->input('atributos', [])
         ]);
 
-        Session::put(self::SESSION_KEY,$personagemData);
+        Session::put(self::SESSION_KEY, $personagemData);
 
-        return redirect()->route('personagens.step4')->with('success','Atributos salvos.');
+        return redirect()->route('personagens.step4')->with('success', 'Atributos salvos.');
     }
+
 
     public function step4()
     {
@@ -244,28 +243,41 @@ class PersonagemCreatorController extends Controller
     }
 
     public function step5()
-    {
-        $sessionData = $this->checkSession();
-        if (!is_array($sessionData)) return $sessionData;
-        if (!isset($sessionData['vida'])) return redirect()->route('personagens.step4')->with('error','Complete o Passo 4.');
+        {
+            $sessionData = $this->checkSession();
+            if (!is_array($sessionData)) return $sessionData;
+            if (!isset($sessionData['vida'])) return redirect()->route('personagens.step4')->with('error','Complete o Passo 4.');
 
-        $periciasSistema = Pericia::where('sistema_id',$sessionData['sistema_id'])->orderBy('nome')->get();
+            $periciasSistema = Pericia::where('sistema_id',$sessionData['sistema_id'])->orderBy('nome')->get();
+            $classe = Classe::find($sessionData['classe_id']); // Adicionado para exibir limite
 
-        return view('personagens.create.step5',[
-            'data'=>$sessionData,
-            'periciasSistema'=>$periciasSistema,
-        ]);
-    }
+            // Perícias previamente selecionadas
+            $periciasSalvasJson = $sessionData['pericias_classe_selecionadas'] ?? '[]';
+            $periciasSalvas = json_decode($periciasSalvasJson, true);
 
-    public function storeStep5(StoreStep5Request $request)
+
+            return view('personagens.create.step5',[
+                'data'=>$sessionData,
+                'periciasSistema'=>$periciasSistema,
+                'classe'=>$classe, // Passa a classe para a view
+                'periciasSalvas'=>$periciasSalvas, // Passa as perícias salvas
+            ]);
+        }
+
+   public function storeStep5(StoreStep5Request $request)
     {
         $sessionData = $this->checkSession();
         if (!is_array($sessionData)) return $sessionData;
 
         $validatedData = $request->validated();
-
+        
+        // A lógica de validação mais complexa está no StoreStep5Request::after().
+        // Aqui, apenas salvamos o JSON das perícias e os campos de texto.
+        $periciasJson = $validatedData['pericias_classe_selecionadas'] ?? '[]';
+        
         $personagemData = array_merge($sessionData,[
-            'pericias'=>$validatedData['pericias']??[],
+            'pericias_classe_selecionadas' => $periciasJson,
+            'pericias' => $periciasJson, // Armazena na chave 'pericias' para a lógica de conclusão final (Passo 6)
             'inventario'=>$validatedData['inventario']??null,
             'equipamento'=>$validatedData['equipamento']??null,
         ]);
@@ -274,6 +286,7 @@ class PersonagemCreatorController extends Controller
 
         return redirect()->route('personagens.final')->with('success','Perícias e Inventário salvos.');
     }
+
 
     public function final()
     {
@@ -290,8 +303,21 @@ class PersonagemCreatorController extends Controller
         $raca = Raca::find($sessionData['raca_id']);
         $classe = Classe::find($sessionData['classe_id']);
         $origem = $sessionData['origem_id'] ? Origem::find($sessionData['origem_id']):null;
-        $atributos = $sessionData['atributos']??[];
-        $pericias = $sessionData['pericias']??[];
+        
+        // CORREÇÃO: Decodificar os dados de JSON para PHP Array antes de passar para a view
+        // Se o Passo 5 salvou 'pericias' como uma string JSON, decodifique aqui.
+        // Se o Passo 3 salvou 'atributos' como um array PHP, não precisa decodificar. 
+        // Como você usa json_encode() no storeFinal, vamos garantir que aqui seja um array:
+
+        $atributos = $sessionData['atributos'] ?? []; 
+        $periciasData = $sessionData['pericias'] ?? '[]';
+
+        // Se $periciasData for uma string JSON, decodifica. Se já for array, mantém.
+        $pericias = is_string($periciasData) ? json_decode($periciasData, true) : $periciasData;
+
+        // Garante que ambos sejam arrays, mesmo que vazios
+        $atributos = is_array($atributos) ? $atributos : [];
+        $pericias = is_array($pericias) ? $pericias : [];
 
         return view('personagens.create.stepfinal',compact('sessionData','campanha','sistema','raca','classe','origem','atributos','pericias'));
     }

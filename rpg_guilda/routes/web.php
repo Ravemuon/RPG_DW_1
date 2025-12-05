@@ -173,7 +173,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/step5', [PersonagemCreatorController::class, 'step5'])->name('step5');
         Route::post('/store/step5', [PersonagemCreatorController::class, 'storeStep5'])->name('storeStep5');
 
-        // Revisão Final e Salvamento no DB
         Route::get('/final', [PersonagemCreatorController::class, 'final'])->name('final');
         Route::post('/store/final', [PersonagemCreatorController::class, 'storeFinal'])->name('storeFinal');
 

@@ -14,7 +14,9 @@
                     @include('personagens.create._progress_bar', ['data' => $data])
                     <hr class="my-3">
                     @include('personagens.create._dashboard_preview', ['data' => $data, 'atributosPadrao' => $atributosSistema])
-                    <p class="mt-3 text-muted small text-center">Os dados são atualizados conforme você digita.</p>
+                    <p class="mt-3 text-muted small text-center">
+                        Os dados são atualizados conforme você digita.
+                    </p>
                 </div>
             </div>
         </div>
@@ -26,7 +28,8 @@
                     <h4 class="mb-0">3. Atributos (Pontuações)</h4>
                 </div>
                 <div class="card-body">
-                    <p>Defina ou sorteie os valores para os atributos do seu personagem. Valores padrão para este sistema:
+                    <p>
+                        Defina ou sorteie os valores para os atributos do seu personagem. Valores padrão para este sistema:
                         @foreach ($atributosSistema as $attr)
                             <span class="badge bg-secondary">{{ strtoupper(substr($attr, 0, 3)) }}</span>
                         @endforeach
@@ -36,7 +39,7 @@
                         @csrf
 
                         @php
-                            $atributosAtuais = json_decode($data['atributos'] ?? '{}', true);
+                            $atributosAtuais = $atributosSalvos ?? [];
                         @endphp
 
                         <div id="atributos-list" class="row">
@@ -61,11 +64,15 @@
                             <a href="{{ route('personagens.step2') }}" class="btn btn-outline-secondary">
                                 &laquo; Voltar (Passo 2)
                             </a>
-                            <button type="submit" class="btn btn-primary">Salvar e Próximo (Passo 4) &raquo;</button>
+                            <button type="submit" class="btn btn-primary">
+                                Salvar e Próximo (Passo 4) &raquo;
+                            </button>
                         </div>
 
                         <div class="mt-3 text-center">
-                            <button type="button" id="btn-sortear" class="btn btn-sm btn-info">🎲 Sortear Atributos (4d6)</button>
+                            <button type="button" id="btn-sortear" class="btn btn-sm btn-info">
+                                🎲 Sortear Atributos (4d6)
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -77,53 +84,59 @@
 
 @push('scripts')
 <script>
+    // Atualiza dashboard em tempo real
     function updateDashboard(atributo, valor) {
         const displayElement = document.getElementById('dashboard-attr-' + atributo);
         if (displayElement) {
             displayElement.textContent = valor;
             const mod = Math.floor((valor - 10) / 2);
-            const modDisplayElement = document.getElementById('dashboard-mod-' + atributo);
-            if (modDisplayElement) {
-                modDisplayElement.textContent = (mod > 0 ? '+' : '') + mod;
+            const modDisplay = document.getElementById('dashboard-mod-' + atributo);
+            if (modDisplay) {
+                modDisplay.textContent = (mod >= 0 ? '+' : '') + mod;
             }
         }
     }
 
+    // Input manual
     document.querySelectorAll('.atributo-input').forEach(input => {
         input.addEventListener('input', function() {
-            const atributo = this.getAttribute('data-atributo');
+            const atributo = this.dataset.atributo;
             const valor = parseInt(this.value) || 0;
             updateDashboard(atributo, valor);
         });
     });
 
+    // Sortear atributos via AJAX
     document.getElementById('btn-sortear').addEventListener('click', function() {
         const btn = this;
         btn.disabled = true;
 
-        fetch('{{ route('personagens.sortearAtributos') }}?sistema_id={{ $data['sistema_id'] }}', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+        fetch('{{ route('personagens.sortearAtributos') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ sistema_id: {{ $data['sistema_id'] }} })
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             if (data.atributos) {
                 @foreach ($atributosSistema as $atributo)
+                    const inputEl = document.getElementById('attr-{{ $atributo }}');
                     const valorSorteado = data.atributos['{{ $atributo }}'];
-                    const inputElement = document.getElementById('attr-{{ $atributo }}');
-                    if (inputElement) {
-                        inputElement.value = valorSorteado;
+                    if (inputEl) {
+                        inputEl.value = valorSorteado;
                         updateDashboard('{{ $atributo }}', valorSorteado);
                     }
                 @endforeach
-                alert('Atributos sorteados com sucesso!');
             } else {
                 alert('Erro ao sortear atributos.');
             }
             btn.disabled = false;
         })
-        .catch(error => {
-            console.error('Erro:', error);
+        .catch(err => {
+            console.error(err);
             alert('Erro na comunicação com o servidor.');
             btn.disabled = false;
         });
