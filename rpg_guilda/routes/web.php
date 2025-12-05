@@ -123,24 +123,25 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Sessões
-        Route::prefix('{campanha}/sessoes')->name('sessoes.')->group(function () {
+        Route::prefix('campanhas/{campanha}/sessoes')->name('sessoes.')->group(function () {
             Route::get('/', [SessaoController::class, 'index'])->name('index');
-            Route::get('/criar', [SessaoController::class, 'create'])->name('create');
+            Route::get('/create', [SessaoController::class, 'create'])->name('create');
             Route::post('/', [SessaoController::class, 'store'])->name('store');
 
-            Route::get('/{sessao}', [SessaoController::class, 'show'])->name('show');
-            Route::get('/{sessao}/editar', [SessaoController::class, 'edit'])->name('edit');
-            Route::put('/{sessao}', [SessaoController::class, 'update'])->name('update');
-            Route::delete('/{sessao}', [SessaoController::class, 'destroy'])->name('destroy');
+            Route::prefix('{sessao}')->group(function () {
+                Route::get('/', [SessaoController::class, 'show'])->name('show');
+                Route::get('/edit', [SessaoController::class, 'edit'])->name('edit');
+                Route::put('/', [SessaoController::class, 'update'])->name('update');
+                Route::delete('/', [SessaoController::class, 'destroy'])->name('destroy');
 
-            Route::post('/{sessao}/adicionar-personagem', [SessaoController::class, 'adicionarPersonagem'])->name('adicionar-personagem');
-            Route::post('/{sessao}/confirmar-personagem', [SessaoController::class, 'confirmarPersonagem'])->name('confirmar-personagem');
-            Route::put('/{sessao}/personagem/{personagem}', [SessaoController::class, 'atualizarPersonagem'])->name('atualizar-personagem');
-            Route::get('/{sessao}/exportar-pdf', [SessaoController::class, 'exportarPdf'])->name('exportar-pdf');
+                Route::get('/exportar-pdf', [SessaoController::class, 'exportarPdf'])->name('exportarPdf');
 
-            Route::post('/{sessao}/marcar-presenca', [SessaoController::class, 'marcarPresenca'])->name('marcar_presenca');
-
+                // Rota para marcar presença
+                Route::post('/marcar-presenca', [SessaoController::class, 'marcarPresenca'])->name('marcar_presenca');
+            });
         });
+
+
 
     }); // Fim do prefixo 'campanhas'
 

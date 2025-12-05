@@ -8,7 +8,7 @@
     }
     .transform-on-hover:hover {
         transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; /* Sombra mais destacada no hover */
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
     }
 
     /* Estilos de botão aprimorados */
@@ -25,73 +25,77 @@
 
 <div class="container py-4">
 
+    <!-- Cabeçalho com título e botões -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="fw-bolder m-0 text-primary">
-            <i class="bi bi-book me-2"></i> Sistemas de RPG
-        </h1>
+        <h1 class="fw-bold m-0">📚 Sistemas de RPG</h1>
 
         <div class="d-flex gap-2 flex-wrap">
             @if(auth()->check() && auth()->user()->is_admin)
-                <a href="{{ route('sistemas.create') }}" class="btn btn-success btn-action shadow-sm">
-                    <i class="bi bi-plus-lg"></i> Novo Sistema
+                <a href="{{ route('sistemas.create') }}" class="btn btn-primary btn-action">
+                    <i class="bi bi-plus-circle"></i> Novo Sistema
                 </a>
             @endif
 
-            <a href="{{ route('sistemas.exportar-pdf') }}" target="_blank" class="btn btn-secondary btn-action shadow-sm">
-                <i class="bi bi-filetype-pdf"></i> Exportar PDF
+            <a href="{{ route('sistemas.exportar-pdf') }}" target="_blank" class="btn btn-danger btn-action">
+                <i class="bi bi-file-pdf"></i> PDF
             </a>
         </div>
     </div>
 
+    <!-- Mensagem de sucesso -->
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>
+            <i class="bi bi-check-circle-fill me-1"></i>
             {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
-    {{-- VISUALIZAÇÃO ADMIN: Tabela de Gerenciamento --}}
+    {{-- VISUALIZAÇÃO ADMIN (TABELA E CARDS) --}}
     @if(auth()->check() && auth()->user()->is_admin)
-        <hr>
-        <h2 class="fs-5 fw-bold mb-3 mt-4 pb-2 text-dark">
-            <i class="bi bi-clipboard-data me-1 text-info"></i> Gerenciamento Rápido
+        <!-- Tabela para gerenciamento (Admin) -->
+        <h2 class="fs-5 fw-bold mb-3 border-bottom pb-2 text-dark">
+            <i class="bi bi-table me-1"></i> Gerenciamento (Tabela)
         </h2>
 
-        <div class="card shadow-sm mb-5">
-            <div class="card-body p-0">
-                {{-- Incluir partial para tabela de sistemas --}}
-                @include('sistemas.partials._tabela_admin', ['sistemas' => $sistemas])
-            </div>
-        </div>
-        <hr>
-    @endif
+        {{-- Incluir partial para tabela de sistemas --}}
+        @include('sistemas.partials._tabela_admin', ['sistemas' => $sistemas])
 
-    <h2 class="fs-5 fw-bold {{ auth()->check() && auth()->user()->is_admin ? 'mt-4' : 'mt-2' }} mb-3 pb-2 text-dark">
-        <i class="bi bi-dice-5-fill me-1 text-primary"></i>
-        @if(auth()->check() && auth()->user()->is_admin)
-            Visão de Cards (Detalhada)
-        @else
-            Explorar Sistemas
-        @endif
-    </h2>
-
-    <div class="row g-4 mb-4">
-        @forelse ($sistemas as $sistema)
-            {{-- O partial _sistema deve ser ajustado para exibir as novas colunas JSON (atributos, recursos, etc.) --}}
-            @include('sistemas.partials._sistema', ['sistema' => $sistema])
-        @empty
-            <div class="col-12">
-                <div class="text-center p-5 bg-light rounded-3 border">
-                    <i class="bi bi-emoji-frown-fill fs-3 text-muted"></i>
-                    <h4 class="mt-3 text-muted">Nenhum sistema de RPG encontrado.</h4>
-                    @if(auth()->check() && auth()->user()->is_admin)
-                        <p class="text-muted mb-0">Clique em **Novo Sistema** para começar.</p>
-                    @endif
+        <!-- Cards detalhados para administração -->
+        <h2 class="fs-5 fw-bold mt-5 mb-3 border-bottom pb-2 text-primary">
+            <i class="bi bi-grid-fill me-1"></i> Visão de Cards (Detalhada)
+        </h2>
+        <div class="row g-4 mb-4">
+            @forelse ($sistemas as $sistema)
+                @include('sistemas.partials._sistema', ['sistema' => $sistema])
+            @empty
+                <div class="col-12">
+                    <div class="text-center p-5 bg-light rounded shadow-sm">
+                        <i class="bi bi-emoji-frown fs-3 text-muted"></i>
+                        <h4 class="mt-3 text-muted">Nenhum sistema de RPG encontrado.</h4>
+                    </div>
                 </div>
-            </div>
-        @endforelse
-    </div>
+            @endforelse
+        </div>
+    @else
+        <!-- Visão para usuários comuns -->
+        <h2 class="fs-5 fw-bold mb-3 border-bottom pb-2 text-dark">
+            <i class="bi bi-dice-3-fill me-1"></i> Explorar Sistemas
+        </h2>
+
+        <div class="row g-4 mb-4">
+            @forelse ($sistemas as $sistema)
+                @include('sistemas.partials._sistema', ['sistema' => $sistema])
+            @empty
+                <div class="col-12">
+                    <div class="text-center p-5 bg-light rounded shadow-sm">
+                        <i class="bi bi-emoji-frown fs-3 text-muted"></i>
+                        <h4 class="mt-3 text-muted">Nenhum sistema de RPG disponível para visualização.</h4>
+                    </div>
+                </div>
+            @endforelse
+        </div>
+    @endif
 
 </div>
 @endsection

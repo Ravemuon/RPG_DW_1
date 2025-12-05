@@ -238,11 +238,11 @@
                         @can('delete',$campanha)
                         <form method="POST" action="{{ route('sessoes.destroy',[$campanha->id,$sessao->id]) }}" class="flex-fill">
                             @csrf @method('DELETE')
-                            <button type="button" 
-                                    onclick="confirmDelete('{{ addslashes($sessao->titulo) }}', this.form)"
-                                    class="btn btn-outline-danger btn-sm w-100">
-                                <i class="fas fa-trash me-1"></i> Excluir
-                            </button>
+                            <form action="{{ route('sessoes.destroy', ['campanha'=>$sessao->campanha->id,'sessao'=>$sessao->id]) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir a sessão {{ $sessao->titulo }}? Esta ação é irreversível.')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-lg rounded-pill fw-bold">🗑️ Excluir Sessão</button>
+                            </form>
                         </form>
                         @endcan
                     </div>

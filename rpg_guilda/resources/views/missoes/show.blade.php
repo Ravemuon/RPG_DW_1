@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detalhes da Missão: ' . $missao->titulo)
+@section('title', 'Detalhes da Missão: ' . ($missao->titulo ?? 'Indefinido'))
 
 @section('content')
 
@@ -12,15 +12,14 @@
 @include('amizades.partials._alertas')
 
 <div class="container mt-5 text-light">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
 
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-
-            <div class="card bg-dark-card shadow-lg border-primary">
+            <div class="card bg-dark border-primary shadow-lg rounded-4">
 
                 {{-- HEADER --}}
-                <div class="card-header bg-primary text-white">
-                    <h1 class="h3 mb-0">📜 Missão: {{ $missao->titulo }}</h1>
+                <div class="card-header bg-primary text-white rounded-top-4">
+                    <h1 class="h3 mb-0">📜 Missão: {{ $missao->titulo ?? 'Sem título' }}</h1>
                 </div>
 
                 {{-- BODY --}}
@@ -31,7 +30,7 @@
 
                         <dt class="col-sm-3 text-info">Campanha:</dt>
                         <dd class="col-sm-9 text-light">
-                            {{ $campanha->nome }} (ID: {{ $campanha->id }})
+                            {{ $campanha->nome ?? 'Indefinido' }} (ID: {{ $campanha->id ?? '?' }})
                         </dd>
 
                         <dt class="col-sm-3 text-info">Prioridade:</dt>
@@ -72,19 +71,16 @@
                 </div>
 
                 {{-- FOOTER --}}
-                <div class="card-footer text-muted d-flex justify-content-between align-items-center">
+                <div class="card-footer bg-dark border-top border-secondary text-muted d-flex justify-content-between align-items-center rounded-bottom-4">
 
-                    <small>ID da Missão: {{ $missao->id }}</small>
+                    <small>ID da Missão: {{ $missao->id ?? '?' }}</small>
 
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
 
                         {{-- AÇÕES DO MESTRE --}}
                         @if($isMestre)
-
-                            <a href="{{ route('missoes.edit', [
-                                'campanha' => $campanha->id,
-                                'missao' => $missao->id
-                            ]) }}" class="btn btn-sm btn-warning">
+                            <a href="{{ route('missoes.edit', [$campanha->id, $missao->id]) }}"
+                               class="btn btn-sm btn-warning">
                                 ✏️ Editar
                             </a>
 
@@ -99,7 +95,6 @@
                                     🗑️ Excluir
                                 </button>
                             </form>
-
                         @endif
 
                         <a href="{{ route('missoes.index', $campanha->id) }}"
@@ -112,10 +107,8 @@
                 </div>
 
             </div>
-
         </div>
     </div>
-
 </div>
 
 @endsection

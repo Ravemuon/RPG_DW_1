@@ -91,14 +91,14 @@ class PersonagemSeeder extends Seeder
                 'bonus_proficiencia' => $bonusProficiencia,
                 'sanidade' => rand(50, 100),
                 'sorte' => rand(1, 20),
-                'atributos' => [
+                'atributos' => json_encode([
                     'forca' => rand(8, 18),
                     'destreza' => rand(8, 18),
                     'constituicao' => rand(8, 18),
                     'inteligencia' => rand(8, 18),
                     'sabedoria' => rand(8, 18),
                     'carisma' => rand(8, 18)
-                ],
+                ]),
                 'descricao' => 'Personagem gerado com presets realistas.',
                 'historia' => $historias[array_rand($historias)],
                 'personalidade' => $personalidades[array_rand($personalidades)],
@@ -107,8 +107,8 @@ class PersonagemSeeder extends Seeder
                 'ativo' => true,
                 'pagina' => null
             ]);
+
             $this->command->info("Personagem " . ($i+1) . " criado: " . $nivel . "º nível, campanha '" . ($campanha?->nome ?? 'Desconhecida') . "'");
-            
         }
 
         $this->command->info("{$quantidade} personagens foram populados com sucesso!");

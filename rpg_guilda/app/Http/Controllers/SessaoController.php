@@ -112,15 +112,60 @@ class SessaoController extends Controller
         }
 
         $user = Auth::user();
-        $sessao->load(['personagens', 'campanha', 'presencas']);
+
+        $sessao->load(['personagens', 'campanha.sistema', 'presencas.jogador', 'mestre']);
+
+        // Gráfico de presenças
         $presencaChart = $chart->handler($campanha, $sessao);
 
         $jaMarqueiPresenca = $user
             ? $sessao->presencas()->where('jogador_id', $user->id)->exists()
             : false;
 
-        return view('sessoes.show', compact('campanha', 'sessao', 'jaMarqueiPresenca', 'presencaChart'));
+        $podeMarcarPresenca = $user && !$jaMarqueiPresenca;
+
+        $isMestre = $user && $sessao->mestre_id === $user->id;
+
+        // Lista de confirmados: inclui mestre + jogadores que marcaram presença
+        $confirmados = collect();
+
+        // Mestre sempre confirmado
+        if ($sessao->mestre) {
+            $confirmados->push([
+                'nome' => $sessao->mestre->nome,
+                'isMestre' => true,
+            ]);
+        }
+
+        // Jogadores que marcaram presença
+        $sessao->presencas->each(function ($p) use ($sessao, &$confirmados) {
+            // Evita duplicar mestre
+            if ($p->jogador_id !== $sessao->mestre_id) {
+                $confirmados->push([
+                    'nome' => $p->jogador->nome ?? 'Desconhecido',
+                    'isMestre' => false,
+                ]);
+            }
+        });
+
+        // Jogadores ativos sem confirmação
+        $outrosJogadores = $sessao->personagens->filter(function ($personagem) use ($confirmados) {
+            return !$confirmados->contains('nome', $personagem->nome);
+        });
+
+        return view('sessoes.show', compact(
+            'campanha',
+            'sessao',
+            'jaMarqueiPresenca',
+            'podeMarcarPresenca',
+            'isMestre',
+            'presencaChart',
+            'confirmados',
+            'outrosJogadores'
+        ));
     }
+
+
 
     // Exibe formulário para editar sessão
     public function edit(Campanha $campanha, Sessao $sessao)
@@ -153,10 +198,7 @@ class SessaoController extends Controller
 
         $sessao->update($data);
 
-        if ($request->status === 'concluida') {
-            return $this->exportarPdf($campanha, $sessao);
-        }
-
+        // Apenas redireciona para show depois de salvar
         return redirect()
             ->route('sessoes.show', [$campanha->id, $sessao->id])
             ->with('success', 'Sessão atualizada com sucesso!');
@@ -166,16 +208,9 @@ class SessaoController extends Controller
     public function destroy(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('delete', $campanha);
-
-        if ($sessao->campanha_id !== $campanha->id) {
-            abort(404, 'Sessão não encontrada nesta campanha.');
-        }
-
         $sessao->delete();
-
-        return redirect()
-            ->route('sessoes.index', $campanha->id)
-            ->with('success', 'Sessão deletada com sucesso!');
+        return redirect()->route('sessoes.index', $campanha->id)
+                        ->with('success', 'Sessão excluída com sucesso.');
     }
 
     // Marca presença do jogador em uma sessão

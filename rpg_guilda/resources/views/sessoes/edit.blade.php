@@ -1,152 +1,159 @@
 @extends('layouts.app')
 
-@section('title', "Editar Sessão - {$sessao->titulo}")
+@section('title', "Editar Sessão - {$campanha->nome}")
 
 @section('content')
 <div class="container py-5 text-light">
+
+    {{-- Título centralizado --}}
     <div class="text-center mb-5">
-        <h1 class="fw-bold text-highlight">✏️ Editar Sessão</h1>
-        <p class="text-muted">{{ $sessao->titulo }} | Campanha: {{ $sessao->campanha->nome }}</p>
+        <h1 class="fw-bold display-5 gradient-title">Editar Sessão</h1>
+        <p class="text-muted fs-5">Campanha: <span class="text-success fw-semibold">{{ $campanha->nome }}</span></p>
     </div>
 
     <div class="row justify-content-center">
         <div class="col-md-8">
 
+            {{-- Validações --}}
             @if($errors->any())
-                <div class="alert alert-danger alert-dismissible fade show bg-danger text-light border-0 shadow-sm" role="alert">
-                    <ul class="mb-0 list-unstyled">
+                <div class="alert alert-danger bg-opacity-75 border-danger border-2 rounded-3 shadow-lg fade show" role="alert">
+                    <ul class="mb-0 ps-1">
                         @foreach($errors->all() as $error)
-                            <li>⚠️ {{ $error }}</li>
+                            <li class="mb-1">{{ $error }}</li>
                         @endforeach
                     </ul>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Fechar"></button>
                 </div>
             @endif
 
-            <div class="card bg-dark border-success shadow-lg p-4">
-                <div class="card-body">
-                    {{-- Formulário de Edição --}}
-                    <form action="{{ route('sessoes.update', ['campanha' => $sessao->campanha->id, 'sessao' => $sessao->id]) }}" method="POST" id="editForm">
+            {{-- Card de edição --}}
+            <div class="card session-card border-0 shadow-2xl p-4">
+                <div class="card-body p-4">
+
+                    <form action="{{ route('sessoes.update', [$campanha->id, $sessao->id]) }}" method="POST">
                         @csrf
                         @method('PUT')
 
                         {{-- Título --}}
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label class="form-label text-success fw-semibold">Título da Sessão</label>
-                            <input type="text" name="titulo" class="form-control form-control-lg bg-secondary text-light border-success"
-                                   value="{{ old('titulo', $sessao->titulo) }}" required>
+                            <input
+                                type="text"
+                                name="titulo"
+                                class="form-control form-control-lg custom-input"
+                                placeholder="Ex: O Ataque dos Orcs"
+                                value="{{ old('titulo', $sessao->titulo) }}"
+                                required
+                            >
                         </div>
 
                         {{-- Data e Hora --}}
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label class="form-label text-success fw-semibold">Data e Hora</label>
-                            {{-- Formata o datetime para ser aceito pelo campo 'datetime-local' --}}
-                            <input type="datetime-local" name="data_hora" class="form-control form-control-lg bg-secondary text-light border-success"
-                                   value="{{ old('data_hora', optional($sessao->data_hora)->format('Y-m-d\TH:i')) }}" required>
+                            <input
+                                type="datetime-local"
+                                name="data_hora"
+                                class="form-control form-control-lg custom-input"
+                                value="{{ old('data_hora', $sessao->data_hora->format('Y-m-d\TH:i')) }}"
+                                required
+                            >
                         </div>
 
-                        {{-- Resumo --}}
-                        <div class="mb-3">
-                            <label class="form-label text-success fw-semibold">Resumo (Notas rápidas ou para o Mestre)</label>
-                            <textarea name="resumo" class="form-control form-control-lg bg-secondary text-light border-success"
-                                     rows="5">{{ old('resumo', $sessao->resumo) }}</textarea>
-                        </div>
-
+                        {{-- NOVO CAMPO: Status da Sessão --}}
                         <div class="mb-4">
-                            <label class="form-label text-success fw-semibold">Descrição Detalhada (Relato do Jogo ou Notas da Sessão)</label>
-                            <textarea name="descricao_detalhada" class="form-control form-control-lg bg-secondary text-light border-success"
-                                     rows="8">{{ old('descricao_detalhada', $sessao->descricao_detalhada) }}</textarea>
-                            <div class="form-text text-muted">Use este campo para o relato completo, especialmente quando a sessão for concluída.</div>
-                        </div>
-
-                        {{-- Status --}}
-                        <div class="mb-4">
-                            <label class="form-label text-success fw-semibold">Status</label>
-                            <select name="status" class="form-select form-select-lg bg-secondary text-light border-success" required>
-                                {{-- Opções de Status --}}
+                            <label class="form-label text-success fw-semibold">Status da Sessão</label>
+                            <select
+                                name="status"
+                                class="form-select form-select-lg custom-input"
+                                required
+                            >
                                 @php
-                                    $statuses = [
-                                        'agendada' => 'Agendada',
-                                        'em_andamento' => 'Em andamento',
-                                        'concluida' => 'Concluída',
-                                        'cancelada' => 'Cancelada',
-                                    ];
+                                    $currentStatus = old('status', $sessao->status);
                                 @endphp
-
-                                @foreach ($statuses as $value => $label)
-                                    <option value="{{ $value }}" {{ old('status', $sessao->status) == $value ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
+                                <option value="planejada" {{ $currentStatus == 'planejada' ? 'selected' : '' }}>Planejada (Agendada)</option>
+                                <option value="em andamento" {{ $currentStatus == 'em andamento' ? 'selected' : '' }}>Em Andamento</option>
+                                <option value="concluida" {{ $currentStatus == 'concluida' ? 'selected' : '' }}>Concluída</option>
+                                <option value="cancelada" {{ $currentStatus == 'cancelada' ? 'selected' : '' }}>Cancelada</option>
                             </select>
                         </div>
+                        {{-- FIM NOVO CAMPO --}}
 
-                        {{-- Botões de Ação --}}
-                        <div class="d-flex flex-wrap gap-3 mt-5 justify-content-between">
-                            <button type="button" class="btn btn-danger btn-lg rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                🗑️ Excluir Sessão
-                            </button>
-
-                            <div class="d-flex gap-3">
-                                <a href="{{ route('sessoes.index', $sessao->campanha->id) }}" class="btn btn-outline-secondary btn-lg rounded-pill fw-bold">
-                                    ❌ Cancelar
-                                </a>
-                                <button type="submit" class="btn btn-success btn-lg rounded-pill shadow-sm fw-bold">
-                                    💾 Salvar Alterações
-                                </button>
-                            </div>
+                        {{-- Resumo --}}
+                        <div class="mb-4">
+                            <label class="form-label text-success fw-semibold">Resumo / Notas do Mestre</label>
+                            <textarea
+                                name="resumo"
+                                rows="6"
+                                class="form-control form-control-lg custom-input"
+                                placeholder="Escreva aqui o planejamento da sessão, ganchos narrativos, NPCs importantes..."
+                            >{{ old('resumo', $sessao->resumo) }}</textarea>
                         </div>
+
+                        {{-- Botões --}}
+                        <div class="d-flex flex-wrap gap-3 mt-4 justify-content-end">
+                            <a href="{{ route('campanhas.mestre', $campanha->id) }}"
+                               class="btn btn-outline-light btn-lg rounded-pill px-4 shadow-sm hover-lift">
+                                Voltar ao Painel
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-success btn-lg rounded-pill px-5 shadow success-btn hover-lift">
+                                Atualizar Sessão
+                            </button>
+                        </div>
+
                     </form>
+
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 
-{{-- Modal de Confirmação de Exclusão --}}
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark text-light border-danger">
-            <div class="modal-header border-bottom-0">
-                <h5 class="modal-title text-danger fw-bold" id="deleteModalLabel">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Tem certeza de que deseja excluir a sessão **{{ $sessao->titulo }}**? Esta ação é irreversível e removerá todos os dados relacionados (presenças, personagens, etc.).
-            </div>
-            <div class="modal-footer border-top-0">
-                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                <form action="{{ route('sessoes.destroy', ['campanha' => $sessao->campanha->id, 'sessao' => $sessao->id]) }}" method="POST" class="d-inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger rounded-pill fw-bold">Sim, Excluir</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
+{{-- Estilos Modernos --}}
 <style>
-
-.text-highlight {
-    color: #198754;
+.gradient-title {
+    background: linear-gradient(90deg, #198754, #47d381);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.bg-dark {
-    background-color: #212529 !important;
+.session-card {
+    background: #161a1d;
+    border-radius: 1rem;
+    border: 1px solid rgba(25, 135, 84, 0.25);
+    box-shadow: 0 0 20px rgba(25, 135, 84, 0.15);
 }
 
-.bg-secondary {
-    background-color: #343a40 !important;
+.custom-input {
+    background-color: #202326 !important;
+    color: #e5e5e5 !important;
+    border: 1px solid #2b3a33 !important;
+    border-radius: 0.6rem;
+    font-size: 1.05rem;
+    padding: 14px;
+    transition: 0.25s;
 }
 
-.form-control:focus, .form-select:focus {
-    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
-    border-color: #198754;
+.custom-input:focus {
+    border-color: #198754 !important;
+    box-shadow: 0 0 10px rgba(25, 135, 84, 0.4);
 }
 
-.form-select-lg {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    height: 3rem;
+.success-btn {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #198754, #1f9d68);
+    border: none;
+}
+
+.hover-lift {
+    transition: 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(255, 255, 255, 0.15);
 }
 </style>
 @endsection

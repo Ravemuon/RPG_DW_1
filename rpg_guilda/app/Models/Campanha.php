@@ -67,4 +67,5 @@ class Campanha extends Model
 
     // Retorna o mestre da campanha
     public function mestre() { return $this->belongsTo(User::class, 'criador_id'); }
+
 }

@@ -5,6 +5,26 @@
 @section('content')
 <div class="container py-4">
 
+    {{-- PRÉ-PROCESSAMENTO --}}
+    @php
+        // Garantir que os dados sejam arrays
+        $atributosDecodificados = is_array($sistema->atributos) ? $sistema->atributos : json_decode($sistema->atributos ?? '[]', true) ?? [];
+        $recursosDecodificados = is_array($sistema->recursos) ? $sistema->recursos : json_decode($sistema->recursos ?? '[]', true) ?? [];
+
+        // Mapeamento de complexidade
+        $complexidade = strtolower($sistema->complexidade ?? 'Não Avaliado');
+        $complexidadeBadge = match(true) {
+            str_contains($complexidade, 'baixa') => ['Baixa', 'bg-success'],
+            str_contains($complexidade, 'média'), str_contains($complexidade, 'media') => ['Média', 'bg-warning text-dark'],
+            str_contains($complexidade, 'alta') => ['Alta', 'bg-danger'],
+            default => ['Não Avaliado', 'bg-secondary']
+        };
+
+        // Determinar se usa Sanidade
+        $usaSanidade = $sistema->usa_sanidade ?? false;
+        $usaSanidade = $usaSanidade ? 'Sim' : 'Não';
+    @endphp
+
     {{-- HEADER E AÇÕES --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="display-5 fw-bold text-primary">
@@ -14,11 +34,9 @@
             </span>
         </h1>
         <div class="btn-group" role="group" aria-label="Ações do Sistema">
-            {{-- Botão Voltar --}}
             <a href="{{ route('sistemas.index') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Voltar
             </a>
-            {{-- Botão Editar --}}
             <a href="{{ route('sistemas.edit', $sistema) }}" class="btn btn-primary">
                 <i class="fas fa-edit me-1"></i> Editar
             </a>
@@ -27,7 +45,7 @@
 
     <hr class="mb-5">
 
-    {{-- SEÇÃO 1: DESCRIÇÃO E DETALHES PRINCIPAIS --}}
+    {{-- DETALHES ESSENCIAIS --}}
     <div class="card shadow-sm mb-5">
         <div class="card-header bg-light-subtle">
             <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i> Detalhes Essenciais</h4>
@@ -59,17 +77,15 @@
         </div>
     </div>
 
-    {{-- SEÇÃO 2: ATRIBUTOS E CARACTERÍSTICAS TÉCNICAS --}}
+    {{-- ATRIBUTOS E RECURSOS --}}
     <div class="row mb-5">
-        
-        {{-- CARD DE ATRIBUTOS --}}
         <div class="col-md-6">
             <div class="card h-100 shadow-sm">
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0"><i class="fas fa-dice-d20 me-2"></i> Atributos Base</h5>
                 </div>
                 <ul class="list-group list-group-flush">
-                    @forelse($sistema->atributos ?? [] as $sigla => $nome)
+                    @forelse($atributosDecodificados as $sigla => $nome)
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <strong class="text-uppercase">{{ $sigla }}</strong>
                             <span class="badge bg-dark rounded-pill">{{ $nome }}</span>
@@ -81,7 +97,6 @@
             </div>
         </div>
 
-        {{-- CARD DE REGRAS AVANÇADAS --}}
         <div class="col-md-6">
             <div class="card h-100 shadow-sm">
                 <div class="card-header bg-dark text-white">
@@ -96,23 +111,14 @@
                         <strong>Máximo de Atributos:</strong>
                         <span class="float-end">{{ $sistema->max_atributos ?? 'Sem Limite' }}</span>
                     </li>
-                    {{-- Aqui você pode adicionar mais detalhes como Recursos e Regras Opcionais --}}
-                    @if($sistema->recursos)
                     <li class="list-group-item">
-                        <strong>Recursos:</strong>
-                        <span class="float-end text-muted small">
-                            {{ count(json_decode($sistema->recursos, true) ?? []) }} item(s) listados
-                        </span>
+                        <strong>Recursos Especiais:</strong>
+                        <span class="float-end text-muted small">{{ count($recursosDecodificados) }} item(s) listados</span>
                     </li>
-                    @endif
                 </ul>
             </div>
         </div>
     </div>
+
 </div>
 @endsection
-
-@push('scripts')
-{{-- Incluir Font Awesome para ícones (se necessário) --}}
-<script src="https://kit.fontawesome.com/SEU_TOKEN_AQUI.js" crossorigin="anonymous"></script> 
-@endpush

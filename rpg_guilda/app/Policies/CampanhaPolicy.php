@@ -7,29 +7,57 @@ use App\Models\Campanha;
 
 class CampanhaPolicy
 {
-    // Define se o usuário pode visualizar a campanha
+    /**
+     * Define se o usuário pode visualizar a campanha.
+     * - O criador sempre pode ver.
+     * - Jogadores ativos também podem ver.
+     */
     public function view(User $user, Campanha $campanha): bool
     {
-        // O criador sempre pode ver
+        // Criador da campanha sempre pode ver
         if ($campanha->criador_id === $user->id) {
             return true;
         }
 
-        // Jogadores ativos também podem ver
+        // Jogadores ativos da campanha podem ver
         return $campanha->jogadores()
                         ->where('user_id', $user->id)
                         ->wherePivot('status', 'ativo')
                         ->exists();
     }
 
-    // Só o criador pode atualizar a campanha
+    /**
+     * Define se o usuário pode atualizar a campanha.
+     * Apenas o criador pode atualizar.
+     */
     public function update(User $user, Campanha $campanha): bool
     {
         return $campanha->criador_id === $user->id;
     }
 
-    // Só o criador pode deletar a campanha
+    /**
+     * Define se o usuário pode deletar a campanha.
+     * Apenas o criador pode deletar.
+     */
     public function delete(User $user, Campanha $campanha): bool
+    {
+        return $campanha->criador_id === $user->id;
+    }
+
+    /**
+     * Define se o usuário pode criar sessões dentro da campanha.
+     * Apenas o criador pode criar sessões.
+     */
+    public function createSessao(User $user, Campanha $campanha): bool
+    {
+        return $campanha->criador_id === $user->id;
+    }
+
+    /**
+     * Define se o usuário pode gerenciar personagens na campanha.
+     * Apenas o criador pode adicionar ou remover personagens.
+     */
+    public function managePersonagens(User $user, Campanha $campanha): bool
     {
         return $campanha->criador_id === $user->id;
     }
