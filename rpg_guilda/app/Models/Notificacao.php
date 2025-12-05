@@ -9,10 +9,8 @@ class Notificacao extends Model
 {
     use HasFactory;
 
-    // Tabela associada ao modelo
     protected $table = 'notificacoes';
 
-    // Atributos que podem ser preenchidos
     protected $fillable = [
         'usuario_id',
         'sessao_id',
@@ -21,18 +19,17 @@ class Notificacao extends Model
         'lida',
     ];
 
-    // Cast do atributo 'lida' para booleano
     protected $casts = [
         'lida' => 'boolean',
     ];
 
-    // Relacionamento com o usuário (destinatário da notificação)
+    // Relacionamento com o usuário destinatário
     public function usuario()
     {
         return $this->belongsTo(User::class, 'usuario_id');
     }
 
-    // Relacionamento com a sessão (se houver uma sessão associada)
+    // Relacionamento com sessão associada
     public function sessao()
     {
         return $this->belongsTo(Sessao::class, 'sessao_id');
@@ -45,7 +42,7 @@ class Notificacao extends Model
         $this->save();
     }
 
-    // Cria uma nova notificação
+    // Cria nova notificação no banco
     public static function criarNotificacao($usuarioId, $mensagem, $tipo = 'geral', $sessaoId = null)
     {
         try {

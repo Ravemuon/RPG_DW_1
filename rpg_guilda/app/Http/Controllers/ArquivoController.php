@@ -9,9 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ArquivoController extends Controller
 {
-    /**
-     * Retorna a lista de arquivos de uma entidade específica (usuário ou campanha).
-     */
+    // Retorna lista de arquivos de uma entidade específica (usuário ou campanha)
     public function index(string $entidade, int $id)
     {
         $query = Arquivo::query();
@@ -22,14 +20,10 @@ class ArquivoController extends Controller
             default    => abort(400, 'Entidade inválida.')
         };
 
-        return response()->json(
-            $query->orderBy('created_at', 'desc')->get()
-        );
+        return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
-    /**
-     * Faz o upload de um novo arquivo e o associa a uma entidade.
-     */
+    // Faz upload de um arquivo e associa a uma entidade
     public function upload(Request $request, string $entidade, int $id)
     {
         $request->validate([
@@ -41,7 +35,7 @@ class ArquivoController extends Controller
         $usuario_id = null;
         $campanha_id = null;
 
-        // Verifica a entidade e a permissão
+        // Define IDs de acordo com a entidade e permissões
         match ($entidade) {
             'usuario' => $id == Auth::id()
                 ? $usuario_id = $id
@@ -56,7 +50,6 @@ class ArquivoController extends Controller
         };
 
         $arquivo = $request->file('arquivo');
-        // Salva o arquivo no disco 'public' dentro da pasta da entidade
         $path = $arquivo->store($entidade, 'public');
 
         $novoArquivo = Arquivo::create([
@@ -74,33 +67,23 @@ class ArquivoController extends Controller
         ]);
     }
 
-    /**
-     * Faz o download de um arquivo.
-     */
+    // Faz download do arquivo se o usuário for proprietário ou administrador
     public function download(Arquivo $arquivo)
     {
-        // Verifica se o usuário é o proprietário ou um administrador
         if ($arquivo->usuario_id !== Auth::id() && !Auth::user()->isAdmin()) {
             abort(403, 'Não autorizado.');
         }
 
-        return Storage::disk('public')->download(
-            $arquivo->caminho,
-            $arquivo->nome_original
-        );
+        return Storage::disk('public')->download($arquivo->caminho, $arquivo->nome_original);
     }
 
-    /**
-     * Exclui um arquivo e o remove do storage.
-     */
+    // Exclui arquivo e remove do storage se o usuário for proprietário ou administrador
     public function destroy(Arquivo $arquivo)
     {
-        // Verifica se o usuário é o proprietário ou um administrador
         if ($arquivo->usuario_id !== Auth::id() && !Auth::user()->isAdmin()) {
             abort(403, 'Não autorizado.');
         }
 
-        // Remove o arquivo do storage e o registro do banco de dados
         Storage::disk('public')->delete($arquivo->caminho);
         $arquivo->delete();
 

@@ -8,107 +8,99 @@ use Illuminate\Http\Request;
 
 class ClasseController extends Controller
 {
-    public function __construct()
+    // Listar classes de um sistema com filtro por busca e paginação
+    public function index(Request $request, Sistema $sistema)
     {
-        // Aplica a política de autorização para o modelo Classe
-        $this->authorizeResource(Classe::class, 'classe');
+        $query = $sistema->classes()->orderBy('nome');
+
+        if ($search = $request->input('search')) {
+            $query->where('nome', 'like', "%{$search}%");
+        }
+
+        $classes = $query->paginate(12);
+        $classes->appends($request->all());
+
+        return view('sistemas.classes.index', compact('sistema', 'classes', 'search'));
     }
 
-    /**
-     * Exibe uma lista de recursos.
-     */
-    public function index()
+    // Mostrar formulário de criação de classe
+    public function create(Sistema $sistema)
     {
-        $classes = Classe::with('sistema')->latest()->paginate(20);
-        return view('classes.index', compact('classes'));
+        return view('sistemas.classes.create', compact('sistema'));
     }
 
-    /**
-     * Mostra o formulário para criar um novo recurso.
-     */
-    public function create()
+    // Armazenar nova classe no banco
+    public function store(Request $request, Sistema $sistema)
     {
-        $sistemas = Sistema::all(['id', 'nome']);
-        return view('classes.create', compact('sistemas'));
-    }
-
-    /**
-     * Armazena um recurso recém-criado no armazenamento.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate($this->rules());
-
-        // Campos JSON são salvos diretamente, pois já foram validados como opcionais ou arrays
-        $classe = Classe::create($validated);
-
-        return redirect()->route('classes.index')
-            ->with('success', "Classe '{$classe->nome}' criada com sucesso!");
-    }
-
-    /**
-     * Exibe o recurso especificado.
-     */
-    public function show(Classe $classe)
-    {
-        $classe->load('sistema');
-        return view('classes.show', compact('classe'));
-    }
-
-    /**
-     * Mostra o formulário para editar o recurso especificado.
-     */
-    public function edit(Classe $classe)
-    {
-        $sistemas = Sistema::all(['id', 'nome']);
-        return view('classes.edit', compact('classe', 'sistemas'));
-    }
-
-    /**
-     * Atualiza o recurso especificado no armazenamento.
-     */
-    public function update(Request $request, Classe $classe)
-    {
-        $validated = $request->validate($this->rules());
-
-        $classe->update($validated);
-
-        return redirect()->route('classes.index')
-            ->with('success', "Classe '{$classe->nome}' atualizada com sucesso!");
-    }
-
-    /**
-     * Remove o recurso especificado do armazenamento.
-     */
-    public function destroy(Classe $classe)
-    {
-        $nome = $classe->nome;
-        $classe->delete();
-
-        return redirect()->route('classes.index')
-            ->with('success', "Classe '{$nome}' removida com sucesso!");
-    }
-
-    /**
-     * Regras de validação para os métodos store e update.
-     */
-    protected function rules()
-    {
-        return [
-            'nome' => 'required|string|max:100',
-            'sistema_id' => 'required|exists:sistemas,id',
+        $data = $request->validate([
+            'nome' => 'required|string|max:100|unique:classes,nome,NULL,id,sistema_id,' . $sistema->id,
             'descricao' => 'nullable|string',
             'dado_vida' => 'nullable|string|max:5',
-            'pericias_iniciais' => 'nullable|json',
-            'equipamento_inicial' => 'nullable|json',
-            'usa_magia' => 'nullable|boolean',
-            'atributos_bonus' => 'nullable|json',
-            'poderes' => 'nullable|json',
+            'pericias_iniciais' => 'nullable|array',
+            'equipamento_inicial' => 'nullable|array',
+            'usa_magia' => 'boolean',
+            'atributos_bonus' => 'nullable|array',
+            'poderes' => 'nullable|array',
             'pagina' => 'nullable|string|max:20',
-        ];
+        ]);
+
+        $data['sistema_id'] = $sistema->id;
+
+        $data['pericias_iniciais'] = $data['pericias_iniciais'] ?? [];
+        $data['equipamento_inicial'] = $data['equipamento_inicial'] ?? [];
+        $data['atributos_bonus'] = $data['atributos_bonus'] ?? [];
+        $data['poderes'] = $data['poderes'] ?? [];
+
+        Classe::create($data);
+
+        return redirect()->route('sistemas.classes.index', $sistema->id)
+                         ->with('success', 'Classe criada com sucesso.');
     }
-        public function pericias()
+
+    // Exibir detalhes de uma classe
+    public function show(Sistema $sistema, Classe $classe)
     {
-        return $this->belongsToMany(Pericia::class, 'classe_pericia', 'classe_id', 'pericia_id');
+        return view('sistemas.classes.show', compact('sistema', 'classe'));
+    }
+
+    // Mostrar formulário de edição de classe
+    public function edit(Sistema $sistema, Classe $classe)
+    {
+        return view('sistemas.classes.edit', compact('sistema', 'classe'));
+    }
+
+    // Atualizar classe existente
+    public function update(Request $request, Sistema $sistema, Classe $classe)
+    {
+        $data = $request->validate([
+            'nome' => 'required|string|max:100|unique:classes,nome,' . $classe->id . ',id,sistema_id,' . $sistema->id,
+            'descricao' => 'nullable|string',
+            'dado_vida' => 'nullable|string|max:5',
+            'pericias_iniciais' => 'nullable|array',
+            'equipamento_inicial' => 'nullable|array',
+            'usa_magia' => 'boolean',
+            'atributos_bonus' => 'nullable|array',
+            'poderes' => 'nullable|array',
+            'pagina' => 'nullable|string|max:20',
+        ]);
+
+        $data['pericias_iniciais'] = $data['pericias_iniciais'] ?? [];
+        $data['equipamento_inicial'] = $data['equipamento_inicial'] ?? [];
+        $data['atributos_bonus'] = $data['atributos_bonus'] ?? [];
+        $data['poderes'] = $data['poderes'] ?? [];
+
+        $classe->update($data);
+
+        return redirect()->route('sistemas.classes.index', $sistema->id)
+                         ->with('success', 'Classe atualizada com sucesso.');
+    }
+
+    // Remover classe do sistema
+    public function destroy(Sistema $sistema, Classe $classe)
+    {
+        $classe->delete();
+
+        return redirect()->route('sistemas.classes.index', $sistema->id)
+                         ->with('success', 'Classe removida com sucesso.');
     }
 }

@@ -13,37 +13,14 @@ return new class extends Migration {
             $table->string('nome', 100);
 
             // Chaves estrangeiras principais
-            $table->foreignId('user_id')
-                ->constrained('users')
-                ->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('campanha_id')->constrained('campanhas')->onDelete('cascade');
 
-            $table->foreignId('campanha_id')
-                ->constrained('campanhas')
-                ->onDelete('cascade');
-
-            // --- RELACIONAMENTOS CORRETOS ---
-
-            $table->foreignId('raca_id')
-                ->nullable()
-                ->constrained('racas')
-                ->nullOnDelete();
-
-            $table->foreignId('classe_id')
-                ->nullable()
-                ->constrained('classes')
-                ->nullOnDelete();
-
-            $table->foreignId('origem_id')
-                ->nullable()
-                ->constrained('origens')
-                ->nullOnDelete();
-
-            $table->foreignId('sistema_id')
-                ->nullable()
-                ->constrained('sistemas')
-                ->nullOnDelete();
-
-            // --- NOVOS CAMPOS ADICIONADOS ---
+            // Chaves estrangeiras opcionais
+            $table->foreignId('raca_id')->nullable()->constrained('racas')->nullOnDelete();
+            $table->foreignId('classe_id')->nullable()->constrained('classes')->nullOnDelete();
+            $table->foreignId('origem_id')->nullable()->constrained('origens')->nullOnDelete();
+            $table->foreignId('sistema_id')->nullable()->constrained('sistemas')->nullOnDelete();
 
             // Sistema de nível e experiência
             $table->integer('nivel')->default(1);
@@ -54,24 +31,24 @@ return new class extends Migration {
             $table->integer('sanidade')->nullable()->comment('Pontuação de sanidade mental');
             $table->integer('sorte')->nullable()->comment('Pontuação de sorte ou destino');
 
-                // Outras informações
-                $table->json('atributos')->nullable();
-                $table->text('descricao')->nullable();
-                $table->text('historia')->nullable();
-                $table->text('personalidade')->nullable();
-                $table->text('inventario')->nullable();
+            // Informações detalhadas do personagem
+            $table->json('atributos')->nullable();
+            $table->text('descricao')->nullable();
+            $table->text('historia')->nullable();
+            $table->text('personalidade')->nullable();
+            $table->text('inventario')->nullable();
 
-                // MANTIDO: 'string' é o tipo correto para armazenar o caminho do arquivo (path)
-                $table->string('imagem')->nullable();
+            // Imagem do personagem
+            $table->string('imagem')->nullable();
 
-                $table->boolean('ativo')->default(true);
-                $table->string('pagina', 50)->nullable();
+            $table->boolean('ativo')->default(true);
+            $table->string('pagina', 50)->nullable();
 
             $table->timestamps();
 
-            // Indexes melhorados
+            // Indexes
             $table->index(['nome', 'raca_id', 'classe_id', 'origem_id']);
-            $table->index(['nivel', 'xp']); // Novo index para buscas por nível
+            $table->index(['nivel', 'xp']);
         });
     }
 

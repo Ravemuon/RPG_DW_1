@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage; // Adicionado para manipulação de arquivos
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -16,18 +16,14 @@ class UserController extends Controller
     // Autenticação
     // ===================================================
 
-    /**
-     * Exibe o formulário de login.
-     */
+    // Exibe o formulário de login
     public function loginForm()
     {
         $temas = User::TEMAS;
         return view('auth.login', compact('temas'));
     }
 
-    /**
-     * Realiza o login do usuário.
-     */
+    // Realiza login do usuário
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -43,9 +39,7 @@ class UserController extends Controller
         return back()->withErrors(['email' => 'Credenciais inválidas.']);
     }
 
-    /**
-     * Realiza o logout do usuário.
-     */
+    // Realiza logout
     public function logout(Request $request)
     {
         Auth::logout();
@@ -55,18 +49,14 @@ class UserController extends Controller
         return redirect()->route('login')->with('success', 'Logout realizado com sucesso.');
     }
 
-    /**
-     * Exibe o formulário de registro.
-     */
+    // Exibe o formulário de registro
     public function registerForm()
     {
         $temas = User::TEMAS;
         return view('auth.register', compact('temas'));
     }
 
-    /**
-     * Registra um novo usuário.
-     */
+    // Registra novo usuário
     public function register(Request $request)
     {
         $request->validate([
@@ -76,12 +66,10 @@ class UserController extends Controller
             'tema' => 'required|in:' . implode(',', User::TEMAS),
         ]);
 
-        // Gera o username com base no nome do usuário
+        // Gera username único
         $usernameBase = strtolower(preg_replace('/\s+/', '', $request->nome));
         $username = $usernameBase;
         $contador = 1;
-
-        // Garante que o username seja único
         while (User::where('username', $username)->exists()) {
             $username = $usernameBase . $contador;
             $contador++;
@@ -101,13 +89,11 @@ class UserController extends Controller
         return redirect()->route('home')->with('success', 'Conta criada com sucesso.');
     }
 
-    // ---------------------------------------------------
-    // Perfil do Usuário
-    // ---------------------------------------------------
+    // ===================================================
+    // Perfil do usuário
+    // ===================================================
 
-    /**
-     * Exibe o perfil do usuário.
-     */
+    // Exibe perfil do usuário logado ou outro usuário
     public function perfil(User $user = null)
     {
         $user = $user ?? Auth::user();
@@ -117,36 +103,26 @@ class UserController extends Controller
         return view('users.perfil', compact('user', 'personagemCount', 'campanhas'));
     }
 
-    /**
-     * Exibe o formulário de edição do perfil do usuário.
-     */
+    // Exibe formulário de edição do perfil
     public function edit(User $user = null)
     {
         $user = $user ?? Auth::user();
-
-        if (!Auth::user()->canEdit($user)) {
-            abort(403, 'Acesso não autorizado.');
-        }
+        if (!Auth::user()->canEdit($user)) abort(403, 'Acesso não autorizado.');
 
         $temas = User::TEMAS;
         return view('users.edit', compact('user', 'temas'));
     }
 
-    /**
-     * Atualiza as informações do perfil do usuário.
-     */
+    // Atualiza perfil do usuário
     public function update(Request $request, User $user = null)
     {
         $user = $user ?? Auth::user();
-
-        if (!Auth::user()->canEdit($user)) {
-            abort(403, 'Acesso não autorizado.');
-        }
+        if (!Auth::user()->canEdit($user)) abort(403, 'Acesso não autorizado.');
 
         $request->validate([
             'nome' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'biografia' => 'nullable|string|max:1000', // Assumindo 'biografia' no request e no DB
+            'biografia' => 'nullable|string|max:1000',
             'tema' => 'required|in:' . implode(',', User::TEMAS),
             'current_password' => 'nullable|required_with:new_password',
             'new_password' => 'nullable|min:6|confirmed',
@@ -159,7 +135,7 @@ class UserController extends Controller
         $user->update([
             'nome' => $request->nome,
             'email' => $request->email,
-            'biografia' => $request->biografia, // Assumindo 'biografia'
+            'biografia' => $request->biografia,
             'tema' => $request->tema,
             'password' => $request->filled('new_password') ? Hash::make($request->new_password) : $user->password,
         ]);
@@ -167,20 +143,11 @@ class UserController extends Controller
         return redirect()->route('usuarios.perfil')->with('success', 'Perfil atualizado com sucesso.');
     }
 
-    // ---------------------------------------------------
-    // Alterar Tema
-    // ---------------------------------------------------
-
-    /**
-     * Atualiza o tema do usuário.
-     */
+    // Atualiza tema do usuário
     public function atualizarTema(Request $request)
     {
         $user = auth()->user();
-
-        $request->validate([
-            'tema' => ['required', 'string', 'in:' . implode(',', User::TEMAS)],
-        ]);
+        $request->validate(['tema' => ['required', 'string', 'in:' . implode(',', User::TEMAS)]]);
 
         $user->tema = $request->tema;
         $user->save();
@@ -188,13 +155,11 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'Tema atualizado com sucesso.');
     }
 
-    // ---------------------------------------------------
-    // Lista / Amigos
-    // ---------------------------------------------------
+    // ===================================================
+    // Usuários / Amigos
+    // ===================================================
 
-    /**
-     * Lista todos os usuários, exceto o logado.
-     */
+    // Lista todos os usuários exceto o logado
     public function index(Request $request)
     {
         $search = $request->search;
@@ -210,36 +175,25 @@ class UserController extends Controller
         return view('users.index', compact('users', 'search'));
     }
 
-    /**
-     * Exibe os amigos do usuário.
-     */
+    // Lista amigos do usuário
     public function friends()
     {
-        // Certifique-se de que o método 'todosAmigos' no modelo User
-        // retorna apenas amigos aceitos, conforme a implementação original.
         $friends = Auth::user()->todosAmigos()->get();
         return view('amizades.amigos', compact('friends'));
     }
 
-    /**
-     * Exibe as solicitações de amizade pendentes.
-     */
+    // Lista solicitações de amizade pendentes
     public function pendingRequests()
     {
-        // O método 'receivedRequests()' deve ser implementado no modelo User
-        // ou você pode usar o método 'amizadesRecebidas()' se for o caso.
-        // Assumindo que 'amizadesRecebidas()' é o correto:
         $pending = Auth::user()->amizadesRecebidas()->where('status', 'pendente')->get();
         return view('amizades.index', compact('pending'));
     }
 
-    // ---------------------------------------------------
+    // ===================================================
     // Notificações
-    // ---------------------------------------------------
+    // ===================================================
 
-    /**
-     * Exibe todas as notificações do usuário.
-     */
+    // Lista todas as notificações
     public function notifications()
     {
         $user = Auth::user();
@@ -247,25 +201,18 @@ class UserController extends Controller
         return view('notificacoes.index', compact('notifications'));
     }
 
-    /**
-     * Marca uma notificação como lida.
-     */
+    // Marca notificação como lida
     public function markNotificationAsRead($id)
     {
         $notification = Notificacao::findOrFail($id);
-
-        if ($notification->usuario_id !== Auth::id()) {
-            abort(403, 'Acesso negado.');
-        }
+        if ($notification->usuario_id !== Auth::id()) abort(403, 'Acesso negado.');
 
         $notification->update(['read' => true]);
 
         return back()->with('success', 'Notificação marcada como lida.');
     }
 
-    /**
-     * Marca todas as notificações como lidas.
-     */
+    // Marca todas as notificações como lidas
     public function markAllAsRead()
     {
         $user = Auth::user();
@@ -274,76 +221,54 @@ class UserController extends Controller
         return back()->with('success', 'Todas as notificações foram marcadas como lidas.');
     }
 
-    // ---------------------------------------------------
+    // ===================================================
     // Home
-    // ---------------------------------------------------
+    // ===================================================
 
-    /**
-     * Exibe a página inicial.
-     */
     public function home()
     {
         return view('home.home');
     }
 
-    // ---------------------------------------------------
-    // Upload de imagem (avatar / banner)
-    // ---------------------------------------------------
+    // ===================================================
+    // Upload de imagem
+    // ===================================================
 
-    /**
-     * Realiza o upload de imagem (avatar ou banner).
-     */
+    // Realiza upload de avatar ou banner
     public function uploadImagem(Request $request, $tipo)
     {
         $user = auth()->user();
-
         if (!in_array($tipo, ['avatar', 'banner'])) {
             return back()->withErrors(['arquivo' => 'Tipo de upload inválido.'])->withInput();
         }
 
-        $request->validate([
-            'arquivo' => 'required|image|max:2048', // 2MB
-        ]);
+        $request->validate(['arquivo' => 'required|image|max:2048']);
 
         $file = $request->file('arquivo');
-
-        // Determina o nome do arquivo para garantir que seja único para o usuário,
-        // mas com o mesmo nome para sobrescrever uploads antigos.
         $nomeArquivo = $tipo . '_' . $user->id . '.' . $file->getClientOriginalExtension();
         $diretorio = "users/{$tipo}s";
 
-        // Deleta o arquivo antigo (se existir)
         if ($user->$tipo && Storage::disk('public')->exists($user->$tipo)) {
             Storage::disk('public')->delete($user->$tipo);
         }
 
-        // Salva o novo arquivo no storage
-        // O Storage::putFileAs é mais robusto
         $caminho = Storage::disk('public')->putFileAs($diretorio, $file, $nomeArquivo);
 
-        // Atualiza o caminho no banco de dados
         $user->$tipo = $caminho;
         $user->save();
 
         return back()->with('success', ucfirst($tipo) . ' atualizado com sucesso.');
     }
 
-    // ---------------------------------------------------
+    // ===================================================
     // Perfil público de outro usuário
-    // ---------------------------------------------------
+    // ===================================================
 
-    /**
-     * Exibe o perfil público de outro usuário.
-     */
     public function perfilPublico($id)
     {
         $usuario = User::findOrFail($id);
         $user = auth()->user();
-
-        // Evita que o usuário veja o próprio perfil público (redireciona para o perfil editável)
-        if ($usuario->id === $user->id) {
-            return redirect()->route('usuarios.perfil');
-        }
+        if ($usuario->id === $user->id) return redirect()->route('usuarios.perfil');
 
         $amizade = \App\Models\Amizade::where(function ($q) use ($user, $usuario) {
             $q->where('user_id', $user->id)->where('friend_id', $usuario->id);
@@ -357,7 +282,6 @@ class UserController extends Controller
         if ($amizade) {
             if ($amizade->status === 'aceita') $status = 'amigo';
             elseif ($amizade->status === 'pendente') {
-                // Checa se a requisição foi enviada por este usuário (pendente) ou se ele deve aceitar (aguardando)
                 $status = $amizade->friend_id === $user->id ? 'aguardando' : 'pendente';
                 $amizadeId = $amizade->id;
             }
@@ -366,20 +290,17 @@ class UserController extends Controller
         return view('amizades.perfilpublico', compact('usuario', 'status', 'amizadeId'));
     }
 
-    // ---------------------------------------------------
+    // ===================================================
     // Procurar usuários
-    // ---------------------------------------------------
+    // ===================================================
 
-    /**
-     * Realiza a busca por usuários.
-     */
     public function procurar(Request $request)
     {
         $search = $request->input('search');
         $usuarios = User::where('id', '!=', auth()->id())
             ->when($search, fn($q) =>
                 $q->where('nome', 'like', "%$search%")
-                ->orWhere('email', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%")
             )->paginate(12);
 
         return view('amizades.procurar', compact('usuarios', 'search'));

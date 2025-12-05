@@ -13,6 +13,7 @@ class NotificacaoController extends Controller
         $this->middleware('auth');
     }
 
+    // Lista todas as notificações do usuário logado
     public function index()
     {
         $usuario = Auth::user();
@@ -24,6 +25,7 @@ class NotificacaoController extends Controller
         return view('notificacoes.index', compact('notificacoes'));
     }
 
+    // Marca uma notificação específica como lida
     public function marcarComoLida($id)
     {
         $usuario = Auth::user();
@@ -41,6 +43,7 @@ class NotificacaoController extends Controller
         return redirect()->back()->with('success', 'Notificação marcada como lida.');
     }
 
+    // Marca todas as notificações do usuário como lidas
     public function marcarTodasComoLidas()
     {
         Notificacao::where('usuario_id', Auth::id())
@@ -50,6 +53,7 @@ class NotificacaoController extends Controller
         return redirect()->back()->with('success', 'Todas as notificações marcadas como lidas.');
     }
 
+    // Remove uma notificação específica
     public function destroy($id)
     {
         $usuario = Auth::user();
@@ -67,6 +71,7 @@ class NotificacaoController extends Controller
         return redirect()->back()->with('success', 'Notificação deletada com sucesso.');
     }
 
+    // Cria uma nova notificação (pode ser chamada de forma estática)
     public static function criarNotificacao($usuarioId, $mensagem, $tipo = 'geral', $sessaoId = null)
     {
         try {
@@ -83,6 +88,7 @@ class NotificacaoController extends Controller
         }
     }
 
+    // Mestre aprova, rejeita ou remove um jogador de uma campanha e envia notificação
     public function aprovarUsuario(Request $request, $campanhaId)
     {
         $campanha = Campanha::findOrFail($campanhaId);
@@ -111,6 +117,7 @@ class NotificacaoController extends Controller
         return back()->with('success', 'Status do jogador atualizado com sucesso!');
     }
 
+    // Limpa todas as notificações do usuário
     public function limparTodas()
     {
         Notificacao::where('usuario_id', Auth::id())->delete();

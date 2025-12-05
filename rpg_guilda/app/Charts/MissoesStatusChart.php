@@ -19,10 +19,10 @@ class MissoesStatusChart extends Chart
             $dashboard['cancelada'],
         ])
         ->backgroundColor([
-            'rgb(108, 117, 125)',  // secondary
-            'rgb(13, 110, 253)',   // info
-            'rgb(25, 135, 84)',    // success
-            'rgb(220, 53, 69)',    // danger
+            'rgb(108, 117, 125)',
+            'rgb(13, 110, 253)',
+            'rgb(25, 135, 84)',
+            'rgb(220, 53, 69)',
         ]);
     }
 }

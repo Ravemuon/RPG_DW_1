@@ -1,102 +1,169 @@
 @extends('layouts.app')
 
-@section('title', 'Criar Novo Sistema')
+@section('title', 'Criar Sistema de RPG')
 
 @section('content')
 <div class="container py-4">
-    <div class="card shadow-lg">
+
+    <div class="card shadow-lg border-0 rounded">
+
+        {{-- Cabeçalho --}}
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">⚙️ Criar Novo Sistema</h4>
+            <h4 class="m-0"><i class="bi bi-gear-fill me-2"></i>Criar Novo Sistema</h4>
             <a href="{{ route('sistemas.index') }}" class="btn btn-outline-light btn-sm">
-                ⬅️ Voltar
+                <i class="bi bi-arrow-left"></i> Voltar
             </a>
         </div>
 
         <div class="card-body">
-            {{-- Mensagens de erro --}}
+
+            {{-- ERROS --}}
             @if ($errors->any())
-                <div class="alert alert-danger">
-                    <h6><strong>⚠️ Ocorreram alguns erros:</strong></h6>
+                <div class="alert alert-danger shadow-sm">
+                    <strong><i class="bi bi-exclamation-triangle-fill"></i> Corrija os erros abaixo:</strong>
                     <ul class="mb-0">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
+                        @foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach
                     </ul>
                 </div>
             @endif
 
-            {{-- Formulário de criação --}}
             <form action="{{ route('sistemas.store') }}" method="POST">
                 @csrf
 
                 {{-- Nome --}}
                 <div class="mb-3">
-                    <label for="nome" class="form-label fw-semibold">Nome do Sistema <span class="text-danger">*</span></label>
-                    <input type="text" name="nome" id="nome" value="{{ old('nome') }}" class="form-control" required>
+                    <label class="fw-semibold">Nome do Sistema <span class="text-danger">*</span></label>
+                    <input type="text" name="nome" class="form-control" value="{{ old('nome') }}" required>
                 </div>
 
                 {{-- Descrição --}}
                 <div class="mb-3">
-                    <label for="descricao" class="form-label fw-semibold">Descrição</label>
-                    <textarea name="descricao" id="descricao" rows="4" class="form-control">{{ old('descricao') }}</textarea>
+                    <label class="fw-semibold">Descrição</label>
+                    <textarea name="descricao" rows="3" class="form-control">{{ old('descricao') }}</textarea>
                 </div>
 
-                {{-- Foco / Mecânica / Complexidade --}}
+                {{-- Campos básicos --}}
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label for="foco" class="form-label fw-semibold">Foco</label>
-                        <input type="text" name="foco" id="foco" value="{{ old('foco') }}" class="form-control">
+                        <label class="fw-semibold">Foco</label>
+                        <input type="text" name="foco" value="{{ old('foco') }}" class="form-control">
                     </div>
+
                     <div class="col-md-4 mb-3">
-                        <label for="mecanica_principal" class="form-label fw-semibold">Mecânica Principal</label>
-                        <input type="text" name="mecanica_principal" id="mecanica_principal" value="{{ old('mecanica_principal') }}" class="form-control">
+                        <label class="fw-semibold">Mecânica Principal</label>
+                        <input type="text" name="mecanica_principal" value="{{ old('mecanica_principal') }}" class="form-control">
                     </div>
+
                     <div class="col-md-4 mb-3">
-                        <label for="complexidade" class="form-label fw-semibold">Complexidade</label>
-                        <input type="text" name="complexidade" id="complexidade" value="{{ old('complexidade') }}" class="form-control">
+                        <label class="fw-semibold">Complexidade</label>
+
+                        <select name="complexidade" class="form-select">
+                            <option value="" disabled {{ old('complexidade') ? '' : 'selected' }}>Selecione...</option>
+                            <option value="Básico"   {{ old('complexidade') == 'Básico'   ? 'selected' : '' }}>Básico (Simples)</option>
+                            <option value="Médio"    {{ old('complexidade') == 'Médio'    ? 'selected' : '' }}>Médio (Equilibrado)</option>
+                            <option value="Avançado" {{ old('complexidade') == 'Avançado' ? 'selected' : '' }}>Avançado (Profundo)</option>
+                        </select>
                     </div>
                 </div>
 
-                {{-- Máximo de atributos --}}
-                <div class="mb-3">
-                    <label for="max_atributos" class="form-label fw-semibold">Quantidade Máxima de Atributos <span class="text-danger">*</span></label>
-                    <input type="number" name="max_atributos" id="max_atributos" min="1" max="6" value="{{ old('max_atributos', 6) }}" class="form-control" required>
-                    <div class="form-text">Escolha entre 1 e 6 atributos principais.</div>
-                </div>
 
-                {{-- Nomes dos atributos --}}
-                <div class="row">
-                    @for ($i = 1; $i <= 6; $i++)
-                        <div class="col-md-6 mb-3">
-                            <label for="atributo{{ $i }}_nome" class="form-label fw-semibold">Atributo {{ $i }}</label>
-                            <input type="text" name="atributo{{ $i }}_nome" id="atributo{{ $i }}_nome" value="{{ old('atributo' . $i . '_nome') }}" class="form-control">
+                {{-- 🔥 ATRIBUTOS DINÂMICOS --}}
+                <hr>
+                <label class="fw-bold mb-2 d-block">Atributos do Sistema</label>
+
+                <div id="areaAtributos">
+                    @php $old_attr = old('atributos', []); @endphp
+
+                    @if(count($old_attr))
+                        @foreach($old_attr as $chave => $nome)
+                        <div class="row g-2 mb-2 atributo-box">
+                            <div class="col-md-5">
+                                <input type="text" name="atributos_chave[]" class="form-control" placeholder="Chave (FOR, DES)" value="{{ $chave }}">
+                            </div>
+                            <div class="col-md-5">
+                                <input type="text" name="atributos_nome[]" class="form-control" placeholder="Nome (Força, Destreza)" value="{{ $nome }}">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-center">
+                                <button type="button" class="btn btn-outline-danger w-100 removeAtributo">X</button>
+                            </div>
                         </div>
-                    @endfor
+                        @endforeach
+                    @endif
                 </div>
 
-                {{-- Regras opcionais --}}
+                <button type="button" id="addAtributo" class="btn btn-sm btn-outline-primary mb-3">
+                    + Adicionar atributo
+                </button>
+
+
+                {{-- JSON REGRAS OPCIONAIS --}}
+                <hr>
                 <div class="mb-3">
-                    <label for="regras_opcionais" class="form-label fw-semibold">Regras Opcionais (JSON)</label>
-                    <textarea name="regras_opcionais" id="regras_opcionais" rows="3" class="form-control" placeholder='Exemplo: {"critico_duplo": true, "iniciativa_variavel": false}'>{{ old('regras_opcionais') }}</textarea>
+                    <label class="fw-semibold">Regras Opcionais (JSON)</label>
+                    <textarea name="regras_opcionais" id="jsonInput" rows="3" class="form-control"
+                              placeholder='{"critico_duplo": true}'>{{ old('regras_opcionais') }}</textarea>
+
+                    <small class="text-muted">Se vazio → sistema converte para `{}` automaticamente.</small>
+                    <div id="jsonError" class="text-danger fw-bold" style="display:none">JSON inválido ❌</div>
                 </div>
 
-                {{-- Página / Fonte --}}
+                {{-- Fórmula PV --}}
                 <div class="mb-3">
-                    <label for="pagina" class="form-label fw-semibold">Página / Fonte</label>
-                    <input type="text" name="pagina" id="pagina" value="{{ old('pagina') }}" class="form-control">
+                    <label class="fw-semibold">Fórmula de Pontos de Vida</label>
+                    <input type="text" name="formula_pontos_vida" class="form-control"
+                           value="{{ old('formula_pontos_vida') }}" placeholder="Ex: 10 + modificador">
                 </div>
 
-                {{-- Botões --}}
-                <div class="d-flex justify-content-end gap-2 mt-4">
-                    <a href="{{ route('sistemas.index') }}" class="btn btn-secondary">
-                        ❌ Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-success">
-                        💾 Salvar Sistema
-                    </button>
+                {{-- Sanidade --}}
+                <div class="form-check mb-4">
+                    <input type="checkbox" name="usa_sanidade" value="1" class="form-check-input" id="san">
+                    <label for="san" class="fw-semibold form-check-label">Sistema utiliza sanidade?</label>
+                </div>
+
+
+                {{-- BOTÕES --}}
+                <div class="text-end mt-3 d-flex gap-2 justify-content-end">
+                    <a href="{{ route('sistemas.index') }}" class="btn btn-secondary">Cancelar</a>
+                    <button class="btn btn-success">Salvar Sistema</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+
+{{-- ========== JAVASCRIPT ========== --}}
+<script>
+    // Adicionar atributo
+    document.getElementById('addAtributo').addEventListener('click', () => {
+        document.getElementById('areaAtributos').insertAdjacentHTML('beforeend', `
+            <div class="row g-2 mb-2 atributo-box">
+                <div class="col-md-5">
+                    <input type="text" name="atributos_chave[]" class="form-control" placeholder="FOR">
+                </div>
+                <div class="col-md-5">
+                    <input type="text" name="atributos_nome[]" class="form-control" placeholder="Força">
+                </div>
+                <div class="col-md-2 d-flex align-items-center">
+                    <button type="button" class="btn btn-outline-danger w-100 removeAtributo">X</button>
+                </div>
+            </div>
+        `);
+    });
+
+    // Remover atributo
+    document.addEventListener('click', e => {
+        if(e.target.closest('.removeAtributo')){
+            e.target.closest('.atributo-box').remove();
+        }
+    });
+
+    // JSON validation live
+    document.getElementById('jsonInput').addEventListener('input', e => {
+        const txt = e.target.value;
+        try { if(txt.trim() !== "") JSON.parse(txt); document.getElementById('jsonError').style.display="none"; }
+        catch { document.getElementById('jsonError').style.display="block"; }
+    });
+</script>
+
 @endsection

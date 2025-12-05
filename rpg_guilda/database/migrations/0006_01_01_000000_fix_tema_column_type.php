@@ -7,9 +7,6 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         $temasCompletos = [
@@ -24,12 +21,12 @@ return new class extends Migration
             'deserto'
         ];
 
-        // 🔹 Ajusta valores inválidos existentes no banco para evitar erro na alteração de ENUM
+        // Ajusta valores inválidos existentes
         DB::table('users')
             ->whereNotIn('tema', $temasCompletos)
             ->update(['tema' => 'medieval']);
 
-        // 🔹 Altera a coluna 'tema' para ENUM com os temas válidos
+        // Altera a coluna 'tema' para ENUM com valores válidos
         Schema::table('users', function (Blueprint $table) use ($temasCompletos) {
             $table->enum('tema', $temasCompletos)
                   ->default('medieval')
@@ -38,12 +35,9 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // 🔹 Reverte a coluna 'tema' para string genérica, mantendo padrão 'medieval'
+        // Reverte para string genérica
         Schema::table('users', function (Blueprint $table) {
             $table->string('tema', 50)
                   ->default('medieval')

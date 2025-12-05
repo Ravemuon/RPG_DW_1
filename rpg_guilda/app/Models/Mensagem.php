@@ -14,25 +14,25 @@ class Mensagem extends Model
         'lida',
     ];
 
-    /* ------------------- Relacionamentos ------------------- */
-
+    // Relação com o usuário que enviou a mensagem
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    // Relação com a campanha da mensagem
     public function campanha()
     {
         return $this->belongsTo(Campanha::class);
     }
 
+    // Relação com o chat
     public function chat()
     {
         return $this->belongsTo(Chat::class);
     }
 
-    /* ------------------- Lógica ------------------- */
-
+    // Marca a mensagem como lida
     public function marcarComoLida(): void
     {
         if (!$this->lida) {

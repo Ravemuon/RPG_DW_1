@@ -11,15 +11,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
-
-// IMPORTAÇÃO DO CHART
 use App\Charts\SessaoPresencasChart;
 
 class SessaoController extends Controller
 {
-    /**
-     * Lista todas as sessões de uma campanha.
-     */
+    // Lista sessões de uma campanha com filtros de busca, data e status
     public function index(Campanha $campanha, SessaoPresencasChart $chart, Request $request)
     {
         $this->authorize('view', $campanha);
@@ -44,9 +40,7 @@ class SessaoController extends Controller
                 try {
                     $formatada = date('Y-m-d', strtotime($dateSearch));
                     $query->orWhereDate('data_hora', $formatada);
-                } catch (\Exception $e) {
-                    // ignora erros de data
-                }
+                } catch (\Exception $e) {}
             });
         }
 
@@ -81,12 +75,14 @@ class SessaoController extends Controller
         ));
     }
 
+    // Exibe formulário para criar nova sessão
     public function create(Campanha $campanha)
     {
         $this->authorize('update', $campanha);
         return view('sessoes.create', compact('campanha'));
     }
 
+    // Armazena nova sessão no banco
     public function store(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
@@ -106,6 +102,7 @@ class SessaoController extends Controller
             ->with('success', 'Sessão criada com sucesso!');
     }
 
+    // Mostra detalhes de uma sessão
     public function show(Campanha $campanha, Sessao $sessao, SessaoPresencasChart $chart)
     {
         $this->authorize('view', $campanha);
@@ -116,7 +113,6 @@ class SessaoController extends Controller
 
         $user = Auth::user();
         $sessao->load(['personagens', 'campanha', 'presencas']);
-
         $presencaChart = $chart->handler($campanha, $sessao);
 
         $jaMarqueiPresenca = $user
@@ -126,6 +122,7 @@ class SessaoController extends Controller
         return view('sessoes.show', compact('campanha', 'sessao', 'jaMarqueiPresenca', 'presencaChart'));
     }
 
+    // Exibe formulário para editar sessão
     public function edit(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('update', $campanha);
@@ -137,6 +134,7 @@ class SessaoController extends Controller
         return view('sessoes.edit', compact('campanha', 'sessao'));
     }
 
+    // Atualiza sessão existente e exporta PDF se concluída
     public function update(Request $request, Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('update', $campanha);
@@ -164,6 +162,7 @@ class SessaoController extends Controller
             ->with('success', 'Sessão atualizada com sucesso!');
     }
 
+    // Deleta uma sessão
     public function destroy(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('delete', $campanha);
@@ -179,6 +178,7 @@ class SessaoController extends Controller
             ->with('success', 'Sessão deletada com sucesso!');
     }
 
+    // Marca presença do jogador em uma sessão
     public function marcarPresenca(Request $request, Campanha $campanha, Sessao $sessao)
     {
         $user = Auth::user();
@@ -215,6 +215,7 @@ class SessaoController extends Controller
         }
     }
 
+    // Funções ainda não implementadas
     public function adicionarPersonagem(Request $request, Campanha $campanha, Sessao $sessao)
     {
         return back()->with('error', 'Função de adicionar personagem ainda não implementada.');
@@ -230,6 +231,7 @@ class SessaoController extends Controller
         return back()->with('error', 'Função de atualizar personagem ainda não implementada.');
     }
 
+    // Exporta relatório da sessão em PDF
     public function exportarPdf(Campanha $campanha, Sessao $sessao)
     {
         $this->authorize('view', $campanha);

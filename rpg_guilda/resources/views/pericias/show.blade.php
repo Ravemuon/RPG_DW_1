@@ -1,19 +1,21 @@
-<div class="card mb-3">
-    <div class="card-header bg-info text-white">
-        <h5 class="m-0">Perícias</h5>
+@extends('layouts.app')
+
+@section('content')
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="fw-bold">{{ $pericia->nome }}</h1>
+        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
     </div>
-    <div class="card-body">
-        @if($sistema->pericias->isEmpty())
-            <p>Não há perícias configuradas para este sistema.</p>
-        @else
-            <ul class="list-group">
-                @foreach($sistema->pericias as $pericia)
-                    <li class="list-group-item">
-                        <strong>{{ $pericia->nome }}</strong> - {{ $pericia->descricao ?? 'Descrição não disponível' }}
-                    </li>
-                @endforeach
-            </ul>
-        @endif
-        <a href="{{ route('sistemas.pericias.create', $sistema->id) }}" class="btn btn-link">Nova Perícia</a>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <p><strong>Sistema:</strong> {{ $pericia->sistemaRPG }}</p>
+            <p><strong>Automática:</strong> {{ $pericia->automatica ? 'Sim' : 'Não' }}</p>
+            <p><strong>Fórmula:</strong> {{ $pericia->formula ?? '—' }}</p>
+        </div>
     </div>
 </div>
+@endsection
+    

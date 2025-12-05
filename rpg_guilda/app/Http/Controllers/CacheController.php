@@ -7,18 +7,14 @@ use Illuminate\Http\Request;
 
 class CacheController extends Controller
 {
-    /**
-     * Exibe a lista de todos os itens de cache.
-     */
+    // Exibe a lista de todos os itens de cache
     public function index()
     {
         $caches = Cache::all();
         return view('cache.index', compact('caches'));
     }
 
-    /**
-     * Cria ou atualiza um item de cache baseado na chave fornecida.
-     */
+    // Cria ou atualiza um item de cache baseado na chave fornecida
     public function store(Request $request)
     {
         $request->validate([
@@ -38,9 +34,7 @@ class CacheController extends Controller
         return redirect()->back()->with('success', 'Cache atualizado com sucesso.');
     }
 
-    /**
-     * Remove um item de cache pela chave.
-     */
+    // Remove um item de cache pela chave
     public function destroy($key)
     {
         Cache::where('key', $key)->delete();

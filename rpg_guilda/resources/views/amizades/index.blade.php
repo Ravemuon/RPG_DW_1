@@ -5,16 +5,10 @@
 @section('content')
 <div class="container mt-4">
 
-    {{-- ============================
-           ALERTAS DO SISTEMA
-    ============================= --}}
+    {{-- ALERTAS --}}
     @include('amizades.partials._alertas')
 
-
-
-    {{-- ============================
-        RESUMO / REDIRECIONAMENTOS
-    ============================= --}}
+    {{-- RESUMO / REDIRECIONAMENTOS --}}
     <div class="card mb-4 shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="mb-0 text-highlight">Central de Amizades</h4>
@@ -42,20 +36,14 @@
         </div>
     </div>
 
-
-
-    {{-- ============================
-         SUGESTÕES DE AMIZADE
-    ============================= --}}
+    {{-- SUGESTÕES DE AMIZADE --}}
     @if(isset($sugestoes) && $sugestoes->isNotEmpty())
         <h5 class="mt-5 mb-3 text-highlight">⭐ Sugestões para Você</h5>
 
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4 mb-5">
             @foreach($sugestoes as $usuario)
                 <div class="col">
-                    @include('amizades.partials._card_usuario', [
-                        'usuario' => $usuario
-                    ])
+                    @include('amizades.partials._card_usuario', ['usuario' => $usuario])
                 </div>
             @endforeach
         </div>
@@ -63,18 +51,13 @@
         <hr>
     @endif
 
-
-
-    {{-- ============================
-            AMIGOS ATUAIS
-    ============================= --}}
+    {{-- AMIGOS ATUAIS --}}
     <h5 class="mt-4 mb-3 text-highlight">
         🤝 Seus Amigos Atuais ({{ $amigos->total() ?? 0 }})
     </h5>
 
     @if(isset($amigos) && $amigos->count() > 0)
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
-
             @foreach($amigos as $usuario)
                 <div class="col">
                     @include('amizades.partials._card_usuario', [
@@ -83,14 +66,12 @@
                     ])
                 </div>
             @endforeach
-
         </div>
 
         {{-- PAGINAÇÃO --}}
         <div class="d-flex justify-content-center mt-4">
             {{ $amigos->links('pagination::bootstrap-5') }}
         </div>
-
     @else
         <div class="alert alert-secondary text-center mt-3">
             Você ainda não tem amigos conectados.

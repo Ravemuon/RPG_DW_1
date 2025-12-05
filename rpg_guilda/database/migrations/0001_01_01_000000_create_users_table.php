@@ -19,14 +19,14 @@ return new class extends Migration {
                 'medieval','fantasia','sobrenatural','steampunk','cyberpunk','apocaliptico','oceano','floresta','deserto'
             ])->default('medieval');
             $table->enum('papel',['jogador','mestre','administrador'])->default('jogador');
-            $table->string('pagina', 50)->nullable()->comment('Página do usuário ou referência');
+            $table->string('pagina', 50)->nullable(); // Página do usuário ou referência
             $table->rememberToken();
             $table->timestamps();
-            $table->index(['nome', 'username']);  
+            $table->index(['nome', 'username']); // Index para busca rápida
         });
     }
 
     public function down(): void {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('users'); // Remove a tabela
     }
 };

@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Auth;
 
 class MensagemController extends Controller
 {
-    // Lista mensagens de uma campanha
+    // Lista todas as mensagens de uma campanha
     public function index($campanhaId)
     {
         $mensagens = Mensagem::where('campanha_id', $campanhaId)->get();
         return view('chat.campanha.index', compact('mensagens'));
     }
 
-    // Salva uma nova mensagem
+    // Salva uma nova mensagem (privada, de campanha ou de chat)
     public function store(Request $request)
     {
         $request->validate([
@@ -57,7 +57,7 @@ class MensagemController extends Controller
         return response()->json($mensagens);
     }
 
-    // Lista mensagens privadas do usuário
+    // Lista mensagens privadas do usuário logado
     public function mensagensPrivadas()
     {
         $mensagens = Mensagem::where('tipo', 'privada')
@@ -71,7 +71,7 @@ class MensagemController extends Controller
         return response()->json($mensagens);
     }
 
-    // Marca mensagem privada como lida
+    // Marca uma mensagem privada como lida
     public function marcarComoLida($id)
     {
         $mensagem = Mensagem::findOrFail($id);

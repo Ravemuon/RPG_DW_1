@@ -2,139 +2,94 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Raca;
 use App\Models\Sistema;
+use Illuminate\Http\Request;
 
 class RacaController extends Controller
 {
-    /**
-     * Lista todas as raças de um sistema específico.
-     */
-    public function index($sistemaId)
+    // Exibir lista de raças de um sistema, com pesquisa e paginação
+    public function index(Request $request, Sistema $sistema)
     {
-        $sistema = Sistema::with('racas')->findOrFail($sistemaId);
+        $query = $sistema->racas()->orderBy('nome');
 
-        return view('sistemas.racas.index', compact('sistema'));
+        // Aplicar filtro de pesquisa por nome
+        if ($search = $request->input('search')) {
+            $query->where('nome', 'like', "%{$search}%");
+        }
+
+        // Paginar resultados (12 por página) e manter parâmetros de busca
+        $racas = $query->paginate(12);
+        $racas->appends($request->all());
+
+        return view('sistemas.racas.index', compact('sistema', 'racas', 'search'));
     }
 
-
-    /**
-     * Formulário de criação de raça.
-     */
-    public function create($sistemaId)
+    // Exibir formulário de criação de nova raça
+    public function create(Sistema $sistema)
     {
-        $sistema = Sistema::findOrFail($sistemaId);
-
         return view('sistemas.racas.create', compact('sistema'));
     }
 
-
-    /**
-     * Armazena uma nova raça no sistema.
-     */
-    public function store(Request $request, $sistemaId)
+    // Armazenar nova raça
+    public function store(Request $request, Sistema $sistema)
     {
-        $request->validate([
-            // Regra unique: Garante que o nome seja único para o sistema_id específico.
-            'nome' => 'required|unique:racas,nome,NULL,id,sistema_id,' . $sistemaId,
+        $data = $request->validate([
+            'nome' => 'required|string|max:255|unique:racas,nome,NULL,id,sistema_id,' . $sistema->id,
             'descricao' => 'nullable|string',
-            'forca_bonus' => 'nullable|integer',
-            'destreza_bonus' => 'nullable|integer',
-            'constituicao_bonus' => 'nullable|integer',
-            'inteligencia_bonus' => 'nullable|integer',
-            'sabedoria_bonus' => 'nullable|integer',
-            'carisma_bonus' => 'nullable|integer',
+            'modificadores_atributos' => 'nullable|array',
+            'tipo_bonus' => 'required|in:flat,multiplicador,escolha',
+            'bonus_livre' => 'nullable|integer|min:0',
             'pagina' => 'nullable|string|max:50',
         ]);
 
-        Raca::create([
-            'nome' => $request->nome,
-            'sistema_id' => $sistemaId,
-            'descricao' => $request->descricao,
-            'forca_bonus' => (int)($request->forca_bonus ?? 0),
-            'destreza_bonus' => (int)($request->destreza_bonus ?? 0),
-            'constituicao_bonus' => (int)($request->constituicao_bonus ?? 0),
-            'inteligencia_bonus' => (int)($request->inteligencia_bonus ?? 0),
-            'sabedoria_bonus' => (int)($request->sabedoria_bonus ?? 0),
-            'carisma_bonus' => (int)($request->carisma_bonus ?? 0),
-            'pagina' => $request->pagina,
-        ]);
+        $data['modificadores_atributos'] = $data['modificadores_atributos'] ?? [];
+        $data['sistema_id'] = $sistema->id;
 
-        return redirect()
-            ->route('sistemas.racas.index', $sistemaId)
-            ->with('success', 'Raça criada com sucesso!');
+        Raca::create($data);
+
+        return redirect()->route('sistemas.racas.index', $sistema->id)
+                         ->with('success', 'Raça criada com sucesso.');
     }
 
-
-    /**
-     * Exibe os detalhes completos de uma raça.
-     */
-    public function show(Raca $raca)
+    // Exibir detalhes de uma raça
+    public function show(Sistema $sistema, Raca $raca)
     {
-        // O Laravel resolve a Raça automaticamente pela URL
-        return view('sistemas.racas.show', compact('raca'));
+        return view('sistemas.racas.show', compact('sistema', 'raca'));
     }
 
-
-    /**
-     * Formulário de edição de uma raça.
-     */
-    public function edit(Raca $raca)
+    // Exibir formulário de edição de uma raça existente
+    public function edit(Sistema $sistema, Raca $raca)
     {
-        $sistema = $raca->sistema;
-
-        return view('sistemas.racas.edit', compact('raca', 'sistema'));
+        return view('sistemas.racas.edit', compact('sistema', 'raca'));
     }
 
-
-    /**
-     * Atualiza uma raça existente.
-     */
-    public function update(Request $request, Raca $raca)
+    // Atualizar dados de uma raça existente
+    public function update(Request $request, Sistema $sistema, Raca $raca)
     {
-        // Regra unique ignorando a própria raça ($raca->id) e checando apenas no sistema correto.
-        $request->validate([
-            'nome' => 'required|unique:racas,nome,' . $raca->id . ',id,sistema_id,' . $raca->sistema_id,
+        $data = $request->validate([
+            'nome' => 'required|string|max:255|unique:racas,nome,' . $raca->id . ',id,sistema_id,' . $sistema->id,
             'descricao' => 'nullable|string',
-            'forca_bonus' => 'nullable|integer',
-            'destreza_bonus' => 'nullable|integer',
-            'constituicao_bonus' => 'nullable|integer',
-            'inteligencia_bonus' => 'nullable|integer',
-            'sabedoria_bonus' => 'nullable|integer',
-            'carisma_bonus' => 'nullable|integer',
+            'modificadores_atributos' => 'nullable|array',
+            'tipo_bonus' => 'required|in:flat,multiplicador,escolha',
+            'bonus_livre' => 'nullable|integer|min:0',
             'pagina' => 'nullable|string|max:50',
         ]);
 
-        $raca->update([
-            'nome' => $request->nome,
-            'descricao' => $request->descricao,
-            'forca_bonus' => (int)($request->forca_bonus ?? 0),
-            'destreza_bonus' => (int)($request->destreza_bonus ?? 0),
-            'constituicao_bonus' => (int)($request->constituicao_bonus ?? 0),
-            'inteligencia_bonus' => (int)($request->inteligencia_bonus ?? 0),
-            'sabedoria_bonus' => (int)($request->sabedoria_bonus ?? 0),
-            'carisma_bonus' => (int)($request->carisma_bonus ?? 0),
-            'pagina' => $request->pagina,
-        ]);
+        $data['modificadores_atributos'] = $data['modificadores_atributos'] ?? [];
 
-        return redirect()
-            ->route('sistemas.racas.index', $raca->sistema_id)
-            ->with('success', 'Raça atualizada com sucesso!');
+        $raca->update($data);
+
+        return redirect()->route('sistemas.racas.index', $sistema->id)
+                         ->with('success', 'Raça atualizada com sucesso.');
     }
 
-
-    /**
-     * Remove uma raça.
-     */
-    public function destroy(Raca $raca)
+    // Remover uma raça
+    public function destroy(Sistema $sistema, Raca $raca)
     {
-        $sistemaId = $raca->sistema_id;
-
         $raca->delete();
 
-        return redirect()
-            ->route('sistemas.racas.index', $sistemaId)
-            ->with('success', 'Raça removida com sucesso!');
+        return redirect()->route('sistemas.racas.index', $sistema->id)
+                         ->with('success', 'Raça removida com sucesso.');
     }
 }

@@ -4,6 +4,12 @@
 
 @section('content')
 
+{{-- 
+    [BEST PRACTICE ALERT]
+    A autorização (checar se o criador é o usuário logado) deve ser movida para 
+    o Controller (usando Gates/Policies) ou para o Middleware. A View deve 
+    apenas focar na apresentação.
+--}}
 @if($campanha->criador_id !== auth()->id())
     @php abort(403, 'Acesso Proibido. Apenas o Mestre pode acessar esta área.'); @endphp
 @endif
@@ -23,6 +29,7 @@
 
     <hr class="border-secondary mb-5">
 
+    {{-- CARDS DE ESTATÍSTICAS --}}
     <div class="row g-4 mb-5">
         <div class="col-6 col-md-3">
             <div class="card bg-secondary text-light p-3 shadow-sm border-0">
@@ -52,7 +59,8 @@
             </div>
         </div>
     </div>
-
+    
+    {{-- BOTÕES DE AÇÃO RÁPIDA --}}
     <div class="mb-5 d-flex gap-3 flex-wrap border-bottom border-secondary pb-4">
         <a href="{{ route('campanhas.show', $campanha->id) }}" class="btn btn-outline-light rounded-pill fw-bold">
             <i class="fas fa-eye me-1"></i> Ver Campanha
@@ -60,6 +68,10 @@
 
         <a href="{{ route('campanhas.edit', $campanha->id) }}" class="btn btn-warning rounded-pill">
             <i class="fas fa-pencil-alt me-1"></i> Editar Campanha
+        </a>
+
+        <a href="{{ route('personagens.index', ['campanha' => $campanha->id]) }}" class="btn btn-secondary rounded-pill fw-bold">
+            <i class="fas fa-users me-1"></i> Ver Todos os Personagens
         </a>
 
         <a href="{{ route('missoes.create', ['campanha' => $campanha->id]) }}" class="btn btn-primary rounded-pill">
@@ -73,8 +85,11 @@
         <a href="{{ route('personagens.create', ['campanha' => $campanha->id]) }}" class="btn btn-info rounded-pill">
             <i class="fas fa-user-plus me-1"></i> Criar Personagem
         </a>
+
+
     </div>
 
+    {{-- CÓDIGO DE CONVITE --}}
     @if($campanha->privada && $campanha->codigo_convite)
         <div class="card bg-dark border-info mb-5 shadow-lg">
             <div class="card-header fw-bold text-info">
@@ -88,8 +103,8 @@
 
                 <div class="d-flex align-items-center gap-3">
                     <span id="inviteCodeDisplay"
-                          class="fs-4 fw-bold text-light bg-secondary px-3 py-1 rounded"
-                          style="user-select:none; min-width:150px; text-align:center;">
+                        class="fs-4 fw-bold text-light bg-secondary px-3 py-1 rounded"
+                        style="user-select:none; min-width:150px; text-align:center;">
                         ********
                     </span>
 
@@ -105,6 +120,7 @@
         </div>
     @endif
 
+    {{-- PAINEL DE GESTÃO DE CONTEÚDO --}}
     <div class="row g-4 mb-5">
 
         {{-- MISSÕES --}}
@@ -218,6 +234,7 @@
                                     </form>
 
                                     {{-- RECUSAR (REMOVER) --}}
+                                    {{-- ATENÇÃO: Confirmação via 'onsubmit' com 'confirm()' é proibida. Use um Modal UI customizado. --}}
                                     <form action="{{ route('campanhas.aprovar',$campanha->id) }}" method="POST" class="d-inline"
                                         onsubmit="return confirm('Recusar {{ $jogador->nome }}? Ele precisará solicitar novamente.');">
                                         @csrf
@@ -238,6 +255,7 @@
                     <h5 class="text-warning fw-bold my-3 px-3"><i class="fas fa-users me-2"></i> Jogadores Ativos</h5>
 
                     @php
+                        // Garante que o mestre (criador_id) apareça primeiro na lista
                         $ativos = $campanha->jogadores->where('pivot.status', 'ativo')->sortByDesc(fn($j)=>$j->id === $campanha->criador_id);
                     @endphp
 
@@ -263,6 +281,7 @@
                                     <div>
                                         @if(!$isMaster)
                                             {{-- BOTÃO REMOVER NA LISTA DE ATIVOS --}}
+                                            {{-- ATENÇÃO: Confirmação via 'onsubmit' com 'confirm()' é proibida. Use um Modal UI customizado. --}}
                                             <form action="{{ route('campanhas.aprovar',$campanha->id) }}"
                                                 method="POST"
                                                 class="d-inline"
@@ -324,7 +343,7 @@
 
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ route('personagens.show',$personagem->id) }}" class="btn btn-outline-info">Ver</a>
-                                        <a href="{{ route('personagens.edit',$personagem->id) }}" class="btn btn-outline-warning">Editar</a>
+                                       <a href="{{ route('personagens.editOverview',$personagem->id) }}" class="btn btn-outline-warning">Editar</a>
                                     </div>
                                 </li>
                             @endforeach
@@ -366,6 +385,7 @@
                 </span>
             </div>
 
+            {{-- Navegação de Tabs do Sistema --}}
             <ul class="nav nav-tabs nav-justified" id="sistemaTabs" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active text-light bg-dark" id="atributos-tab" data-bs-toggle="tab" data-bs-target="#atributos" type="button">
@@ -380,11 +400,20 @@
                 </li>
             </ul>
 
+            {{-- Conteúdo das Tabs --}}
             <div class="tab-content p-4 bg-secondary">
 
+                {{-- ATRIBUTOS E PERÍCIAS --}}
                 <div class="tab-pane fade show active" id="atributos">
                     <div class="row">
 
+                        {{-- 
+                            [BEST PRACTICE ALERT]
+                            Se 'atributos' for armazenado como JSON no banco de dados, adicione 
+                            `'atributos' => 'array'` ou `'atributos' => 'json'` no array 
+                            `$casts` do seu modelo `Sistema` para que o Laravel decodifique 
+                            automaticamente, eliminando o bloco de checagem abaixo.
+                        --}}
                         @php
                             $atributos = $campanha->sistema->atributos;
                             if (is_string($atributos)) {
@@ -454,5 +483,80 @@
     @endif
 
 </div>
+
+{{-- JavaScript para a funcionalidade do código de convite --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleButton = document.getElementById('toggleCodeButton');
+        const copyButton = document.getElementById('copyCodeButton');
+        const codeDisplay = document.getElementById('inviteCodeDisplay');
+
+        if (toggleButton && copyButton && codeDisplay) {
+            const inviteCode = toggleButton.getAttribute('data-code');
+            let isHidden = true;
+
+            toggleButton.addEventListener('click', function () {
+                if (isHidden) {
+                    // Mostrar código
+                    codeDisplay.textContent = inviteCode;
+                    toggleButton.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar';
+                    copyButton.style.display = 'inline-block';
+                } else {
+                    // Ocultar código
+                    codeDisplay.textContent = '********';
+                    toggleButton.innerHTML = '<i class="fas fa-eye"></i> Mostrar';
+                    copyButton.style.display = 'none';
+                }
+                isHidden = !isHidden;
+            });
+
+            copyButton.addEventListener('click', function () {
+                // Tenta usar a API do Clipboard, com fallback para execCommand('copy')
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(inviteCode).then(() => {
+                        showCopySuccess();
+                    }).catch(err => {
+                        console.error('Falha ao copiar usando Clipboard API:', err);
+                        fallbackCopyTextToClipboard(inviteCode);
+                    });
+                } else {
+                    fallbackCopyTextToClipboard(inviteCode);
+                }
+            });
+
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";  // Evita que a rolagem seja alterada
+                textArea.style.opacity = "0";      // Oculta o elemento
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    document.execCommand('copy');
+                    showCopySuccess();
+                } catch (err) {
+                    console.error('Falha ao copiar usando execCommand:', err);
+                    // Opcional: mostrar uma mensagem de erro na UI
+                }
+
+                document.body.removeChild(textArea);
+            }
+
+            function showCopySuccess() {
+                const originalText = copyButton.innerHTML;
+                copyButton.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+                copyButton.classList.remove('btn-info');
+                copyButton.classList.add('btn-success');
+                setTimeout(() => {
+                    copyButton.innerHTML = originalText;
+                    copyButton.classList.remove('btn-success');
+                    copyButton.classList.add('btn-info');
+                }, 1500);
+            }
+        }
+    });
+</script>
 
 @endsection

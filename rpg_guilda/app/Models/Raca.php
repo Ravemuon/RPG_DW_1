@@ -13,20 +13,18 @@ class Raca extends Model
 
     protected $fillable = [
         'nome',
-        'sistema_id',
         'descricao',
-        'forca_bonus',
-        'destreza_bonus',
-        'constituicao_bonus',
-        'inteligencia_bonus',
-        'sabedoria_bonus',
-        'carisma_bonus',
+        'modificadores_atributos',
+        'tipo_bonus',
+        'bonus_livre',
         'pagina',
+        'sistema_id',
     ];
 
-    /**
-     * Cada raça pertence a um sistema.
-     */
+    protected $casts = [
+        'modificadores_atributos' => 'array',
+    ];
+
     public function sistema()
     {
         return $this->belongsTo(Sistema::class);

@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Models\Sistema;   // ← obrigatório
-use App\Models\Pericia;   // ← obrigatório
+use App\Models\Sistema;
+use App\Models\Pericia;
 
 class Classe extends Model
 {
@@ -35,13 +35,13 @@ class Classe extends Model
         'poderes' => 'array',
     ];
 
-    /** Classe pertence a um sistema */
+    // Relação com Sistema
     public function sistema(): BelongsTo
     {
         return $this->belongsTo(Sistema::class, 'sistema_id');
     }
 
-    /** Classe pode ter várias perícias */
+    // Relação com Pericias
     public function pericias(): BelongsToMany
     {
         return $this->belongsToMany(Pericia::class, 'classe_pericia', 'classe_id', 'pericia_id');

@@ -12,6 +12,7 @@ class Campanha extends Model
 
     protected $table = 'campanhas';
 
+    // Campos atribuíveis em massa
     protected $fillable = [
         'nome',
         'sistema_id',
@@ -23,69 +24,33 @@ class Campanha extends Model
         'pagina',
     ];
 
+    // Converte 'privada' para booleano
     protected $casts = [
         'privada' => 'boolean',
     ];
 
-    // ===================================================
-    // Relações principais
-    // ===================================================
-    public function sistema()
-    {
-        return $this->belongsTo(Sistema::class, 'sistema_id');
-    }
-
-    public function missoes()
-    {
-        return $this->hasMany(Missao::class, 'campanha_id');
-    }
-
-    public function criador()
-    {
-        return $this->belongsTo(User::class, 'criador_id');
-    }
-
-    public function jogadores()
-    {
+    // Relações
+    public function sistema() { return $this->belongsTo(Sistema::class, 'sistema_id'); }
+    public function missoes() { return $this->hasMany(Missao::class, 'campanha_id'); }
+    public function criador() { return $this->belongsTo(User::class, 'criador_id'); }
+    public function jogadores() {
         return $this->belongsToMany(User::class, 'campanha_usuario')
                     ->withPivot('status')
                     ->withTimestamps();
     }
-
-    public function solicitacoes()
-    {
-        // Relação para controlar solicitações pendentes
+    public function solicitacoes() {
         return $this->belongsToMany(User::class, 'campanha_usuario')
                     ->withPivot('status')
                     ->wherePivot('status', 'pendente')
                     ->withTimestamps();
     }
+    public function personagens() { return $this->hasMany(Personagem::class, 'campanha_id'); }
+    public function sessoes() { return $this->hasMany(Sessao::class, 'campanha_id'); }
+    public function arquivos() { return $this->hasMany(Arquivo::class, 'campanha_id'); }
+    public function chat() { return $this->hasOne(Chat::class, 'campanha_id'); }
+    public function mensagens() { return $this->hasOne(Chat::class, 'campanha_id')->with('mensagens'); }
 
-    public function personagens()
-    {
-        return $this->hasMany(Personagem::class, 'campanha_id');
-    }
-
-    public function sessoes()
-    {
-        return $this->hasMany(Sessao::class, 'campanha_id');
-    }
-
-    public function arquivos()
-    {
-        return $this->hasMany(Arquivo::class, 'campanha_id');
-    }
-
-    public function chat()
-    {
-        return $this->hasOne(Chat::class, 'campanha_id');
-    }
-
-    public function mensagens()
-    {
-        return $this->hasOne(Chat::class, 'campanha_id')->with('mensagens');
-    }
-
+    // Gera código de convite para campanhas privadas
     protected static function booted()
     {
         static::creating(function ($campanha) {
@@ -95,13 +60,11 @@ class Campanha extends Model
         });
     }
 
-    public function getSistemaRPGAttribute()
-    {
+    // Retorna nome do sistema
+    public function getSistemaRPGAttribute() {
         return $this->sistema->nome ?? 'Sistema Desconhecido';
     }
 
-    public function mestre()
-    {
-        return $this->belongsTo(User::class, 'criador_id');
-    }
+    // Retorna o mestre da campanha
+    public function mestre() { return $this->belongsTo(User::class, 'criador_id'); }
 }

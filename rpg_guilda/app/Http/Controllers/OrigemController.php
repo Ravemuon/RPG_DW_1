@@ -5,122 +5,90 @@ namespace App\Http\Controllers;
 use App\Models\Origem;
 use App\Models\Sistema;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class OrigemController extends Controller
 {
-    /**
-     * Lista todas as origens de um sistema.
-     */
-    public function index(Sistema $sistema)
+    // Lista todas as origens de um sistema, com busca opcional
+    public function index(Request $request, Sistema $sistema)
     {
-        $origens = $sistema->origens()->get();
+        $search = $request->query('search');
 
-        return view('origens.index', compact('sistema', 'origens'));
+        $origensQuery = $sistema->origens()->orderBy('nome');
+
+        if ($search) {
+            $origensQuery->where('nome', 'like', "%{$search}%");
+        }
+
+        $origens = $origensQuery->get();
+
+        return view('sistemas.origens.index', compact('sistema', 'origens', 'search'));
     }
 
-    /**
-     * Formulário para criar nova origem.
-     */
+    // Mostra o formulário de criação de origem
     public function create(Sistema $sistema)
     {
-        return view('origens.create', compact('sistema'));
+        return view('sistemas.origens.create', compact('sistema'));
     }
 
-    /**
-     * Salva uma nova origem.
-     */
+    // Armazena uma nova origem no banco
     public function store(Request $request, Sistema $sistema)
     {
-        try {
-            $validated = $request->validate([
-                'nome' => 'required|string|max:255|unique:origens,nome,NULL,id,sistema_id,' . $sistema->id,
-                'descricao' => 'nullable|string',
-                'pagina' => 'nullable|string|max:50',
+        $data = $request->validate([
+            'nome' => 'required|string|max:255|unique:origens,nome,NULL,id,sistema_id,' . $sistema->id,
+            'descricao' => 'nullable|string',
+            'pericias_iniciais' => 'nullable|array',
+            'recursos_adicionais' => 'nullable|array',
+            'pagina' => 'nullable|string|max:50',
+        ]);
 
-                'bonus_pericias' => 'nullable|json',
-                'recursos_adicionais' => 'nullable|json',
-            ]);
+        $data['pericias_iniciais'] = $data['pericias_iniciais'] ?? [];
+        $data['recursos_adicionais'] = $data['recursos_adicionais'] ?? [];
+        $data['sistema_id'] = $sistema->id;
 
-            // Decodifica JSON caso venha como string
-            if (isset($validated['bonus_pericias']) && is_string($validated['bonus_pericias'])) {
-                $validated['bonus_pericias'] = json_decode($validated['bonus_pericias'], true);
-            }
+        Origem::create($data);
 
-            if (isset($validated['recursos_adicionais']) && is_string($validated['recursos_adicionais'])) {
-                $validated['recursos_adicionais'] = json_decode($validated['recursos_adicionais'], true);
-            }
-
-            $validated['sistema_id'] = $sistema->id;
-
-            Origem::create($validated);
-
-            return redirect()
-                ->route('sistemas.origens.index', $sistema)
-                ->with('success', 'Origem criada com sucesso!');
-        } catch (ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        }
+        return redirect()->route('sistemas.origens.index', $sistema->id)
+                         ->with('success', 'Origem criada com sucesso.');
     }
 
-    /**
-     * Exibe uma origem.
-     */
+    // Mostra detalhes de uma origem específica
     public function show(Sistema $sistema, Origem $origem)
     {
-        return view('origens.show', compact('sistema', 'origem'));
+        return view('sistemas.origens.show', compact('sistema', 'origem'));
     }
 
-    /**
-     * Formulário de edição.
-     */
+    // Mostra o formulário de edição de uma origem
     public function edit(Sistema $sistema, Origem $origem)
     {
-        return view('origens.edit', compact('sistema', 'origem'));
+        return view('sistemas.origens.edit', compact('sistema', 'origem'));
     }
 
-    /**
-     * Atualiza a origem.
-     */
+    // Atualiza os dados de uma origem existente
     public function update(Request $request, Sistema $sistema, Origem $origem)
     {
-        try {
-            $validated = $request->validate([
-                'nome' => 'required|string|max:255|unique:origens,nome,' . $origem->id . ',id,sistema_id,' . $sistema->id,
-                'descricao' => 'nullable|string',
-                'pagina' => 'nullable|string|max:50',
+        $data = $request->validate([
+            'nome' => 'required|string|max:255|unique:origens,nome,' . $origem->id . ',id,sistema_id,' . $sistema->id,
+            'descricao' => 'nullable|string',
+            'pericias_iniciais' => 'nullable|array',
+            'recursos_adicionais' => 'nullable|array',
+            'pagina' => 'nullable|string|max:50',
+        ]);
 
-                'bonus_pericias' => 'nullable|json',
-                'recursos_adicionais' => 'nullable|json',
-            ]);
+        $data['pericias_iniciais'] = $data['pericias_iniciais'] ?? [];
+        $data['recursos_adicionais'] = $data['recursos_adicionais'] ?? [];
 
-            if (isset($validated['bonus_pericias']) && is_string($validated['bonus_pericias'])) {
-                $validated['bonus_pericias'] = json_decode($validated['bonus_pericias'], true);
-            }
+        $origem->update($data);
 
-            if (isset($validated['recursos_adicionais']) && is_string($validated['recursos_adicionais'])) {
-                $validated['recursos_adicionais'] = json_decode($validated['recursos_adicionais'], true);
-            }
-
-            $origem->update($validated);
-
-            return redirect()
-                ->route('sistemas.origens.index', $sistema)
-                ->with('success', 'Origem atualizada com sucesso!');
-        } catch (ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        }
+        return redirect()->route('sistemas.origens.index', $sistema->id)
+                         ->with('success', 'Origem atualizada com sucesso.');
     }
 
-    /**
-     * Remove uma origem.
-     */
+    // Remove uma origem do sistema
     public function destroy(Sistema $sistema, Origem $origem)
     {
         $origem->delete();
 
-        return redirect()
-            ->route('sistemas.origens.index', $sistema)
-            ->with('success', 'Origem excluída com sucesso!');
+        return redirect()->route('sistemas.origens.index', $sistema->id)
+                         ->with('success', 'Origem removida com sucesso.');
     }
 }

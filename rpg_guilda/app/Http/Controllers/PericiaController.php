@@ -9,9 +9,7 @@ use Illuminate\Validation\Rule;
 
 class PericiaController extends Controller
 {
-    /**
-     * LISTAGEM DE PERÍCIAS
-     */
+    // Lista todas as perícias com paginação
     public function index()
     {
         $pericias = Pericia::with('sistema')
@@ -21,18 +19,14 @@ class PericiaController extends Controller
         return view('pericias.index', compact('pericias'));
     }
 
-    /**
-     * FORMULÁRIO DE CRIAÇÃO
-     */
+    // Mostra formulário de criação de perícia
     public function create()
     {
         $sistemas = Sistema::pluck('nome', 'id');
         return view('pericias.create', compact('sistemas'));
     }
 
-    /**
-     * SALVAR NOVA PERÍCIA
-     */
+    // Armazena nova perícia no banco
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -56,27 +50,21 @@ class PericiaController extends Controller
             ->with('success', 'Perícia criada com sucesso!');
     }
 
-    /**
-     * DETALHES DA PERÍCIA
-     */
+    // Mostra detalhes de uma perícia
     public function show(Pericia $pericia)
     {
         $pericia->load('sistema');
         return view('pericias.show', compact('pericia'));
     }
 
-    /**
-     * FORMULÁRIO DE EDIÇÃO
-     */
+    // Mostra formulário de edição de perícia
     public function edit(Pericia $pericia)
     {
         $sistemas = Sistema::pluck('nome', 'id');
         return view('pericias.edit', compact('pericia', 'sistemas'));
     }
 
-    /**
-     * ATUALIZAR PERÍCIA
-     */
+    // Atualiza perícia existente
     public function update(Request $request, Pericia $pericia)
     {
         $validated = $request->validate([
@@ -102,9 +90,7 @@ class PericiaController extends Controller
             ->with('success', 'Perícia atualizada com sucesso!');
     }
 
-    /**
-     * EXCLUIR PERÍCIA
-     */
+    // Remove perícia do banco
     public function destroy(Pericia $pericia)
     {
         $pericia->delete();

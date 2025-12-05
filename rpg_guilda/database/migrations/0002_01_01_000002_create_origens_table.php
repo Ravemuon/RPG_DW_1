@@ -7,24 +7,21 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::create('origens', function (Blueprint $table) {
-            $table->id();
+            $table->id(); // Chave primária
+            $table->string('nome'); // Nome da origem
+            $table->foreignId('sistema_id') // FK para sistemas
+                  ->constrained('sistemas')
+                  ->onDelete('cascade');
 
-            $table->string('nome');
-            $table->foreignId('sistema_id')
-                ->constrained('sistemas')
-                ->onDelete('cascade');
+            $table->text('descricao')->nullable(); // Descrição da origem
+            $table->json('pericias_iniciais')->nullable() // Perícias iniciais em JSON
+                  ->comment('JSON com tipo de bônus, quantidade e lista de perícias');
+            $table->json('recursos_adicionais')->nullable() // Talentos, proficiências ou recursos especiais
+                  ->comment('Talentos, proficiências ou recursos especiais.');
 
-            $table->text('descricao')->nullable();
-            $table->json('pericias_iniciais')->nullable()->comment('JSON com tipo de bônus, quantidade e lista de perícias');
-            
-            $table->json('recursos_adicionais')->nullable()
-                ->comment('Talentos, proficiências ou recursos especiais.');
-
-            $table->string('pagina', 50)->nullable();
-
-            $table->timestamps();
-
-            $table->unique(['nome', 'sistema_id']);
+            $table->string('pagina', 50)->nullable(); // Página de referência
+            $table->timestamps(); // created_at e updated_at
+            $table->unique(['nome', 'sistema_id']); // Nome único por sistema
         });
     }
 

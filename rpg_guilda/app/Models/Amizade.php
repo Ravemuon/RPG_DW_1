@@ -17,51 +17,39 @@ class Amizade extends Model
         'status',
     ];
 
-    /**
-     * Usuário que enviou a solicitação.
-     */
+    // Usuário que enviou a solicitação
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * Usuário que recebeu a solicitação.
-     */
+    // Usuário que recebeu a solicitação
     public function friend()
     {
         return $this->belongsTo(User::class, 'friend_id');
     }
 
-    /**
-     * Scope: amizades já aceitas.
-     */
+    // Scope: retorna apenas amizades aceitas
     public function scopeAceitas($query)
     {
         return $query->where('status', 'aceito');
     }
 
-    /**
-     * Scope: solicitações pendentes recebidas pelo usuário.
-     */
+    // Scope: solicitações pendentes recebidas pelo usuário
     public function scopePendentesRecebidas($query, $userId)
     {
         return $query->where('friend_id', $userId)
                      ->where('status', 'pendente');
     }
 
-    /**
-     * Scope: solicitações pendentes enviadas pelo usuário.
-     */
+    // Scope: solicitações pendentes enviadas pelo usuário
     public function scopePendentesEnviadas($query, $userId)
     {
         return $query->where('user_id', $userId)
                      ->where('status', 'pendente');
     }
 
-    /**
-     * Verifica se existe amizade ou solicitação entre dois usuários.
-     */
+    // Verifica se existe amizade ou solicitação entre dois usuários
     public static function existeEntre($userId, $friendId): bool
     {
         return self::where(function ($q) use ($userId, $friendId) {

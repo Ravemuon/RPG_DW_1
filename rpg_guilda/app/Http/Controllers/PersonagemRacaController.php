@@ -8,27 +8,21 @@ use App\Models\Sistema;
 
 class PersonagemRacaController extends Controller
 {
-    /**
-     * Listar todas as raças de um sistema
-     */
+    // Listar todas as raças de um sistema
     public function index($sistemaId)
     {
         $sistema = Sistema::with('racas')->findOrFail($sistemaId);
         return view('sistemas.racas.index', compact('sistema'));
     }
 
-    /**
-     * Exibir formulário de criação de raça
-     */
+    // Exibir formulário de criação de raça
     public function create($sistemaId)
     {
         $sistema = Sistema::findOrFail($sistemaId);
         return view('sistemas.racas.create', compact('sistema'));
     }
 
-    /**
-     * Armazenar nova raça
-     */
+    // Armazenar nova raça
     public function store(Request $request, $sistemaId)
     {
         $request->validate([
@@ -60,26 +54,20 @@ class PersonagemRacaController extends Controller
                          ->with('success', 'Raça criada com sucesso!');
     }
 
-    /**
-     * Exibir detalhes de uma raça
-     */
+    // Exibir detalhes de uma raça
     public function show(Raca $raca)
     {
         return view('sistemas.racas.show', compact('raca'));
     }
 
-    /**
-     * Exibir formulário de edição
-     */
+    // Exibir formulário de edição
     public function edit(Raca $raca)
     {
         $sistema = $raca->sistema;
         return view('sistemas.racas.edit', compact('raca', 'sistema'));
     }
 
-    /**
-     * Atualizar raça existente
-     */
+    // Atualizar raça existente
     public function update(Request $request, Raca $raca)
     {
         $request->validate([
@@ -110,9 +98,7 @@ class PersonagemRacaController extends Controller
                          ->with('success', 'Raça atualizada com sucesso!');
     }
 
-    /**
-     * Remover uma raça
-     */
+    // Remover uma raça
     public function destroy(Raca $raca)
     {
         $sistemaId = $raca->sistema_id;

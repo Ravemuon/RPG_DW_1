@@ -15,9 +15,7 @@ class CampanhaUsuarioController extends Controller
         $this->middleware('auth');
     }
 
-    /**
-     * Usuário solicita entrada em uma campanha.
-     */
+    // Usuário solicita entrada em uma campanha
     public function solicitarEntrada(Campanha $campanha)
     {
         $user = Auth::user();
@@ -26,10 +24,8 @@ class CampanhaUsuarioController extends Controller
             return back()->with('info', 'Você já participa desta campanha.');
         }
 
-        // Adiciona como pendente
         $campanha->jogadores()->attach($user->id, ['status' => 'pendente']);
 
-        // Notificação para o mestre
         NotificacaoController::criarNotificacao(
             $campanha->criador_id,
             "{$user->nome} solicitou entrar na sua campanha '{$campanha->nome}'.",
@@ -39,9 +35,7 @@ class CampanhaUsuarioController extends Controller
         return back()->with('success', 'Solicitação enviada ao mestre da campanha!');
     }
 
-    /**
-     * Mestre adiciona/convida um usuário para a campanha.
-     */
+    // Mestre adiciona/convida um usuário para a campanha
     public function adicionar(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
@@ -56,10 +50,8 @@ class CampanhaUsuarioController extends Controller
             return back()->with('error', 'Este usuário já está na campanha.');
         }
 
-        // Adiciona como pendente
         $campanha->jogadores()->attach($userId, ['status' => 'pendente']);
 
-        // Notificação para o usuário convidado
         NotificacaoController::criarNotificacao(
             $userId,
             "Você foi convidado para a campanha '{$campanha->nome}' por {$campanha->criador->nome}.",
@@ -69,9 +61,7 @@ class CampanhaUsuarioController extends Controller
         return back()->with('success', 'Convite enviado com sucesso!');
     }
 
-    /**
-     * Mestre gerencia o status (aprova/rejeita/promove) de usuários.
-     */
+    // Mestre gerencia o status de usuários (aprova, rejeita, promove)
     public function gerenciar(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
@@ -83,14 +73,12 @@ class CampanhaUsuarioController extends Controller
 
         $user = User::findOrFail($request->user_id);
 
-        // Atualiza ou adiciona pivot
         if ($campanha->jogadores()->where('user_id', $user->id)->exists()) {
             $campanha->jogadores()->updateExistingPivot($user->id, ['status' => $request->status]);
         } else {
             $campanha->jogadores()->attach($user->id, ['status' => $request->status]);
         }
 
-        // Notificação direta
         NotificacaoController::criarNotificacao(
             $user->id,
             "Seu status na campanha '{$campanha->nome}' foi atualizado para '{$request->status}'.",
@@ -100,9 +88,7 @@ class CampanhaUsuarioController extends Controller
         return back()->with('success', "Status de {$user->nome} atualizado para {$request->status}!");
     }
 
-    /**
-     * Mestre remove um usuário da campanha.
-     */
+    // Mestre remove um usuário da campanha
     public function remover(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
@@ -124,9 +110,7 @@ class CampanhaUsuarioController extends Controller
         return back()->with('success', 'Usuário removido da campanha com sucesso.');
     }
 
-    /**
-     * Lista os jogadores da campanha.
-     */
+    // Lista os jogadores da campanha, ordenando pelo status
     public function listarJogadores(Campanha $campanha)
     {
         $jogadores = $campanha->jogadores->sortBy(function($user) {
@@ -141,9 +125,7 @@ class CampanhaUsuarioController extends Controller
         return view('campanhas.jogadores', compact('campanha', 'jogadores'));
     }
 
-    /**
-     * Adiciona/convida um amigo via AJAX.
-     */
+    // Adiciona/convida um amigo via AJAX
     public function adicionarAjax(Request $request, Campanha $campanha)
     {
         $this->authorize('update', $campanha);
@@ -164,7 +146,6 @@ class CampanhaUsuarioController extends Controller
 
         $campanha->jogadores()->attach($userId, ['status' => 'pendente']);
 
-        // Notificação
         NotificacaoController::criarNotificacao(
             $userId,
             "Você foi convidado para a campanha '{$campanha->nome}' por {$campanha->criador->nome}.",

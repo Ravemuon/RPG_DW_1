@@ -10,17 +10,12 @@ return new class extends Migration
     {
         Schema::create('classe_pericia', function (Blueprint $table) {
             $table->id();
-
-            $table->unsignedBigInteger('classe_id');
+            $table->unsignedBigInteger('classe_id'); // FK para classes
             $table->foreign('classe_id')->references('id')->on('classes')->onDelete('cascade');
-
-            $table->unsignedBigInteger('pericia_id');
+            $table->unsignedBigInteger('pericia_id'); // FK para perícias
             $table->foreign('pericia_id')->references('id')->on('pericias')->onDelete('cascade');
-
             $table->timestamps();
-
-            // 🔥 impede duplicação de vínculos
-            $table->unique(['classe_id','pericia_id']);
+            $table->unique(['classe_id','pericia_id']); // Impede duplicação de vínculos
         });
     }
 

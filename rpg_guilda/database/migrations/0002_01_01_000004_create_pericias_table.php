@@ -8,21 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('pericias', function (Blueprint $table) {
-            $table->id();
-            $table->string('nome');
-            $table->foreignId('sistema_id')->constrained('sistemas')->onDelete('cascade');
-            $table->string('atributo_relacionado');
-            $table->string('atributo_nome')->nullable()->comment('Nome legível do atributo conforme o sistema');
-            $table->text('descricao')->nullable();
-            $table->integer('modificador')->default(0);
-            $table->timestamps();
-            $table->unique(['nome', 'sistema_id']);
+        Schema::create('classe_pericia', function (Blueprint $table) {
+            $table->id(); // Chave primária
+            $table->unsignedBigInteger('classe_id'); // FK para classes
+            $table->foreign('classe_id')->references('id')->on('classes')->onDelete('cascade');
+            $table->unsignedBigInteger('pericia_id'); // FK para perícias
+            $table->foreign('pericia_id')->references('id')->on('pericias')->onDelete('cascade');
+            $table->timestamps(); // created_at e updated_at
+            $table->unique(['classe_id', 'pericia_id']); // Impede duplicação de vínculo
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('pericias');
+        Schema::dropIfExists('classe_pericia');
     }
 };

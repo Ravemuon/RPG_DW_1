@@ -8,17 +8,12 @@ use Illuminate\Support\Facades\Auth;
 
 class RolagemController extends Controller
 {
-
-    /**
-     * Lista todas as rolagens.
-     * Pode filtrar por campanha e personagem.
-     */
+    // Lista todas as rolagens, com possibilidade de filtro por campanha e personagem
     public function index(Request $request)
     {
         $campanhaId = $request->campanha_id;
         $personagemId = $request->personagem_id;
 
-        // Consulta dinâmica
         $rolagens = Rolagem::query()
             ->when($campanhaId, fn($q) => $q->where('campanha_id', $campanhaId))
             ->when($personagemId, fn($q) => $q->where('personagem_id', $personagemId))
@@ -28,13 +23,9 @@ class RolagemController extends Controller
         return view('rolagens.index', compact('rolagens'));
     }
 
-
-    /**
-     * Cria uma rolagem e salva no banco.
-     */
+    // Cria e salva uma nova rolagem no banco
     public function store(Request $request)
     {
-        // Validação
         $request->validate([
             'campanha_id' => 'required|exists:campanhas,id',
             'personagem_id' => 'nullable|exists:personagens,id',
@@ -45,18 +36,17 @@ class RolagemController extends Controller
             'tipo_rolagem' => 'nullable|in:ataque,pericia,magia,resistencia,outro',
         ]);
 
-        // Normaliza quantidade e modificador
         $quantidade = max(1, (int) ($request->quantidade ?? 1));
         $modificador = (int) ($request->modificador ?? 0);
 
-        // Executa a rolagem usando método estático do Model
+        // Calcula o resultado da rolagem usando método do Model
         $resultado = Rolagem::rolar(
             $request->tipo_dado,
             $quantidade,
             $modificador
         );
 
-        // Salva no banco
+        // Salva a rolagem no banco
         $rolagem = Rolagem::create([
             'user_id' => Auth::id(),
             'campanha_id' => $request->campanha_id,
@@ -75,19 +65,13 @@ class RolagemController extends Controller
         );
     }
 
-
-    /**
-     * Exibe detalhes de uma rolagem específica.
-     */
+    // Exibe detalhes de uma rolagem específica
     public function show(Rolagem $rolagem)
     {
         return view('rolagens.show', compact('rolagem'));
     }
 
-
-    /**
-     * Exclui uma rolagem do histórico.
-     */
+    // Remove uma rolagem do histórico
     public function destroy(Rolagem $rolagem)
     {
         $rolagem->delete();

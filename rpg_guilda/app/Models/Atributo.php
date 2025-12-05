@@ -9,13 +9,12 @@ class Atributo extends Model
 {
     use HasFactory;
 
-    // Defina a tabela se o nome não for padrão
+    // Nome da tabela no banco de dados
     protected $table = 'atributos';
 
-    // Relação com o Sistema
+    // Relacionamento com o sistema ao qual pertence o atributo
     public function sistema()
     {
         return $this->belongsTo(Sistema::class);
     }
 }
-    
