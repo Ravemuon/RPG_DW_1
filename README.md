@@ -8,7 +8,19 @@ Administrador: tem acesso aos sistemas cadastrados e a paginas especificas.
 Usuário teste: tem acesso comum as paginas
 - Email: jogador@teste.com
 - Senha: password
+---------------------------------------------
+O que é necessário para funcionar:
 
+Laravel
+
+Laragon
+
+Visual Studio Code
+Abra cada arquivo e finalize a instalação, com isso:
+
+Abra o Laragon e selecione a pasta do projeto.
+Aceite as permissões do Laragon e inicie o serviço.
+Gere os códigos pelo terminal do Visual Studio Code ou pelo terminal do Laragon.
 
 ---------------------------------------------
 Passo a passo, de esses comandos no terminal do visual
