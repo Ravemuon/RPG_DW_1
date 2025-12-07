@@ -11,11 +11,12 @@ Usuário teste: tem acesso comum as paginas
 ---------------------------------------------
 O que é necessário para funcionar:
 
-Laravel
+Laravel: https://herd.laravel.com/windows
 
-Laragon
+Laragon: https://github.com/leokhoa/laragon/releases/tag/6.0.0
 
-Visual Studio Code
+Visual Studio Code: https://code.visualstudio.com/
+
 Abra cada arquivo e finalize a instalação, com isso:
 
 Abra o Laragon e selecione a pasta do projeto.
