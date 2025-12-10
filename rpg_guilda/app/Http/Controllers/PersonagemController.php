@@ -534,254 +534,254 @@ class PersonagemController extends Controller
     }
 
     /**
- * Atualiza personagem - VERSÃO FUNCIONAL
- */
-public function update(Request $request, Personagem $personagem)
-{
-    $this->authorize('update', $personagem);
+     * Atualiza personagem - VERSÃO FUNCIONAL
+     */
+    public function update(Request $request, Personagem $personagem)
+    {
+        $this->authorize('update', $personagem);
 
-    // DEBUG: Log dos dados recebidos
-    \Log::info('UPDATE PERSONAGEM - INÍCIO', [
-        'personagem_id' => $personagem->id,
-        'nome' => $request->nome,
-        'nivel' => $request->nivel,
-        'atributos_count' => $request->has('atributos') ? count($request->atributos) : 0,
-        'has_imagem' => $request->hasFile('imagem'),
-        'remover_imagem' => $request->has('remover_imagem')
-    ]);
-
-    // Validação completa
-    $validator = Validator::make($request->all(), [
-        'nome' => 'required|string|max:100',
-        'nivel' => 'required|integer|min:1|max:20',
-        'xp' => 'required|integer|min:0',
-        'bonus_proficiencia' => 'required|integer|min:0|max:10',
-        'descricao' => 'nullable|string',
-        'historia' => 'nullable|string',
-        'personalidade' => 'nullable|string',
-        'sanidade' => 'nullable|integer|min:0|max:100',
-        'sorte' => 'nullable|integer|min:0|max:100',
-        'imagem' => 'nullable|image|max:2048',
-        'atributos' => 'required|array',
-        'atributos.*' => 'required|integer|min:1|max:20',
-        'inventario' => 'nullable|string',
-        'ativo' => 'sometimes|boolean',
-        'remover_imagem' => 'sometimes|boolean'
-    ], [
-        'nome.required' => 'O nome do personagem é obrigatório.',
-        'nivel.required' => 'O nível é obrigatório.',
-        'xp.required' => 'O XP é obrigatório.',
-        'bonus_proficiencia.required' => 'O bônus de proficiência é obrigatório.',
-        'atributos.required' => 'Os atributos são obrigatórios.',
-        'atributos.array' => 'Os atributos devem ser um array válido.',
-        'atributos.*.required' => 'Cada atributo é obrigatório.',
-        'atributos.*.integer' => 'Cada atributo deve ser um número inteiro.',
-        'atributos.*.min' => 'Cada atributo deve ser no mínimo 1.',
-        'atributos.*.max' => 'Cada atributo deve ser no máximo 20.',
-        'imagem.image' => 'O arquivo deve ser uma imagem.',
-        'imagem.max' => 'A imagem não pode ter mais que 2MB.'
-    ]);
-
-    if ($validator->fails()) {
-        \Log::error('UPDATE PERSONAGEM - VALIDAÇÃO FALHOU', [
-            'errors' => $validator->errors()->toArray()
-        ]);
-        
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput()
-            ->with('error', 'Por favor, corrija os erros no formulário.');
-    }
-
-    try {
-        // Iniciar transação para garantir consistência
-        DB::beginTransaction();
-
-        // 1. Preparar dados básicos
-        $dadosAtualizacao = [
+        // DEBUG: Log dos dados recebidos
+        \Log::info('UPDATE PERSONAGEM - INÍCIO', [
+            'personagem_id' => $personagem->id,
             'nome' => $request->nome,
             'nivel' => $request->nivel,
-            'xp' => $request->xp,
-            'bonus_proficiencia' => $request->bonus_proficiencia,
-            'descricao' => $request->descricao,
-            'historia' => $request->historia,
-            'personalidade' => $request->personalidade,
-            'sanidade' => $request->sanidade ?? null,
-            'sorte' => $request->sorte ?? null,
-            'ativo' => $request->boolean('ativo'),
-            'updated_at' => now(),
-        ];
+            'atributos_count' => $request->has('atributos') ? count($request->atributos) : 0,
+            'has_imagem' => $request->hasFile('imagem'),
+            'remover_imagem' => $request->has('remover_imagem')
+        ]);
 
-        \Log::info('Dados básicos preparados', $dadosAtualizacao);
+        // Validação completa
+        $validator = Validator::make($request->all(), [
+            'nome' => 'required|string|max:100',
+            'nivel' => 'required|integer|min:1|max:20',
+            'xp' => 'required|integer|min:0',
+            'bonus_proficiencia' => 'required|integer|min:0|max:10',
+            'descricao' => 'nullable|string',
+            'historia' => 'nullable|string',
+            'personalidade' => 'nullable|string',
+            'sanidade' => 'nullable|integer|min:0|max:100',
+            'sorte' => 'nullable|integer|min:0|max:100',
+            'imagem' => 'nullable|image|max:2048',
+            'atributos' => 'required|array',
+            'atributos.*' => 'required|integer|min:1|max:20',
+            'inventario' => 'nullable|string',
+            'ativo' => 'sometimes|boolean',
+            'remover_imagem' => 'sometimes|boolean'
+        ], [
+            'nome.required' => 'O nome do personagem é obrigatório.',
+            'nivel.required' => 'O nível é obrigatório.',
+            'xp.required' => 'O XP é obrigatório.',
+            'bonus_proficiencia.required' => 'O bônus de proficiência é obrigatório.',
+            'atributos.required' => 'Os atributos são obrigatórios.',
+            'atributos.array' => 'Os atributos devem ser um array válido.',
+            'atributos.*.required' => 'Cada atributo é obrigatório.',
+            'atributos.*.integer' => 'Cada atributo deve ser um número inteiro.',
+            'atributos.*.min' => 'Cada atributo deve ser no mínimo 1.',
+            'atributos.*.max' => 'Cada atributo deve ser no máximo 20.',
+            'imagem.image' => 'O arquivo deve ser uma imagem.',
+            'imagem.max' => 'A imagem não pode ter mais que 2MB.'
+        ]);
 
-        // 2. Processar atributos com bônus de raça
-        if ($request->has('atributos') && is_array($request->atributos)) {
-            $atributosBase = $request->atributos;
+        if ($validator->fails()) {
+            \Log::error('UPDATE PERSONAGEM - VALIDAÇÃO FALHOU', [
+                'errors' => $validator->errors()->toArray()
+            ]);
             
-            // Aplicar bônus da raça se existir
-            if ($personagem->raca && $personagem->raca->modificadores_atributos) {
-                $bonusRaca = is_string($personagem->raca->modificadores_atributos) 
-                    ? json_decode($personagem->raca->modificadores_atributos, true)
-                    : $personagem->raca->modificadores_atributos;
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Por favor, corrija os erros no formulário.');
+        }
+
+        try {
+            // Iniciar transação para garantir consistência
+            DB::beginTransaction();
+
+            // 1. Preparar dados básicos
+            $dadosAtualizacao = [
+                'nome' => $request->nome,
+                'nivel' => $request->nivel,
+                'xp' => $request->xp,
+                'bonus_proficiencia' => $request->bonus_proficiencia,
+                'descricao' => $request->descricao,
+                'historia' => $request->historia,
+                'personalidade' => $request->personalidade,
+                'sanidade' => $request->sanidade ?? null,
+                'sorte' => $request->sorte ?? null,
+                'ativo' => $request->boolean('ativo'),
+                'updated_at' => now(),
+            ];
+
+            \Log::info('Dados básicos preparados', $dadosAtualizacao);
+
+            // 2. Processar atributos com bônus de raça
+            if ($request->has('atributos') && is_array($request->atributos)) {
+                $atributosBase = $request->atributos;
                 
-                if (is_array($bonusRaca)) {
-                    foreach ($bonusRaca as $atributo => $bonus) {
-                        if (isset($atributosBase[$atributo]) && is_numeric($bonus)) {
-                            $atributosBase[$atributo] = (int)$atributosBase[$atributo] + (int)$bonus;
-                            \Log::debug("Aplicado bônus de raça para $atributo: +$bonus");
+                // Aplicar bônus da raça se existir
+                if ($personagem->raca && $personagem->raca->modificadores_atributos) {
+                    $bonusRaca = is_string($personagem->raca->modificadores_atributos) 
+                        ? json_decode($personagem->raca->modificadores_atributos, true)
+                        : $personagem->raca->modificadores_atributos;
+                    
+                    if (is_array($bonusRaca)) {
+                        foreach ($bonusRaca as $atributo => $bonus) {
+                            if (isset($atributosBase[$atributo]) && is_numeric($bonus)) {
+                                $atributosBase[$atributo] = (int)$atributosBase[$atributo] + (int)$bonus;
+                                \Log::debug("Aplicado bônus de raça para $atributo: +$bonus");
+                            }
                         }
                     }
                 }
-            }
-            
-            $dadosAtualizacao['atributos'] = json_encode($atributosBase, JSON_UNESCAPED_UNICODE);
-            \Log::info('Atributos processados', ['atributos' => $atributosBase]);
-        }
-
-        // 3. Processar inventário
-        if ($request->filled('inventario')) {
-            try {
-                $inventarioText = trim($request->inventario);
                 
-                // Verificar se é JSON válido
-                if ($this->isValidJson($inventarioText)) {
-                    $inventarioDecodificado = json_decode($inventarioText, true);
-                    $dadosAtualizacao['inventario'] = json_encode($inventarioDecodificado, JSON_UNESCAPED_UNICODE);
-                    \Log::info('Inventário processado como JSON');
-                } else {
-                    // Converter texto simples para array
-                    $itens = array_filter(
-                        array_map('trim', explode("\n", $inventarioText)),
-                        function($item) { return !empty($item); }
-                    );
-                    
-                    $dadosAtualizacao['inventario'] = json_encode($itens, JSON_UNESCAPED_UNICODE);
-                    \Log::info('Inventário convertido de texto', ['itens' => $itens]);
-                }
-            } catch (\Exception $e) {
-                \Log::warning('Erro ao processar inventário, salvando como texto simples', [
-                    'error' => $e->getMessage()
-                ]);
-                $dadosAtualizacao['inventario'] = json_encode([$request->inventario], JSON_UNESCAPED_UNICODE);
+                $dadosAtualizacao['atributos'] = json_encode($atributosBase, JSON_UNESCAPED_UNICODE);
+                \Log::info('Atributos processados', ['atributos' => $atributosBase]);
             }
-        } else {
-            $dadosAtualizacao['inventario'] = null;
-        }
 
-        // 4. Processar remoção de imagem
-        if ($request->has('remover_imagem') && $request->boolean('remover_imagem')) {
-            if ($personagem->imagem) {
+            // 3. Processar inventário
+            if ($request->filled('inventario')) {
                 try {
-                    Storage::disk('public')->delete($personagem->imagem);
-                    \Log::info('Imagem removida: ' . $personagem->imagem);
+                    $inventarioText = trim($request->inventario);
+                    
+                    // Verificar se é JSON válido
+                    if ($this->isValidJson($inventarioText)) {
+                        $inventarioDecodificado = json_decode($inventarioText, true);
+                        $dadosAtualizacao['inventario'] = json_encode($inventarioDecodificado, JSON_UNESCAPED_UNICODE);
+                        \Log::info('Inventário processado como JSON');
+                    } else {
+                        // Converter texto simples para array
+                        $itens = array_filter(
+                            array_map('trim', explode("\n", $inventarioText)),
+                            function($item) { return !empty($item); }
+                        );
+                        
+                        $dadosAtualizacao['inventario'] = json_encode($itens, JSON_UNESCAPED_UNICODE);
+                        \Log::info('Inventário convertido de texto', ['itens' => $itens]);
+                    }
                 } catch (\Exception $e) {
-                    \Log::warning('Erro ao remover imagem antiga: ' . $e->getMessage());
+                    \Log::warning('Erro ao processar inventário, salvando como texto simples', [
+                        'error' => $e->getMessage()
+                    ]);
+                    $dadosAtualizacao['inventario'] = json_encode([$request->inventario], JSON_UNESCAPED_UNICODE);
                 }
+            } else {
+                $dadosAtualizacao['inventario'] = null;
             }
-            $dadosAtualizacao['imagem'] = null;
-        }
 
-        // 5. Processar nova imagem (se não foi marcada para remoção)
-        if (!$request->boolean('remover_imagem') && $request->hasFile('imagem')) {
-            if ($request->file('imagem')->isValid()) {
-                // Remover imagem antiga se existir
+            // 4. Processar remoção de imagem
+            if ($request->has('remover_imagem') && $request->boolean('remover_imagem')) {
                 if ($personagem->imagem) {
                     try {
                         Storage::disk('public')->delete($personagem->imagem);
+                        \Log::info('Imagem removida: ' . $personagem->imagem);
                     } catch (\Exception $e) {
                         \Log::warning('Erro ao remover imagem antiga: ' . $e->getMessage());
                     }
                 }
+                $dadosAtualizacao['imagem'] = null;
+            }
+
+            // 5. Processar nova imagem (se não foi marcada para remoção)
+            if (!$request->boolean('remover_imagem') && $request->hasFile('imagem')) {
+                if ($request->file('imagem')->isValid()) {
+                    // Remover imagem antiga se existir
+                    if ($personagem->imagem) {
+                        try {
+                            Storage::disk('public')->delete($personagem->imagem);
+                        } catch (\Exception $e) {
+                            \Log::warning('Erro ao remover imagem antiga: ' . $e->getMessage());
+                        }
+                    }
+                    
+                    // Salvar nova imagem
+                    $path = $request->file('imagem')->store('personagens', 'public');
+                    $dadosAtualizacao['imagem'] = $path;
+                    \Log::info('Nova imagem salva: ' . $path);
+                } else {
+                    \Log::warning('Upload de imagem falhou - arquivo inválido');
+                }
+            }
+
+            // 6. Atualizar personagem
+            \Log::info('Atualizando personagem com dados:', $dadosAtualizacao);
+            
+            $personagem->update($dadosAtualizacao);
+            
+            // Verificar se subiu de nível com base no XP
+            $this->verificarSubidaNivel($personagem);
+
+            DB::commit();
+
+            \Log::info('UPDATE PERSONAGEM - SUCESSO', [
+                'personagem_id' => $personagem->id,
+                'nome' => $personagem->nome,
+                'nivel' => $personagem->nivel
+            ]);
+
+            // Redirecionar com mensagem de sucesso
+            return redirect()->route('personagens.show', $personagem)
+                ->with('success', 'Personagem atualizado com sucesso!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            \Log::error('UPDATE PERSONAGEM - ERRO', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->except(['imagem']) // Não logar arquivos
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Erro ao atualizar personagem: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Verifica se o personagem subiu de nível com base no XP
+     */
+    private function verificarSubidaNivel(Personagem $personagem)
+    {
+        $xpPorNivel = [
+            1 => 0, 2 => 300, 3 => 900, 4 => 2700, 5 => 6500,
+            6 => 14000, 7 => 23000, 8 => 34000, 9 => 48000,
+            10 => 64000, 11 => 85000, 12 => 100000, 13 => 120000,
+            14 => 140000, 15 => 165000, 16 => 195000,
+            17 => 225000, 18 => 265000, 19 => 305000, 20 => 355000
+        ];
+
+        $nivelAtual = $personagem->nivel;
+        
+        // Verificar se atingiu XP para próximo nível
+        if ($nivelAtual < 20 && isset($xpPorNivel[$nivelAtual + 1])) {
+            $xpNecessario = $xpPorNivel[$nivelAtual + 1];
+            
+            if ($personagem->xp >= $xpNecessario) {
+                $personagem->nivel = $nivelAtual + 1;
+                $personagem->bonus_proficiencia = floor(($personagem->nivel - 1) / 4) + 2;
+                $personagem->save();
                 
-                // Salvar nova imagem
-                $path = $request->file('imagem')->store('personagens', 'public');
-                $dadosAtualizacao['imagem'] = $path;
-                \Log::info('Nova imagem salva: ' . $path);
-            } else {
-                \Log::warning('Upload de imagem falhou - arquivo inválido');
+                \Log::info('Personagem subiu de nível', [
+                    'personagem_id' => $personagem->id,
+                    'novo_nivel' => $personagem->nivel,
+                    'novo_bonus_proficiencia' => $personagem->bonus_proficiencia
+                ]);
             }
         }
-
-        // 6. Atualizar personagem
-        \Log::info('Atualizando personagem com dados:', $dadosAtualizacao);
-        
-        $personagem->update($dadosAtualizacao);
-        
-        // Verificar se subiu de nível com base no XP
-        $this->verificarSubidaNivel($personagem);
-
-        DB::commit();
-
-        \Log::info('UPDATE PERSONAGEM - SUCESSO', [
-            'personagem_id' => $personagem->id,
-            'nome' => $personagem->nome,
-            'nivel' => $personagem->nivel
-        ]);
-
-        // Redirecionar com mensagem de sucesso
-        return redirect()->route('personagens.show', $personagem)
-            ->with('success', 'Personagem atualizado com sucesso!');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        \Log::error('UPDATE PERSONAGEM - ERRO', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'request_data' => $request->except(['imagem']) // Não logar arquivos
-        ]);
-
-        return redirect()->back()
-            ->with('error', 'Erro ao atualizar personagem: ' . $e->getMessage())
-            ->withInput();
     }
-}
 
-/**
- * Verifica se o personagem subiu de nível com base no XP
- */
-private function verificarSubidaNivel(Personagem $personagem)
-{
-    $xpPorNivel = [
-        1 => 0, 2 => 300, 3 => 900, 4 => 2700, 5 => 6500,
-        6 => 14000, 7 => 23000, 8 => 34000, 9 => 48000,
-        10 => 64000, 11 => 85000, 12 => 100000, 13 => 120000,
-        14 => 140000, 15 => 165000, 16 => 195000,
-        17 => 225000, 18 => 265000, 19 => 305000, 20 => 355000
-    ];
-
-    $nivelAtual = $personagem->nivel;
-    
-    // Verificar se atingiu XP para próximo nível
-    if ($nivelAtual < 20 && isset($xpPorNivel[$nivelAtual + 1])) {
-        $xpNecessario = $xpPorNivel[$nivelAtual + 1];
-        
-        if ($personagem->xp >= $xpNecessario) {
-            $personagem->nivel = $nivelAtual + 1;
-            $personagem->bonus_proficiencia = floor(($personagem->nivel - 1) / 4) + 2;
-            $personagem->save();
-            
-            \Log::info('Personagem subiu de nível', [
-                'personagem_id' => $personagem->id,
-                'novo_nivel' => $personagem->nivel,
-                'novo_bonus_proficiencia' => $personagem->bonus_proficiencia
-            ]);
+    /**
+     * Verifica se uma string é JSON válido
+     */
+    private function isValidJson($string)
+    {
+        if (!is_string($string)) {
+            return false;
         }
+        
+        json_decode($string);
+        return json_last_error() === JSON_ERROR_NONE;
     }
-}
-
-/**
- * Verifica se uma string é JSON válido
- */
-private function isValidJson($string)
-{
-    if (!is_string($string)) {
-        return false;
-    }
-    
-    json_decode($string);
-    return json_last_error() === JSON_ERROR_NONE;
-}
 
     /**
      * Remove personagem
