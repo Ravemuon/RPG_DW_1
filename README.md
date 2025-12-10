@@ -13,7 +13,7 @@ O que é necessário para funcionar:
 
 Laravel: https://herd.laravel.com/windows
 
-Laragon: https://github.com/leokhoa/laragon/releases/tag/6.0.0
+Laragon: https://laragon.org/download
 
 Visual Studio Code: https://code.visualstudio.com/
 
