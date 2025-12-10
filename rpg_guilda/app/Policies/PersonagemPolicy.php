@@ -34,13 +34,39 @@ class PersonagemPolicy
     }
 
     /**
-     * Determina se o usuário pode criar personagem na campanha
+     * Determina se o usuário pode criar personagem
      */
-    public function create(User $user, $campanhaId): bool
+    public function create(User $user): bool
     {
-        // Verificar se usuário pode participar da campanha
-        // Implemente a lógica conforme seu sistema de participação
+        // Qualquer usuário autenticado pode criar personagem
+        // Se quiser restringir, adicione lógica aqui
         return true;
+    }
+
+    /**
+     * Determina se o usuário pode criar personagem em uma campanha específica
+     */
+    public function criarPersonagem(User $user, $campanha): bool
+    {
+        // Se precisar verificar permissões específicas para criar em uma campanha
+        // Use este método separado
+        
+        // Verificar se usuário pode participar da campanha
+        if ($campanha->criador_id === $user->id) {
+            return true;
+        }
+
+        // Verificar se é jogador da campanha
+        if ($campanha->jogadores()->where('user_id', $user->id)->exists()) {
+            return true;
+        }
+
+        // Se campanha não é privada, qualquer um pode criar
+        if (!$campanha->privada) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

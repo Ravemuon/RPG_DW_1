@@ -29,4 +29,9 @@ class Raca extends Model
     {
         return $this->belongsTo(Sistema::class);
     }
+    
+    public function personagens()
+    {
+        return $this->hasMany(Personagem::class, 'raca_id');
+    }
 }

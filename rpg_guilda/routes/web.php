@@ -270,9 +270,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/chat-privado/{chat}/mensagem', [ChatPrivadoController::class, 'store'])->name('chat.privado.store');
 
 }); // Fim do middleware 'auth'
+
 Route::middleware(['auth'])->prefix('personagens')->name('personagens.')->group(function () {
-    
-    // Rotas CRUD básicas
+
+    // -----------------------------
+    // CRUD Básico
+    // -----------------------------
     Route::get('/', [PersonagemController::class, 'index'])->name('index');
     Route::get('/create', [PersonagemController::class, 'create'])->name('create');
     Route::post('/', [PersonagemController::class, 'store'])->name('store');
@@ -280,80 +283,83 @@ Route::middleware(['auth'])->prefix('personagens')->name('personagens.')->group(
     Route::get('/{personagem}/edit', [PersonagemController::class, 'edit'])->name('edit');
     Route::put('/{personagem}', [PersonagemController::class, 'update'])->name('update');
     Route::delete('/{personagem}', [PersonagemController::class, 'destroy'])->name('destroy');
-    
-    // Rotas adicionais mencionadas no CRUD:
-    
-    // 1. Gerenciamento de perícias (item 8 do CRUD)
-    Route::get('/{personagem}/pericias', [PersonagemController::class, 'pericias'])->name('pericias');
-    Route::post('/{personagem}/pericias', [PersonagemController::class, 'updatePericias'])->name('pericias.update');
-    
-    // 2. Sistema de XP (item 9 do CRUD)
-    Route::post('/{personagem}/adicionar-xp', [PersonagemController::class, 'adicionarXp'])->name('adicionar-xp');
-    Route::get('/{personagem}/subir-nivel', [PersonagemController::class, 'subirNivel'])->name('subir-nivel');
-    Route::post('/{personagem}/subir-nivel', [PersonagemController::class, 'processarSubidaNivel'])->name('subir-nivel.processar');
-    
-    // 3. Exportação PDF (item 10 do CRUD)
-    Route::get('/{personagem}/exportar-pdf', [PersonagemController::class, 'exportarPdf'])->name('exportar-pdf');
-    Route::get('/{personagem}/exportar-json', [PersonagemController::class, 'exportarJson'])->name('exportar-json');
-    
-    // 4. Restauração (soft delete)
-    Route::post('/{personagem}/restaurar', [PersonagemController::class, 'restore'])->name('restore')
-         ->withTrashed();
+
+    // -----------------------------
+    // Recursos Avançados
+    // -----------------------------
+    Route::prefix('{personagem}')->group(function () {
+        // Perícias
+        Route::get('/pericias', [PersonagemController::class, 'pericias'])->name('pericias');
+        Route::post('/pericias', [PersonagemController::class, 'updatePericias'])->name('pericias.update');
+
+        // XP e Nível
+        Route::post('/adicionar-xp', [PersonagemController::class, 'adicionarXp'])->name('adicionar-xp');
+        Route::get('/subir-nivel', [PersonagemController::class, 'subirNivel'])->name('subir-nivel');
+        Route::post('/subir-nivel', [PersonagemController::class, 'processarSubidaNivel'])->name('subir-nivel.processar');
+
+        // Exportação
+        Route::get('/exportar-pdf', [PersonagemController::class, 'exportarPdf'])->name('exportar-pdf');
+        Route::get('/exportar-json', [PersonagemController::class, 'exportarJson'])->name('exportar-json');
+
+        // Restauração e Lixeira
+        Route::post('/restaurar', [PersonagemController::class, 'restore'])->name('restore')->withTrashed();
+        Route::delete('/forcar-exclusao', [PersonagemController::class, 'forceDelete'])->name('force-delete')->withTrashed();
+
+        // Duplicação
+        Route::post('/duplicar', [PersonagemController::class, 'duplicar'])->name('duplicar');
+
+        // Toggle Status
+        Route::post('/toggle-ativo', [PersonagemController::class, 'toggleAtivo'])->name('toggle.ativo');
+        Route::post('/toggle-favorito', [PersonagemController::class, 'toggleFavorito'])->name('toggle.favorito');
+
+        // Vida e Recursos
+        Route::post('/atualizar-pv', [PersonagemController::class, 'atualizarPontosVida'])->name('atualizar-pv');
+        Route::post('/usar-recurso', [PersonagemController::class, 'usarRecurso'])->name('usar-recurso');
+
+        // Upload de Imagem/Token
+        Route::post('/upload-imagem', [PersonagemController::class, 'uploadImagem'])->name('upload-imagem');
+        Route::post('/upload-token', [PersonagemController::class, 'uploadToken'])->name('upload-token');
+        Route::delete('/remover-imagem', [PersonagemController::class, 'removerImagem'])->name('remover-imagem');
+
+        // Notas
+        Route::post('/adicionar-nota', [PersonagemController::class, 'adicionarNota'])->name('adicionar-nota');
+        Route::put('/nota/{notaId}', [PersonagemController::class, 'atualizarNota'])->name('atualizar-nota');
+        Route::delete('/nota/{notaId}', [PersonagemController::class, 'removerNota'])->name('remover-nota');
+
+        // Inventário
+        Route::get('/inventario', [PersonagemController::class, 'inventario'])->name('inventario');
+        Route::post('/inventario/adicionar-item', [PersonagemController::class, 'adicionarItemInventario'])->name('inventario.adicionar');
+        Route::put('/inventario/{itemIndex}', [PersonagemController::class, 'atualizarItemInventario'])->name('inventario.atualizar');
+        Route::delete('/inventario/{itemIndex}', [PersonagemController::class, 'removerItemInventario'])->name('inventario.remover');
+        Route::post('/equipar-item', [PersonagemController::class, 'equiparItem'])->name('equipar-item');
+
+        // Magias
+        Route::get('/magias', [PersonagemController::class, 'magias'])->name('magias');
+        Route::post('/magias/adicionar', [PersonagemController::class, 'adicionarMagia'])->name('magias.adicionar');
+        Route::delete('/magias/{magiaIndex}', [PersonagemController::class, 'removerMagia'])->name('magias.remover');
+
+        // Compartilhamento
+        Route::get('/compartilhar', [PersonagemController::class, 'compartilhar'])->name('compartilhar');
+        Route::post('/gerar-link', [PersonagemController::class, 'gerarLinkCompartilhamento'])->name('gerar-link');
+        Route::delete('/revogar-link', [PersonagemController::class, 'revogarLinkCompartilhamento'])->name('revogar-link');
+
+        // API interna
+        Route::get('/api/atributos', [PersonagemController::class, 'apiAtributos'])->name('api.atributos');
+        Route::get('/api/pericias', [PersonagemController::class, 'apiPericias'])->name('api.pericias');
+        Route::get('/api/recursos', [PersonagemController::class, 'apiRecursos'])->name('api.recursos');
+    });
+
+    // Lixeira
     Route::get('/lixeira', [PersonagemController::class, 'lixeira'])->name('lixeira');
-    Route::delete('/{personagem}/forcar-exclusao', [PersonagemController::class, 'forceDelete'])->name('force-delete')
-         ->withTrashed();
-    
-    // 5. Duplicação de personagem
-    Route::post('/{personagem}/duplicar', [PersonagemController::class, 'duplicar'])->name('duplicar');
-    
-    // 6. Toggle de status
-    Route::post('/{personagem}/toggle-ativo', [PersonagemController::class, 'toggleAtivo'])->name('toggle.ativo');
-    Route::post('/{personagem}/toggle-favorito', [PersonagemController::class, 'toggleFavorito'])->name('toggle.favorito');
-    
-    // 7. Gerenciamento de vida/recursos
-    Route::post('/{personagem}/atualizar-pv', [PersonagemController::class, 'atualizarPontosVida'])->name('atualizar-pv');
-    Route::post('/{personagem}/usar-recurso', [PersonagemController::class, 'usarRecurso'])->name('usar-recurso');
-    
-    // 8. Upload de token/imagem
-    Route::post('/{personagem}/upload-imagem', [PersonagemController::class, 'uploadImagem'])->name('upload-imagem');
-    Route::post('/{personagem}/upload-token', [PersonagemController::class, 'uploadToken'])->name('upload-token');
-    Route::delete('/{personagem}/remover-imagem', [PersonagemController::class, 'removerImagem'])->name('remover-imagem');
-    
-    // 9. Notas e anotações
-    Route::post('/{personagem}/adicionar-nota', [PersonagemController::class, 'adicionarNota'])->name('adicionar-nota');
-    Route::put('/{personagem}/nota/{notaId}', [PersonagemController::class, 'atualizarNota'])->name('atualizar-nota');
-    Route::delete('/{personagem}/nota/{notaId}', [PersonagemController::class, 'removerNota'])->name('remover-nota');
-    
-    // 10. Inventário e equipamento
-    Route::get('/{personagem}/inventario', [PersonagemController::class, 'inventario'])->name('inventario');
-    Route::post('/{personagem}/inventario/adicionar-item', [PersonagemController::class, 'adicionarItemInventario'])->name('inventario.adicionar');
-    Route::put('/{personagem}/inventario/{itemIndex}', [PersonagemController::class, 'atualizarItemInventario'])->name('inventario.atualizar');
-    Route::delete('/{personagem}/inventario/{itemIndex}', [PersonagemController::class, 'removerItemInventario'])->name('inventario.remover');
-    Route::post('/{personagem}/equipar-item', [PersonagemController::class, 'equiparItem'])->name('equipar-item');
-    
-    // 11. Magias e habilidades
-    Route::get('/{personagem}/magias', [PersonagemController::class, 'magias'])->name('magias');
-    Route::post('/{personagem}/magias/adicionar', [PersonagemController::class, 'adicionarMagia'])->name('magias.adicionar');
-    Route::delete('/{personagem}/magias/{magiaIndex}', [PersonagemController::class, 'removerMagia'])->name('magias.remover');
-    
-    // 12. Compartilhamento
-    Route::get('/{personagem}/compartilhar', [PersonagemController::class, 'compartilhar'])->name('compartilhar');
-    Route::post('/{personagem}/gerar-link', [PersonagemController::class, 'gerarLinkCompartilhamento'])->name('gerar-link');
-    Route::delete('/{personagem}/revogar-link', [PersonagemController::class, 'revogarLinkCompartilhamento'])->name('revogar-link');
-    
-    // 13. API para dados dinâmicos (usado nas views)
-    Route::get('/{personagem}/api/atributos', [PersonagemController::class, 'apiAtributos'])->name('api.atributos');
-    Route::get('/{personagem}/api/pericias', [PersonagemController::class, 'apiPericias'])->name('api.pericias');
-    Route::get('/{personagem}/api/recursos', [PersonagemController::class, 'apiRecursos'])->name('api.recursos');
 });
 
-// Rotas públicas (para links de compartilhamento)
+// Rotas públicas
 Route::prefix('personagens')->group(function () {
     Route::get('/public/{hash}', [PersonagemController::class, 'viewPublic'])->name('personagens.public.view');
     Route::get('/public/{hash}/pdf', [PersonagemController::class, 'exportarPublicPdf'])->name('personagens.public.pdf');
 });
 
-// Rotas API para AJAX (separadas do web para melhor organização)
+// Rotas API AJAX
 Route::middleware(['auth', 'ajax'])->prefix('api/personagens')->name('api.personagens.')->group(function () {
     Route::get('/campanha/{campanha}/sistema', [PersonagemController::class, 'getSistemaByCampanha'])->name('sistema-by-campanha');
     Route::get('/sistema/{sistema}/racas', [PersonagemController::class, 'getRacasBySistema'])->name('racas-by-sistema');
@@ -363,17 +369,14 @@ Route::middleware(['auth', 'ajax'])->prefix('api/personagens')->name('api.person
     Route::get('/classe/{classe}/detalhes', [PersonagemController::class, 'getClasseDetalhes'])->name('classe-detalhes');
     Route::get('/raca/{raca}/detalhes', [PersonagemController::class, 'getRacaDetalhes'])->name('raca-detalhes');
     Route::get('/origem/{origem}/detalhes', [PersonagemController::class, 'getOrigemDetalhes'])->name('origem-detalhes');
-    
-    // Autocomplete e busca
+
     Route::get('/busca', [PersonagemController::class, 'busca'])->name('busca');
     Route::get('/autocomplete', [PersonagemController::class, 'autocomplete'])->name('autocomplete');
-    
-    // Validações
     Route::post('/validar-nome', [PersonagemController::class, 'validarNome'])->name('validar-nome');
     Route::post('/validar-atributos', [PersonagemController::class, 'validarAtributos'])->name('validar-atributos');
 });
 
-// Middleware para verificar permissões (se necessário)
+// Middleware para bind com Trashed
 Route::bind('personagem', function ($value) {
     return \App\Models\Personagem::withTrashed()->findOrFail($value);
 });

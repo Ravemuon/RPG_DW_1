@@ -408,7 +408,7 @@
         <div class="section">
             <div class="section-title">História de Fundo</div>
             <div class="text-content">
-                {{ $personagem->historia ?: 'Nenhuma história fornecida.' }}
+                {{ $personagem->hisatoria ?: 'Nenhuma história fornecida.' }}
             </div>
         </div>
         

@@ -2,7 +2,6 @@
 
 @section('content')
 <style>
-    /* Estilo customizado para o efeito de card, se o Tailwind não estiver disponível */
     .transform-on-hover {
         transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     }
@@ -11,7 +10,6 @@
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
     }
 
-    /* Estilos de botão aprimorados */
     .btn-action {
         display: flex;
         align-items: center;
@@ -42,6 +40,26 @@
         </div>
     </div>
 
+    <!-- Formulário de busca -->
+    <form method="GET" action="{{ route('sistemas.index') }}" class="row g-2 mb-4">
+        <div class="col-md-6">
+            <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Buscar por nome, foco ou mecânica">
+        </div>
+        <div class="col-md-4">
+            <select name="complexidade" class="form-select">
+                <option value="">Todas as complexidades</option>
+                <option value="Baixa" {{ request('complexidade')=='Baixa'?'selected':'' }}>Baixa</option>
+                <option value="Média" {{ request('complexidade')=='Média'?'selected':'' }}>Média</option>
+                <option value="Alta" {{ request('complexidade')=='Alta'?'selected':'' }}>Alta</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search me-1"></i> Buscar
+            </button>
+        </div>
+    </form>
+
     <!-- Mensagem de sucesso -->
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
@@ -53,15 +71,12 @@
 
     {{-- VISUALIZAÇÃO ADMIN (TABELA E CARDS) --}}
     @if(auth()->check() && auth()->user()->is_admin)
-        <!-- Tabela para gerenciamento (Admin) -->
         <h2 class="fs-5 fw-bold mb-3 border-bottom pb-2 text-dark">
             <i class="bi bi-table me-1"></i> Gerenciamento (Tabela)
         </h2>
 
-        {{-- Incluir partial para tabela de sistemas --}}
         @include('sistemas.partials._tabela_admin', ['sistemas' => $sistemas])
 
-        <!-- Cards detalhados para administração -->
         <h2 class="fs-5 fw-bold mt-5 mb-3 border-bottom pb-2 text-primary">
             <i class="bi bi-grid-fill me-1"></i> Visão de Cards (Detalhada)
         </h2>
@@ -78,7 +93,6 @@
             @endforelse
         </div>
     @else
-        <!-- Visão para usuários comuns -->
         <h2 class="fs-5 fw-bold mb-3 border-bottom pb-2 text-dark">
             <i class="bi bi-dice-3-fill me-1"></i> Explorar Sistemas
         </h2>

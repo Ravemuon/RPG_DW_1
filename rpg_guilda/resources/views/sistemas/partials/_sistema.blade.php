@@ -1,5 +1,4 @@
 @php
-    // Determina a cor do badge de complexidade
     $complexidade = strtolower($sistema->complexidade ?? '');
     $complexidadeCor = match(true) {
         str_contains($complexidade, 'baixa') => 'bg-success text-white',
@@ -8,11 +7,10 @@
         default => 'bg-secondary text-white'
     };
 
-    // Garantir arrays caso alguma relação esteja vazia
-    $classesCount = $sistema->classes->count() ?? 0;
-    $origensCount = $sistema->origens->count() ?? 0;
-    $racasCount   = $sistema->racas->count() ?? 0;
-    $periciasCount = $sistema->pericias->count() ?? 0;
+    $classesCount   = $sistema->classes->count() ?? 0;
+    $origensCount   = $sistema->origens->count() ?? 0;
+    $racasCount     = $sistema->racas->count() ?? 0;
+    $periciasCount  = $sistema->pericias->count() ?? 0;
 @endphp
 
 <div class="col-12 col-md-6 col-lg-4 d-flex align-items-stretch mb-4">
@@ -59,7 +57,6 @@
                 </div>
             </div>
 
-            <!-- Botão “Ver Sistema” -->
             <div class="mt-auto pt-3">
                 <a href="{{ route('sistemas.show', $sistema->id) }}" class="btn btn-primary w-100">
                     <i class="bi bi-eye me-1"></i> Ver Sistema

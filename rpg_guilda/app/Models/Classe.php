@@ -46,4 +46,9 @@ class Classe extends Model
     {
         return $this->belongsToMany(Pericia::class, 'classe_pericia', 'classe_id', 'pericia_id');
     }
+
+    public function personagens(): HasMany 
+    {
+        return $this->hasMany(Personagem::class);
+    }
 }

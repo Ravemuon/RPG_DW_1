@@ -35,45 +35,327 @@ class PersonagemController extends Controller
     {
         $user = Auth::user();
 
-        // Base da query
-        $query = Personagem::with(['campanha', 'raca', 'classe', 'origem'])->latest();
+        // ====================
+        // CONSTRUIR QUERY BASE
+        // ====================
+        $query = Personagem::with([
+            'campanha:id,nome,status',
+            'raca:id,nome',
+            'classe:id,nome,dado_vida',
+            'origem:id,nome',
+            'sistema:id,nome,usa_sanidade',
+            'user:id,name'
+        ]);
 
         // Usuários comuns veem apenas seus personagens
         if (!$user->isMestre()) {
             $query->where('user_id', $user->id);
         }
 
-        // Filtros
+        // ====================
+        // FILTROS AVANÇADOS
+        // ====================
+        
+        // Filtro por campanha
         if ($request->filled('campanha_id')) {
-            $query->where('campanha_id', $request->campanha_id);
+            $campanhaId = $request->campanha_id;
+            $query->where('campanha_id', $campanhaId);
         }
 
+        // Filtro por sistema
         if ($request->filled('sistema_id')) {
-            $query->where('sistema_id', $request->sistema_id);
+            $sistemaId = $request->sistema_id;
+            $query->where('sistema_id', $sistemaId);
         }
 
+        // Filtro por status (ativo/inativo)
         if ($request->filled('ativo')) {
-            $query->where('ativo', $request->ativo === 'true');
+            $ativo = $request->ativo === 'true';
+            $query->where('ativo', $ativo);
         }
 
+        // Filtro por raça
+        if ($request->filled('raca_id')) {
+            $query->where('raca_id', $request->raca_id);
+        }
+
+        // Filtro por classe
+        if ($request->filled('classe_id')) {
+            $query->where('classe_id', $request->classe_id);
+        }
+
+        // Filtro por origem
+        if ($request->filled('origem_id')) {
+            $query->where('origem_id', $request->origem_id);
+        }
+
+        // Filtro por nível mínimo e máximo
+        if ($request->filled('nivel_min')) {
+            $query->where('nivel', '>=', $request->nivel_min);
+        }
+        
+        if ($request->filled('nivel_max')) {
+            $query->where('nivel', '<=', $request->nivel_max);
+        }
+
+        // Filtro por XP mínimo e máximo
+        if ($request->filled('xp_min')) {
+            $query->where('xp', '>=', $request->xp_min);
+        }
+        
+        if ($request->filled('xp_max')) {
+            $query->where('xp', '<=', $request->xp_max);
+        }
+
+        // Filtro de busca textual
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nome', 'LIKE', "%{$search}%")
-                ->orWhere('descricao', 'LIKE', "%{$search}%");
+                ->orWhere('descricao', 'LIKE', "%{$search}%")
+                ->orWhere('historia', 'LIKE', "%{$search}%")
+                ->orWhere('personalidade', 'LIKE', "%{$search}%")
+                ->orWhereHas('campanha', function ($q) use ($search) {
+                    $q->where('nome', 'LIKE', "%{$search}%");
+                })
+                ->orWhereHas('raca', function ($q) use ($search) {
+                    $q->where('nome', 'LIKE', "%{$search}%");
+                })
+                ->orWhereHas('classe', function ($q) use ($search) {
+                    $q->where('nome', 'LIKE', "%{$search}%");
+                });
             });
         }
 
-        // Paginação
-        $personagens = $query->paginate(12)->withQueryString();
+        // Ordenação personalizada
+        $ordenacao = $request->filled('ordenar') ? $request->ordenar : 'created_at_desc';
+        
+        switch ($ordenacao) {
+            case 'nome_asc':
+                $query->orderBy('nome', 'asc');
+                break;
+            case 'nome_desc':
+                $query->orderBy('nome', 'desc');
+                break;
+            case 'nivel_asc':
+                $query->orderBy('nivel', 'asc');
+                break;
+            case 'nivel_desc':
+                $query->orderBy('nivel', 'desc');
+                break;
+            case 'xp_asc':
+                $query->orderBy('xp', 'asc');
+                break;
+            case 'xp_desc':
+                $query->orderBy('xp', 'desc');
+                break;
+            case 'atualizado_desc':
+                $query->orderBy('updated_at', 'desc');
+                break;
+            case 'atualizado_asc':
+                $query->orderBy('updated_at', 'asc');
+                break;
+            default:
+                $query->latest();
+                break;
+        }
 
-        // Para o filtro de campanha
-        $campanhas = \App\Models\Campanha::all();
+        // ====================
+        // CALCULAR ESTATÍSTICAS (ANTES DA PAGINAÇÃO)
+        // ====================
+        $estatisticas = [
+            'total' => 0,
+            'ativos' => 0,
+            'inativos' => 0,
+            'por_nivel' => [],
+            'por_campanha' => [],
+            'por_sistema' => [],
+            'media_nivel' => 0,
+            'total_xp' => 0,
+            'personagem_maior_nivel' => null,
+            'personagem_mais_xp' => null,
+        ];
 
-        return view('personagens.index', compact('personagens', 'campanhas'));
+        // Clonar a query para estatísticas
+        $queryEstatisticas = clone $query;
+        $todosPersonagens = $queryEstatisticas->get();
+        
+        if ($todosPersonagens->isNotEmpty()) {
+            $estatisticas['total'] = $todosPersonagens->count();
+            $estatisticas['ativos'] = $todosPersonagens->where('ativo', true)->count();
+            $estatisticas['inativos'] = $todosPersonagens->where('ativo', false)->count();
+            $estatisticas['media_nivel'] = round($todosPersonagens->avg('nivel'), 1);
+            $estatisticas['total_xp'] = $todosPersonagens->sum('xp');
+            
+            // Salvar o total para uso nos cálculos de porcentagem
+            $totalPersonagens = $todosPersonagens->count();
+            
+            // Distribuição por nível
+            $estatisticas['por_nivel'] = $todosPersonagens->groupBy('nivel')
+                ->map(function ($group, $nivel) use ($totalPersonagens) {
+                    return [
+                        'nivel' => $nivel,
+                        'quantidade' => $group->count(),
+                        'porcentagem' => round(($group->count() / $totalPersonagens) * 100, 1)
+                    ];
+                })
+                ->sortBy('nivel')
+                ->values();
+            
+            // Distribuição por campanha
+            $estatisticas['por_campanha'] = $todosPersonagens->groupBy('campanha.nome')
+                ->map(function ($group, $campanhaNome) use ($totalPersonagens) {
+                    return [
+                        'campanha' => $campanhaNome ?? 'Sem Campanha',
+                        'quantidade' => $group->count(),
+                        'porcentagem' => round(($group->count() / $totalPersonagens) * 100, 1)
+                    ];
+                })
+                ->sortByDesc('quantidade')
+                ->take(5)
+                ->values();
+            
+            // Distribuição por sistema
+            $estatisticas['por_sistema'] = $todosPersonagens->groupBy('sistema.nome')
+                ->map(function ($group, $sistemaNome) use ($totalPersonagens) {
+                    return [
+                        'sistema' => $sistemaNome ?? 'Sistema Desconhecido',
+                        'quantidade' => $group->count(),
+                        'porcentagem' => round(($group->count() / $totalPersonagens) * 100, 1)
+                    ];
+                })
+                ->sortByDesc('quantidade')
+                ->values();
+            
+            // Personagem com maior nível
+            $estatisticas['personagem_maior_nivel'] = $todosPersonagens->sortByDesc('nivel')->first();
+            
+            // Personagem com mais XP
+            $estatisticas['personagem_mais_xp'] = $todosPersonagens->sortByDesc('xp')->first();
+            
+            // Níveis mais comuns
+            $estatisticas['niveis_mais_comuns'] = $todosPersonagens->groupBy('nivel')
+                ->map(function ($group) {
+                    return $group->count();
+                })
+                ->sortDesc()
+                ->take(3)
+                ->map(function ($quantidade, $nivel) {
+                    return [
+                        'nivel' => $nivel,
+                        'quantidade' => $quantidade
+                    ];
+                })
+                ->values();
+        }
+
+        // ====================
+        // PAGINAÇÃO (APÓS ESTATÍSTICAS)
+        // ====================
+        $porPagina = $request->filled('por_pagina') ? $request->por_pagina : 12;
+        $personagens = $query->paginate($porPagina)->withQueryString();
+
+        // ====================
+        // DADOS PARA FILTROS - VERSÃO SEGURA
+        // ====================
+        $campanhas = Campanha::where(function ($q) use ($user) {
+            if (!$user->isMestre()) {
+                $q->where('criador_id', $user->id)
+                ->orWhereHas('jogadores', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+            }
+        })->get(['id', 'nome', 'status']);
+
+        // Obter sistemas disponíveis - usando subquery segura
+        $sistemasDisponiveis = Sistema::whereIn('id', function ($query) use ($user) {
+            $query->select('sistema_id')
+                ->from('personagens')
+                ->whereNotNull('sistema_id')
+                ->when(!$user->isMestre(), function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->distinct();
+        })->get(['id', 'nome']);
+
+        // Obter raças disponíveis - usando subquery segura
+        $racasDisponiveis = Raca::whereIn('id', function ($query) use ($user) {
+            $query->select('raca_id')
+                ->from('personagens')
+                ->whereNotNull('raca_id')
+                ->when(!$user->isMestre(), function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->distinct();
+        })->get(['id', 'nome', 'sistema_id']);
+
+        // Obter classes disponíveis - usando subquery segura
+        $classesDisponiveis = Classe::whereIn('id', function ($query) use ($user) {
+            $query->select('classe_id')
+                ->from('personagens')
+                ->whereNotNull('classe_id')
+                ->when(!$user->isMestre(), function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->distinct();
+        })->get(['id', 'nome', 'sistema_id']);
+
+        // Obter origens disponíveis - usando subquery segura
+        $origensDisponiveis = Origem::whereIn('id', function ($query) use ($user) {
+            $query->select('origem_id')
+                ->from('personagens')
+                ->whereNotNull('origem_id')
+                ->when(!$user->isMestre(), function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->distinct();
+        })->get(['id', 'nome', 'sistema_id']);
+
+        // Opções de ordenação
+        $opcoesOrdenacao = [
+            'created_at_desc' => 'Mais Recentes',
+            'created_at_asc' => 'Mais Antigos',
+            'nome_asc' => 'Nome (A-Z)',
+            'nome_desc' => 'Nome (Z-A)',
+            'nivel_desc' => 'Maior Nível',
+            'nivel_asc' => 'Menor Nível',
+            'xp_desc' => 'Mais XP',
+            'xp_asc' => 'Menos XP',
+            'atualizado_desc' => 'Recentes Atualizações',
+            'atualizado_asc' => 'Antigas Atualizações',
+        ];
+
+        // Opções de itens por página
+        $opcoesPorPagina = [6, 12, 24, 48, 96];
+
+        // ====================
+        // LOG DE CONSULTA (opcional - para debug)
+        // ====================
+        if (config('app.debug')) {
+            \Log::debug('Consulta de personagens', [
+                'user_id' => $user->id,
+                'is_mestre' => $user->isMestre(),
+                'filtros' => $request->all(),
+                'total_resultados' => $personagens->total(),
+                'total_estatisticas' => $todosPersonagens->count()
+            ]);
+        }
+
+        // ====================
+        // RETORNAR VIEW
+        // ====================
+        return view('personagens.index', compact(
+            'personagens',
+            'campanhas',
+            'sistemasDisponiveis',
+            'racasDisponiveis',
+            'classesDisponiveis',
+            'origensDisponiveis',
+            'estatisticas',
+            'opcoesOrdenacao',
+            'opcoesPorPagina'
+        ));
     }
-
-
 
     public function create(Request $request)
     {
@@ -613,10 +895,16 @@ private function isValidJson($string)
         $atributosCompletos = $personagem->atributosCompletos();
         $pontosVida = $personagem->calcularPontosVida();
 
+        // --- Cálculo do progresso de XP para o próximo nível ---
+        $xpAtual = $personagem->xp;
+        $xpProximo = $personagem->xpProximoNivel();
+        $progressoNivel = $xpProximo > 0 ? ($xpAtual / $xpProximo) * 100 : 100;
+
         $pdf = \PDF::loadView('personagens.pdf.ficha', compact(
             'personagem',
             'atributosCompletos',
-            'pontosVida'
+            'pontosVida',
+            'progressoNivel'
         ));
 
         return $pdf->download("ficha-{$personagem->nome}.pdf");
