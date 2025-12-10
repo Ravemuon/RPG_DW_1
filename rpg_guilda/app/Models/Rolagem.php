@@ -5,28 +5,46 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Raca extends Model
+class Rolagem extends Model
 {
     use HasFactory;
 
-    protected $table = 'racas';
+    protected $table = 'rolagens';
 
     protected $fillable = [
-        'nome',
+        'user_id',
+        'campanha_id',
+        'personagem_id',
+        'tipo_dado',
+        'quantidade',
+        'modificador',
+        'resultado',
         'descricao',
-        'modificadores_atributos',
-        'tipo_bonus',
-        'bonus_livre',
-        'pagina',
-        'sistema_id',
+        'tipo_rolagem',
     ];
 
     protected $casts = [
-        'modificadores_atributos' => 'array',
+        'quantidade' => 'integer',
+        'modificador' => 'integer',
+        'resultado' => 'integer',
     ];
 
-    public function sistema()
+    /* ---------------------------------
+       RELACIONAMENTOS
+    -----------------------------------*/
+
+    public function user()
     {
-        return $this->belongsTo(Sistema::class);
+        return $this->belongsTo(User::class);
+    }
+
+    public function campanha()
+    {
+        return $this->belongsTo(Campanha::class);
+    }
+
+    public function personagem()
+    {
+        return $this->belongsTo(Personagem::class);
     }
 }

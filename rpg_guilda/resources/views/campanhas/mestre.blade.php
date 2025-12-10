@@ -82,7 +82,7 @@
             <i class="fas fa-calendar-plus me-1"></i> Criar Sessão
         </a>
 
-        <a href="{{ route('personagens.create', ['campanha' => $campanha->id]) }}" class="btn btn-info rounded-pill">
+       <a href="{{ route('personagens.create', ['campanha_id' => $campanha->id]) }}" class="btn btn-info rounded-pill">
             <i class="fas fa-user-plus me-1"></i> Criar Personagem
         </a>
 
@@ -343,7 +343,7 @@
 
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ route('personagens.show',$personagem->id) }}" class="btn btn-outline-info">Ver</a>
-                                       <a href="{{ route('personagens.editOverview',$personagem->id) }}" class="btn btn-outline-warning">Editar</a>
+                                       <a href="{{ route('personagens.edit',$personagem->id) }}" class="btn btn-outline-warning">Editar</a>
                                     </div>
                                 </li>
                             @endforeach

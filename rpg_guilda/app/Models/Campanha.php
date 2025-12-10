@@ -67,5 +67,9 @@ class Campanha extends Model
 
     // Retorna o mestre da campanha
     public function mestre() { return $this->belongsTo(User::class, 'criador_id'); }
-
+    
+    public function participantes()
+    {
+        return $this->jogadores()->whereIn('campanha_usuario.status', ['ativo', 'mestre']);
+    }
 }

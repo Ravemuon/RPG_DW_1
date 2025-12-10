@@ -23,6 +23,11 @@ class UserController extends Controller
         return view('auth.login', compact('temas'));
     }
 
+    public function isMestre(): bool
+    {
+        return $this->papel === 'mestre';
+    }
+
     // Realiza login do usuário
     public function login(Request $request)
     {

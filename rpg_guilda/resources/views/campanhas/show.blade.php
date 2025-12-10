@@ -117,7 +117,7 @@
                     <div class="dashboard-card shadow-sm border-start border-3 border-primary">
                         <h6 class="text-muted"><i class="bi bi-person-badge-fill me-1 text-primary"></i> PERSONAGENS</h6>
                         <h2 class="fw-bold">{{ $campanha->personagens->count() }}</h2>
-                        <a href="{{ route('personagens.create', ['campanha' => $campanha->id]) }}" class="btn btn-sm rounded-pill btn-outline-primary mt-2">
+                        <a href="{{ route('personagens.create', ['campanha_id' => $campanha->id]) }}" class="btn btn-sm rounded-pill btn-outline-primary mt-2">
                             Criar Novo
                         </a>
                     </div>
@@ -211,6 +211,10 @@
                     <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge-fill me-2"></i> Personagens do Grupo</h5>
                     <a href="{{ route('personagens.create', ['campanha' => $campanha->id]) }}" class="btn btn-light btn-sm rounded-pill fw-bold">
                         <i class="bi bi-plus-lg me-1"></i> Criar Novo
+                    </a>
+                     <a href="{{ route('personagens.index',['campanha'=>$campanha->id]) }}"
+                           class="btn btn-outline-info btn-sm rounded-pill">
+                            Ver Todos
                     </a>
                 </div>
                 <div class="card-body p-0">

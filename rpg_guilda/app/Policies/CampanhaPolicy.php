@@ -61,4 +61,27 @@ class CampanhaPolicy
     {
         return $campanha->criador_id === $user->id;
     }
+
+    public function criarPersonagem(User $user, Campanha $campanha): bool
+{
+    // Criador pode sempre criar
+    if ($campanha->criador_id === $user->id) {
+        return true;
+    }
+    
+    // Jogadores ativos podem criar
+    if ($campanha->jogadores()
+        ->where('user_id', $user->id)
+        ->whereIn('campanha_usuario.status', ['ativo', 'mestre'])
+        ->exists()) {
+        return true;
+    }
+    
+    // Campanhas públicas permitem criação
+    if (!$campanha->privada) {
+        return true;
+    }
+    
+    return false;
+}
 }

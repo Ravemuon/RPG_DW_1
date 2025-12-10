@@ -8,30 +8,30 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('personagem_classe', function (Blueprint $table) {
+        Schema::create('personagem_pericias', function (Blueprint $table) {
             $table->id();
-
-            // Relacionamento com personagem
+            
             $table->foreignId('personagem_id')
                   ->constrained('personagens')
-                  ->onDelete('cascade')
-                  ->comment('Referência ao personagem');
-
-            // Relacionamento com classe
-            $table->foreignId('classe_id')
-                  ->constrained('classes')
-                  ->onDelete('cascade')
-                  ->comment('Referência à classe do personagem');
-
+                  ->onDelete('cascade');
+                  
+            $table->foreignId('pericia_id')
+                  ->constrained('pericias')
+                  ->onDelete('cascade');
+            
+            $table->boolean('proficiente')->default(false);
+            $table->integer('bonus_especial')->default(0);
+            $table->text('observacoes')->nullable();
+            
             $table->timestamps();
-
-            // Evita duplicidade de classes para o mesmo personagem
-            $table->unique(['personagem_id', 'classe_id']);
+            
+            // Evitar duplicatas
+            $table->unique(['personagem_id', 'pericia_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('personagem_classe');
+        Schema::dropIfExists('personagem_pericias');
     }
 };
