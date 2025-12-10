@@ -3,7 +3,7 @@ Aluna: Emilly Marteninghe Fortes
 Usuários Login:
 Administrador: tem acesso aos sistemas cadastrados e a paginas especificas.
 - Email: admin@teste.com
-- Senha: password
+- Senha: admin123
 
 Usuário teste: tem acesso comum as paginas
 - Email: jogador@teste.com
