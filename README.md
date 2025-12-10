@@ -33,7 +33,9 @@ Passo a passo, de esses comandos no terminal do visual
 
 4. php artisan serve
 
-5. Acessar o sistema na pagina: http://localhost:8000/
+5. php artisan storage:link
+
+6. Acessar o sistema na pagina: http://localhost:8000/
 
 Se der erro, coloque no terminal: php artisan key:generate
 
