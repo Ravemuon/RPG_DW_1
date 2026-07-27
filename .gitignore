@@ -1,0 +1,63 @@
+# ------------------------------
+#  Arquivos ignorados pelo Git
+# ------------------------------
+
+# MySQL 8.4 (instalação local, dados, logs)
+mysql-8.4/
+*.sql
+*.sqlite
+*.sqlite-journal
+
+# Diretórios do Laravel
+/vendor/
+/node_modules/
+/storage/*.key
+/storage/*.lock
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/testing/
+/storage/framework/views/
+/storage/logs/
+
+# Arquivos de ambiente
+.env
+.env.*
+!.env.example
+
+# Composer
+composer.phar
+composer.lock
+
+# NPM
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE / Editor
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Testes e cobertura
+coverage/
+.phpunit.result.cache
+*.log
+
+# Configurações do PHP
+.php-cs-fixer.cache
+.php_cs.cache
+
+# Relatórios gerados
+public/reports/
+public/pdf/
+*.pdf
+
+# Arquivos temporários
+tmp/
+temp/
