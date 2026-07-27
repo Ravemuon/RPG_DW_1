@@ -20,7 +20,7 @@ class UsersTableSeeder extends Seeder
                 'username' => 'admin',
                 'email' => 'admin@teste.com',
                 'papel' => 'administrador',
-                'tema' => 'steampunk',
+                'tema' => 'sobrenatural',
                 'bio' => 'Responsável pela Guilda.',
                 'password' => Hash::make('admin123'),
             ],
